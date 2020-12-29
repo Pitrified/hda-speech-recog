@@ -1,5 +1,43 @@
 import logging
 
+ALL_WORDS = [
+    "backward",
+    "bed",
+    "bird",
+    "cat",
+    "dog",
+    "down",
+    "eight",
+    "five",
+    "follow",
+    "forward",
+    "four",
+    "go",
+    "happy",
+    "house",
+    "learn",
+    "left",
+    "marvin",
+    "nine",
+    "no",
+    "off",
+    "on",
+    "one",
+    "right",
+    "seven",
+    "sheila",
+    "six",
+    "stop",
+    "three",
+    "tree",
+    "two",
+    "up",
+    "visual",
+    "wow",
+    "yes",
+    "zero",
+]
+
 
 def setup_logger(logLevel="DEBUG"):
     """Setup logger that outputs to console for the module"""

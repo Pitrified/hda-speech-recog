@@ -58,7 +58,7 @@ def run_visualize(args):
     logg = logging.getLogger(f"c.{__name__}.run_visualize")
     logg.debug("Starting run_visualize")
 
-    dataset_path = Path("/home/pmn/uni/human_data/progetto2020/speech_commands_v0.02")
+    dataset_path = Path("data_raw")
     logg.debug(f"dataset_path: {dataset_path}")
 
     sample_path = dataset_path / "happy" / "0a2b400e_nohash_0.wav"
@@ -74,6 +74,12 @@ def run_visualize(args):
     sample_log_melspec = librosa.power_to_db(sample_melspec, ref=np.max)
     logg.debug(f"sample_log_melspec.shape: {sample_log_melspec.shape}")
     plot_spec(sample_log_melspec, ax[1])
+
+    sample_mfcc = librosa.feature.mfcc(sample_sig, sr=sample_rate)
+    logg.debug(f"sample_mfcc.shape: {sample_mfcc.shape}")
+    sample_log_mfcc = librosa.power_to_db(sample_mfcc, ref=np.max)
+    logg.debug(f"sample_log_mfcc.shape: {sample_log_mfcc.shape}")
+    plot_spec(sample_log_mfcc, ax[2])
 
     plt.tight_layout()
     plt.show()
