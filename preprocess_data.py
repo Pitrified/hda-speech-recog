@@ -1,14 +1,13 @@
 import argparse
 import logging
+from pathlib import Path
 
 from tqdm import tqdm  # type: ignore
-import numpy as np  # type: ignore
-
-# from random import seed as rseed
-# from timeit import default_timer as timer
-
 import librosa  # type: ignore
-from pathlib import Path
+
+from sklearn.preprocessing import LabelEncoder  # type: ignore
+from tensorflow.keras.utils import to_categorical  # type: ignore
+import numpy as np  # type: ignore
 
 from utils import setup_logger
 from utils import ALL_WORDS
@@ -94,6 +93,7 @@ def preprocess_mfcc():
 
     words = ALL_WORDS
     # words = ["happy", "learn"]
+    words = ["happy", "learn", "wow", "visual"]
     for word in words:
         word_in_path = dataset_path / word
         logg.debug(f"Processing folder: {word_in_path}")
@@ -117,30 +117,50 @@ def preprocess_mfcc():
             word_mfcc[which].append(log_mfcc)
 
         for which in ["validation", "training", "testing"]:
-            np_mfcc = np.array(word_mfcc[which], dtype=object)
-            logg.debug(f"{which} np_mfcc.shape: {np_mfcc.shape}")
+            # logg.debug(f"word_mfcc[{which}][0].shape: {word_mfcc[which][0].shape}")
+            # np_mfcc = np.vstack(word_mfcc[which])
+            # np_mfcc = np.array(word_mfcc[which], dtype=object)
+            np_mfcc = np.stack(word_mfcc[which])
+            # logg.debug(f"{which} np_mfcc.shape: {np_mfcc.shape}")
             word_out_path = processed_path / f"{word}_{which}.npy"
             np.save(word_out_path, np_mfcc)
 
 
 def load_processed(processed_path, words):
     """TODO: what is load_processed doing?"""
-    logg = logging.getLogger(f"c.{__name__}.load_processed")
-    logg.debug("Start load_processed")
+    # logg = logging.getLogger(f"c.{__name__}.load_processed")
+    # logg.debug("Start load_processed")
 
-    loaded = {"validation": [], "training": [], "testing": []}
+    loaded_words = {"validation": [], "training": [], "testing": []}
+    loaded_labels = {"validation": [], "training": [], "testing": []}
     for word in words:
-        loaded[word] = {}
+        loaded_words[word] = {}
         for which in ["validation", "training", "testing"]:
             word_path = processed_path / f"{word}_{which}.npy"
-            loaded[which].append(np.load(word_path, allow_pickle=True))
+            word_data = np.load(word_path, allow_pickle=True)
+            loaded_words[which].append(word_data)
+            word_label = np.full(word_data.shape[0], fill_value=word)
+            loaded_labels[which].append(word_label)
 
     data = {}
+    labels = {}
     for which in ["validation", "training", "testing"]:
-        data[which] = np.vstack(loaded[which])
-        logg.debug(f"data[{which}].shape: {data[which].shape}")
+        # data have shape (*, 20, 32) so we use vstack
+        data[which] = np.vstack(loaded_words[which])
+        # labels have shape (*, ) so we use hstack
+        labels[which] = np.hstack(loaded_labels[which])
 
-    return data
+        # logg.debug(f"data[{which}].shape: {data[which].shape}")
+        # logg.debug(f"labels[{which}].shape: {labels[which].shape}")
+
+    for which in ["validation", "training", "testing"]:
+        data[which] = np.reshape(data[which], (*data[which].shape, 1))
+        y = LabelEncoder().fit_transform(labels[which])
+        labels[which] = to_categorical(y)
+        # logg.debug(f"data[{which}].shape: {data[which].shape}")
+        # logg.debug(f"labels[{which}].shape: {labels[which].shape}")
+
+    return data, labels
 
 
 def test_load_processed():
@@ -149,7 +169,7 @@ def test_load_processed():
     logg.debug("Start test_load_processed")
     processed_path = Path("data_proc/mfcc")
     words = ["happy", "learn"]
-    words = ALL_WORDS
+    # words = ALL_WORDS
     load_processed(processed_path, words)
 
 
@@ -158,8 +178,8 @@ def run_preprocess_data(args):
     logg = logging.getLogger(f"c.{__name__}.run_preprocess_data")
     logg.debug("Starting run_preprocess_data")
 
-    # preprocess_mfcc()
-    test_load_processed()
+    preprocess_mfcc()
+    # test_load_processed()
 
 
 if __name__ == "__main__":
