@@ -123,12 +123,43 @@ def preprocess_mfcc():
             np.save(word_out_path, np_mfcc)
 
 
+def load_processed(processed_path, words):
+    """TODO: what is load_processed doing?"""
+    logg = logging.getLogger(f"c.{__name__}.load_processed")
+    logg.debug("Start load_processed")
+
+    loaded = {"validation": [], "training": [], "testing": []}
+    for word in words:
+        loaded[word] = {}
+        for which in ["validation", "training", "testing"]:
+            word_path = processed_path / f"{word}_{which}.npy"
+            loaded[which].append(np.load(word_path, allow_pickle=True))
+
+    data = {}
+    for which in ["validation", "training", "testing"]:
+        data[which] = np.vstack(loaded[which])
+        logg.debug(f"data[{which}].shape: {data[which].shape}")
+
+    return data
+
+
+def test_load_processed():
+    """TODO: what is test_load_processed doing?"""
+    logg = logging.getLogger(f"c.{__name__}.test_load_processed")
+    logg.debug("Start test_load_processed")
+    processed_path = Path("data_proc/mfcc")
+    words = ["happy", "learn"]
+    words = ALL_WORDS
+    load_processed(processed_path, words)
+
+
 def run_preprocess_data(args):
     """TODO: What is preprocess_data doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_preprocess_data")
     logg.debug("Starting run_preprocess_data")
 
-    preprocess_mfcc()
+    # preprocess_mfcc()
+    test_load_processed()
 
 
 if __name__ == "__main__":
