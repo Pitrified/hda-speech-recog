@@ -5,11 +5,13 @@ from pathlib import Path
 # import numpy as np  # type: ignore
 # from tensorflow.data.Dataset import from_tensor_slices  # type: ignore
 # from tensorflow import data as tfdata  # type: ignore
+import tensorflow as tf
 from tensorflow.data import Dataset  # type: ignore
 
 from models import CNNmodel
 from preprocess_data import load_processed
 from utils import setup_logger
+from utils import ALL_WORDS
 
 
 def parse_arguments():
@@ -46,20 +48,47 @@ def setup_env():
     return args
 
 
+def setup_gpus():
+    """TODO: what is setup_gpus doing?
+
+    https://www.tensorflow.org/guide/gpu#limiting_gpu_memory_growth
+    https://github.com/tensorflow/tensorflow/issues/25138
+    """
+    logg = logging.getLogger(f"c.{__name__}.setup_gpus")
+    logg.debug(f"Start setup_gpus")
+
+    gpus = tf.config.experimental.list_physical_devices("GPU")
+    if gpus:
+        try:
+            # Currently, memory growth needs to be the same across GPUs
+            for gpu in gpus:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            logical_gpus = tf.config.experimental.list_logical_devices("GPU")
+            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+
+        except RuntimeError as e:
+            # Memory growth must be set before GPUs have been initialized
+            print(e)
+    else:
+        logg.debug(f"Broski non ho trovato le GPU")
+
+
 def run_train(args):
     """TODO: What is train doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_train")
     logg.debug("Starting run_train")
 
+    setup_gpus()
+
     processed_path = Path("data_proc/mfcc")
+    words = ALL_WORDS
     words = ["happy", "learn", "wow", "visual"]
-    # words = ALL_WORDS
     data, labels = load_processed(processed_path, words)
 
     model_folder = Path("models")
     if not model_folder.exists():
         model_folder.mkdir(parents=True, exist_ok=True)
-    model_path = model_folder / "CNNmodel_001.h5"
+    model_path = model_folder / "CNNmodel_002.h5"
     logg.debug(f"model_path: {model_path}")
 
     model = CNNmodel(len(words), input_shape=data["training"][0].shape)
