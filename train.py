@@ -12,7 +12,7 @@ from tensorflow.data import Dataset  # type: ignore
 from models import CNNmodel
 from preprocess_data import load_processed
 from utils import setup_logger
-from utils import ALL_WORDS
+from utils import ALL_WORDS, ALL_NUMBERS
 from utils import pred_hot_2_cm
 from utils import setup_gpus
 from plot_utils import plot_loss
@@ -64,8 +64,8 @@ def run_train(args):
     # input data
     processed_path = Path("data_proc/mfcc")
     words = ALL_WORDS
+    words = ALL_NUMBERS
     words = ["happy", "learn", "wow", "visual"]
-    words = ["happy", "visual", "wow", "learn"]
     data, labels = load_processed(processed_path, words)
 
     model_name = "CNNmodel_002"
@@ -91,6 +91,7 @@ def run_train(args):
 
     # training parameters
     BATCH_SIZE = 128
+    # BATCH_SIZE = 64
     SHUFFLE_BUFFER_SIZE = 200
     EPOCH_NUM = 60
 

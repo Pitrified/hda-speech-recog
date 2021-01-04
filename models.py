@@ -7,17 +7,26 @@ def CNNmodel(num_labels, input_shape):
 
     x = layers.BatchNormalization()(inputs)
 
-    x = layers.Conv2D(64, kernel_size=(2, 2), activation="relu", padding="same")(x)
+    # x = layers.Conv2D(64, kernel_size=(2, 2), activation="relu", padding="same")(x)
+    x = layers.Conv2D(20, kernel_size=(5, 1), activation="relu", padding="same")(x)
+    # x = layers.Conv2D(20, kernel_size=(8, 2), activation="relu", padding="same")(x)
+    # x = layers.Conv2D(64, kernel_size=(5, 1), activation="relu", padding="same")(x)
     x = layers.BatchNormalization()(x)
-    x = layers.MaxPooling2D(pool_size=(2, 2))(x)
+    # x = layers.MaxPooling2D(pool_size=(2, 2))(x)
+    x = layers.MaxPooling2D(pool_size=(2, 1))(x)
     x = layers.Dropout(0.03)(x)
 
-    x = layers.Conv2D(128, kernel_size=(2, 2), activation="relu", padding="same")(x)
+    # x = layers.Conv2D(128, kernel_size=(2, 2), activation="relu", padding="same")(x)
+    x = layers.Conv2D(40, kernel_size=(3, 3), activation="relu", padding="same")(x)
+    # x = layers.Conv2D(40, kernel_size=(4, 4), activation="relu", padding="same")(x)
+    # x = layers.Conv2D(128, kernel_size=(3, 3), activation="relu", padding="same")(x)
     x = layers.BatchNormalization()(x)
     x = layers.MaxPooling2D(pool_size=(2, 2))(x)
     x = layers.Dropout(0.01)(x)
 
-    x = layers.Conv2D(256, kernel_size=(2, 2), activation="relu", padding="same")(x)
+    # x = layers.Conv2D(256, kernel_size=(2, 2), activation="relu", padding="same")(x)
+    x = layers.Conv2D(80, kernel_size=(3, 3), activation="relu", padding="same")(x)
+    # x = layers.Conv2D(256, kernel_size=(3, 3), activation="relu", padding="same")(x)
     x = layers.BatchNormalization()(x)
     x = layers.MaxPooling2D(pool_size=(2, 2))(x)
 

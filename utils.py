@@ -41,6 +41,19 @@ ALL_WORDS = [
     "zero",
 ]
 
+ALL_NUMBERS = [
+    "zero",
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+]
+
 
 def setup_logger(logLevel="DEBUG"):
     """Setup logger that outputs to console for the module"""
