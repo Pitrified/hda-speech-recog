@@ -1,17 +1,23 @@
 import argparse
 import logging
 from pathlib import Path
+import matplotlib.pyplot as plt  # type: ignore
 
 # import numpy as np  # type: ignore
 # from tensorflow.data.Dataset import from_tensor_slices  # type: ignore
 # from tensorflow import data as tfdata  # type: ignore
-import tensorflow as tf
+# import tensorflow as tf  # type: ignore
 from tensorflow.data import Dataset  # type: ignore
 
 from models import CNNmodel
 from preprocess_data import load_processed
 from utils import setup_logger
 from utils import ALL_WORDS
+from utils import pred_hot_2_cm
+from utils import setup_gpus
+from plot_utils import plot_loss
+from plot_utils import plot_cat_acc
+from plot_utils import plot_confusion_matrix
 
 
 def parse_arguments():
@@ -48,31 +54,6 @@ def setup_env():
     return args
 
 
-def setup_gpus():
-    """TODO: what is setup_gpus doing?
-
-    https://www.tensorflow.org/guide/gpu#limiting_gpu_memory_growth
-    https://github.com/tensorflow/tensorflow/issues/25138
-    """
-    logg = logging.getLogger(f"c.{__name__}.setup_gpus")
-    logg.debug(f"Start setup_gpus")
-
-    gpus = tf.config.experimental.list_physical_devices("GPU")
-    if gpus:
-        try:
-            # Currently, memory growth needs to be the same across GPUs
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
-            logical_gpus = tf.config.experimental.list_logical_devices("GPU")
-            print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
-
-        except RuntimeError as e:
-            # Memory growth must be set before GPUs have been initialized
-            print(e)
-    else:
-        logg.debug(f"Broski non ho trovato le GPU")
-
-
 def run_train(args):
     """TODO: What is train doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_train")
@@ -80,17 +61,26 @@ def run_train(args):
 
     setup_gpus()
 
+    # input data
     processed_path = Path("data_proc/mfcc")
     words = ALL_WORDS
     words = ["happy", "learn", "wow", "visual"]
+    words = ["happy", "visual", "wow", "learn"]
     data, labels = load_processed(processed_path, words)
+
+    model_name = "CNNmodel_002"
 
     model_folder = Path("models")
     if not model_folder.exists():
         model_folder.mkdir(parents=True, exist_ok=True)
-    model_path = model_folder / "CNNmodel_002.h5"
+    model_path = model_folder / f"{model_name}.h5"
     logg.debug(f"model_path: {model_path}")
 
+    info_folder = Path("info") / model_name
+    if not info_folder.exists():
+        info_folder.mkdir(parents=True, exist_ok=True)
+
+    # create the model
     model = CNNmodel(len(words), input_shape=data["training"][0].shape)
     model.compile(
         optimizer="adam",
@@ -99,27 +89,65 @@ def run_train(args):
     )
     model.summary()
 
-    BATCH_SIZE = 64
-    SHUFFLE_BUFFER_SIZE = 100
+    # training parameters
+    BATCH_SIZE = 128
+    SHUFFLE_BUFFER_SIZE = 200
+    EPOCH_NUM = 60
 
+    # load the datasets
     datasets = {}
     for which in ["validation", "training", "testing"]:
         logg.debug(f"data[{which}].shape: {data[which].shape}")
         datasets[which] = Dataset.from_tensor_slices((data[which], labels[which]))
         datasets[which] = datasets[which].shuffle(SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE)
 
-    model.fit(
+    # train the model
+    results = model.fit(
         datasets["training"],
         validation_data=datasets["validation"],
         batch_size=BATCH_SIZE,
-        epochs=60,
+        epochs=EPOCH_NUM,
     )
     model.save(model_path)
 
+    # quickly evaluate the results
     logg.debug(f"\nmodel.metrics_names: {model.metrics_names}")
     for which in ["validation", "training", "testing"]:
         model_eval = model.evaluate(datasets[which])
         logg.debug(f"{which}: model_eval: {model_eval}")
+
+    # save plots about training
+    # loss
+    fig, ax = plt.subplots(figsize=(12, 12))
+    plot_loss(results.history["loss"], results.history["val_loss"], ax, model_name)
+    plot_loss_path = info_folder / "train_loss.png"
+    fig.savefig(plot_loss_path)
+
+    # categorical accuracy
+    fig, ax = plt.subplots(figsize=(12, 12))
+    plot_cat_acc(
+        results.history["categorical_accuracy"],
+        results.history["val_categorical_accuracy"],
+        ax,
+        model_name,
+    )
+    plot_cat_acc_path = info_folder / "train_cat_acc.png"
+    fig.savefig(plot_cat_acc_path)
+
+    # a dict to recreate this training
+    recap = {}
+    recap["words"] = words
+
+    # compute the confusion matrix
+    y_pred = model.predict(datasets["testing"])
+    cm = pred_hot_2_cm(labels["testing"], y_pred, words)
+    logg.debug(f"cm: {cm}")
+    fig, ax = plt.subplots(figsize=(12, 12))
+    plot_confusion_matrix(cm, ax, model_name, words)
+    plot_cm_path = info_folder / "test_confusion_matrix.png"
+    fig.savefig(plot_cm_path)
+
+    plt.show()
 
 
 if __name__ == "__main__":
