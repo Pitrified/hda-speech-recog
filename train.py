@@ -8,11 +8,12 @@ import matplotlib.pyplot as plt  # type: ignore
 # from tensorflow import data as tfdata  # type: ignore
 # import tensorflow as tf  # type: ignore
 from tensorflow.data import Dataset  # type: ignore
+from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
 
 from models import CNNmodel
 from preprocess_data import load_processed
 from utils import setup_logger
-from utils import ALL_WORDS, ALL_NUMBERS
+from utils import WORDS_ALL, WORDS_NUMBERS, WORDS_DIRECTION
 from utils import pred_hot_2_cm
 from utils import setup_gpus
 from plot_utils import plot_loss
@@ -63,9 +64,10 @@ def run_train(args):
 
     # input data
     processed_path = Path("data_proc/mfcc")
-    words = ALL_WORDS
-    words = ALL_NUMBERS
-    words = ["happy", "learn", "wow", "visual"]
+    words = WORDS_DIRECTION
+    words = WORDS_NUMBERS
+    words = WORDS_ALL
+    # words = ["happy", "learn", "wow", "visual"]
     data, labels = load_processed(processed_path, words)
 
     model_name = "CNNmodel_002"
@@ -93,7 +95,7 @@ def run_train(args):
     BATCH_SIZE = 128
     # BATCH_SIZE = 64
     SHUFFLE_BUFFER_SIZE = 200
-    EPOCH_NUM = 60
+    EPOCH_NUM = 30
 
     # load the datasets
     datasets = {}
@@ -102,12 +104,24 @@ def run_train(args):
         datasets[which] = Dataset.from_tensor_slices((data[which], labels[which]))
         datasets[which] = datasets[which].shuffle(SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE)
 
+    # setup early stopping
+    early_stop = EarlyStopping(
+        monitor="val_categorical_accuracy",
+        patience=10,
+        verbose=1,
+        restore_best_weights=True,
+    )
+
     # train the model
     results = model.fit(
-        datasets["training"],
+        # datasets["training"],
+        data["training"],
+        labels["training"],
         validation_data=datasets["validation"],
         batch_size=BATCH_SIZE,
         epochs=EPOCH_NUM,
+        verbose=1,
+        callbacks=[early_stop],
     )
     model.save(model_path)
 

@@ -3,7 +3,7 @@ import numpy as np  # type: ignore
 from sklearn.metrics import confusion_matrix  # type: ignore
 import tensorflow as tf  # type: ignore
 
-ALL_WORDS = [
+WORDS_ALL = [
     "backward",
     "bed",
     "bird",
@@ -41,7 +41,7 @@ ALL_WORDS = [
     "zero",
 ]
 
-ALL_NUMBERS = [
+WORDS_NUMBERS = [
     "zero",
     "one",
     "two",
@@ -53,6 +53,8 @@ ALL_NUMBERS = [
     "eight",
     "nine",
 ]
+
+WORDS_DIRECTION = ["up", "down", "forward", "backward", "left", "right"]
 
 
 def setup_logger(logLevel="DEBUG"):

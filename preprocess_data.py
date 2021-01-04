@@ -10,7 +10,7 @@ from tensorflow.keras.utils import to_categorical  # type: ignore
 import numpy as np  # type: ignore
 
 from utils import setup_logger
-from utils import ALL_WORDS
+from utils import WORDS_ALL
 
 
 def parse_arguments():
@@ -91,7 +91,7 @@ def preprocess_mfcc():
             testing_names.append(line.strip())
     # logg.debug(f"testing_names: {testing_names[:10]}")
 
-    words = ALL_WORDS
+    words = WORDS_ALL
     # words = ["happy", "learn"]
     # words = ["happy", "learn", "wow", "visual"]
     for word in words:
@@ -169,7 +169,7 @@ def test_load_processed():
     logg.debug("Start test_load_processed")
     processed_path = Path("data_proc/mfcc")
     words = ["happy", "learn"]
-    # words = ALL_WORDS
+    # words = WORDS_ALL
     load_processed(processed_path, words)
 
 
