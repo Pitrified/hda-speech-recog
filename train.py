@@ -11,6 +11,7 @@ from tensorflow.data import Dataset  # type: ignore
 from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
 
 from models import CNNmodel
+from models import AttRNNmodel
 from preprocess_data import load_processed
 from utils import setup_logger
 from utils import WORDS_ALL, WORDS_NUMBERS, WORDS_DIRECTION
@@ -55,6 +56,12 @@ def setup_env():
     return args
 
 
+def hyper_train():
+    """TODO: what is hyper_train doing?"""
+    logg = logging.getLogger(f"c.{__name__}.hyper_train")
+    logg.debug("Start hyper_train")
+
+
 def run_train(args):
     """TODO: What is train doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_train")
@@ -64,26 +71,56 @@ def run_train(args):
 
     # input data
     processed_path = Path("data_proc/mfcc")
+    words = WORDS_ALL
     words = WORDS_DIRECTION
     words = WORDS_NUMBERS
-    words = WORDS_ALL
-    # words = ["happy", "learn", "wow", "visual"]
+    words = ["happy", "learn", "wow", "visual"]
     data, labels = load_processed(processed_path, words)
 
-    model_name = "CNNmodel_002"
+    # model_name = "CNNmodel_002"
+    model_name = "AttRNNmodel_001"
 
+    # save the trained model here
     model_folder = Path("models")
     if not model_folder.exists():
         model_folder.mkdir(parents=True, exist_ok=True)
     model_path = model_folder / f"{model_name}.h5"
     logg.debug(f"model_path: {model_path}")
 
+    # save info regarding the model training
     info_folder = Path("info") / model_name
     if not info_folder.exists():
         info_folder.mkdir(parents=True, exist_ok=True)
 
+    # setup the hyperparameters
+    num_labels = len(words)
+    input_shape = data["training"][0].shape
+    base_filters = 20
+    kernel_sizes = [(2, 2), (2, 2), (2, 2)]
+    pool_sizes = [(2, 2), (2, 2), (2, 2)]
+    base_dense_width = 32
+    dropouts = [0.03, 0.01]
+
     # create the model
-    model = CNNmodel(len(words), input_shape=data["training"][0].shape)
+    model_type = "CNN"
+    # model_type = "AttRNN"
+    if model_type == "CNN":
+        logg.debug(f"Loading model_type: {model_type}")
+        model = CNNmodel(
+            num_labels=num_labels,
+            input_shape=input_shape,
+            base_filters=base_filters,
+            kernel_sizes=kernel_sizes,
+            pool_sizes=pool_sizes,
+            base_dense_width=base_dense_width,
+            dropouts=dropouts,
+        )
+    elif model_type == "AttRNN":
+        model = AttRNNmodel(len(words), input_shape=data["training"][0].shape)
+    else:
+        logg.error(f"Unrecognized model_type: {model_type}, defaulting to CNN")
+        model = CNNmodel(len(words), input_shape=data["training"][0].shape)
+
     model.compile(
         optimizer="adam",
         loss=["categorical_crossentropy"],
@@ -106,7 +143,8 @@ def run_train(args):
 
     # setup early stopping
     early_stop = EarlyStopping(
-        monitor="val_categorical_accuracy",
+        # monitor="val_categorical_accuracy",
+        monitor="val_loss",
         patience=10,
         verbose=1,
         restore_best_weights=True,
