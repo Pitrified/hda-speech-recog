@@ -1,4 +1,5 @@
 import argparse
+import json
 import logging
 from pathlib import Path
 
@@ -47,14 +48,18 @@ def setup_env():
     return args
 
 
-def wav2mfcc(wav_path, mfcc_kwargs):
+def wav2mfcc(wav_path, mfcc_kwargs, p2d_kwargs):
     """TODO: what is wav2mfcc doing?"""
     sig, sample_rate = librosa.load(wav_path, sr=None)
-    mfcc = librosa.feature.mfcc(sig, sr=sample_rate)
-    log_mfcc = librosa.power_to_db(mfcc, **mfcc_kwargs)
+    mfcc = librosa.feature.mfcc(sig, sr=sample_rate, **mfcc_kwargs)
+    log_mfcc = librosa.power_to_db(mfcc, **p2d_kwargs)
+
+    # print(f"sig.shape: {sig.shape}")
+    # print(f"log_mfcc.shape: {log_mfcc.shape}")
 
     # the shape is not consistent, pad it
-    pad_needed = 32 - log_mfcc.shape[1]
+    pad_needed = 16384 // mfcc_kwargs["hop_length"] - log_mfcc.shape[1]
+    # print(f"pad_needed: {pad_needed}")
     # number of values padded to the edges of each axis.
     pad_width = ((0, 0), (0, pad_needed))
     padded_log_mfcc = np.pad(log_mfcc, pad_width=pad_width)
@@ -66,14 +71,31 @@ def preprocess_mfcc():
     logg = logging.getLogger(f"c.{__name__}.preprocess_mfcc")
     logg.debug("Start preprocess_mfcc")
 
+    dataset_name = "mfcc01"
+
+    # args for the power_to_db function
+    p2d_kwargs = {"ref": np.max}
+
     # args for the mfcc spec
-    mfcc_kwargs = {"ref": np.max}
+    if dataset_name == "mfcc01":
+        mfcc_kwargs = {"n_mfcc": 20, "n_fft": 2048, "hop_length": 512}
+    elif dataset_name == "mfcc02":
+        mfcc_kwargs = {"n_mfcc": 40, "n_fft": 2048, "hop_length": 512}
+    elif dataset_name == "mfcc03":
+        mfcc_kwargs = {"n_mfcc": 40, "n_fft": 2048, "hop_length": 256}
 
     # original / processed dataset base locations
     dataset_path = Path("data_raw")
-    processed_path = Path("data_proc/mfcc")
+    processed_path = Path(f"data_proc/{dataset_name}")
     if not processed_path.exists():
         processed_path.mkdir(parents=True, exist_ok=True)
+
+    # write info regarding the dataset generation
+    recap = {}
+    recap["mfcc_kwargs"] = mfcc_kwargs
+    logg.debug(f"recap: {recap}")
+    recap_path = processed_path / "recap.json"
+    recap_path.write_text(json.dumps(recap, indent=4))
 
     # list of file names for validation
     validation_path = dataset_path / "validation_list.txt"
@@ -93,7 +115,7 @@ def preprocess_mfcc():
 
     words = WORDS_ALL
     # words = ["happy", "learn"]
-    # words = ["happy", "learn", "wow", "visual"]
+    words = ["happy", "learn", "wow", "visual"]
     for word in words:
         word_in_path = dataset_path / word
         logg.debug(f"Processing folder: {word_in_path}")
@@ -105,7 +127,7 @@ def preprocess_mfcc():
             # logg.debug(f"wav_path: {wav_path}")
             wav_name = f"{word}/{wav_path.name}"
             # logg.debug(f"wav_name: {wav_name}")
-            log_mfcc = wav2mfcc(wav_path, mfcc_kwargs)
+            log_mfcc = wav2mfcc(wav_path, mfcc_kwargs, p2d_kwargs)
 
             if wav_name in validation_names:
                 which = "validation"

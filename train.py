@@ -2,6 +2,7 @@ import argparse
 import logging
 from pathlib import Path
 import matplotlib.pyplot as plt  # type: ignore
+import json
 
 # import numpy as np  # type: ignore
 # from tensorflow.data.Dataset import from_tensor_slices  # type: ignore
@@ -67,28 +68,35 @@ def run_train(args):
     logg = logging.getLogger(f"c.{__name__}.run_train")
     logg.debug("Starting run_train")
 
+    # magic to fix the GPUs
     setup_gpus()
 
     # setup the hyperparameters (WILL ARRIVE FROM GRID)
     hypa = {}
-    hypa["base_filters"] = 20
-    hypa["kernel_size_type"] = "01"
-    hypa["pool_size_type"] = "01"
+    # hypa["base_filters"] = 20
+    hypa["base_filters"] = 64
+    hypa["kernel_size_type"] = "02"
+    hypa["pool_size_type"] = "02"
     hypa["base_dense_width"] = 32
     hypa["dropout_type"] = "01"
     hypa["batch_size"] = 64
     hypa["epoch_num"] = 30
-    hypa["dataset"] = "mfcc1"
+    hypa["dataset"] = "mfcc03"
+    hypa["words"] = "f1"
 
-    words = WORDS_ALL
-    words = WORDS_DIRECTION
-    words = ["happy", "learn", "wow", "visual"]
-    words = WORDS_NUMBERS
-    hypa["words"] = words
+    # get the words
+    words_types = {
+        "all": WORDS_ALL,
+        "dir": WORDS_DIRECTION,
+        "num": WORDS_NUMBERS,
+        "f1": ["happy", "learn", "wow", "visual"],
+        "f2": ["backward", "eight", "go", "yes"],
+    }
+    words = words_types[hypa["words"]]
 
     # input data
     processed_path = Path(f"data_proc/{hypa['dataset']}")
-    data, labels = load_processed(processed_path, hypa["words"])
+    data, labels = load_processed(processed_path, words)
 
     # from hypa extract model param
     model_param = {}
@@ -97,14 +105,15 @@ def run_train(args):
     model_param["base_filters"] = hypa["base_filters"]
     model_param["base_dense_width"] = hypa["base_dense_width"]
 
-    if hypa["kernel_size_type"] == "01":
-        model_param["kernel_sizes"] = [(2, 2), (2, 2), (2, 2)]
+    # translate types to actual values
+    kernel_size_types = {"01": [(2, 2), (2, 2), (2, 2)], "02": [(5, 1), (3, 3), (3, 3)]}
+    model_param["kernel_sizes"] = kernel_size_types[hypa["kernel_size_type"]]
 
-    if hypa["pool_size_type"] == "01":
-        model_param["pool_sizes"] = [(2, 2), (2, 2), (2, 2)]
+    pool_size_types = {"01": [(2, 2), (2, 2), (2, 2)], "02": [(2, 1), (2, 2), (2, 2)]}
+    model_param["pool_sizes"] = pool_size_types[hypa["pool_size_type"]]
 
-    if hypa["dropout_type"] == "01":
-        model_param["dropouts"] = [0.03, 0.01]
+    dropout_types = {"01": [0.03, 0.01]}
+    model_param["dropouts"] = dropout_types[hypa["dropout_type"]]
 
     # create the model
     model = CNNmodel(**model_param)
@@ -116,6 +125,9 @@ def run_train(args):
     model_name += f"_ps{hypa['pool_size_type']}"
     model_name += f"_dw{hypa['base_dense_width']}"
     model_name += f"_dr{hypa['dropout_type']}"
+    model_name += f"_ds{hypa['dataset']}"
+    model_name += f"_bs{hypa['batch_size']}"
+    model_name += f"_en{hypa['epoch_num']}"
     logg.debug(f"model_name: {model_name}")
 
     # save the trained model here
@@ -135,8 +147,10 @@ def run_train(args):
     recap["words"] = words
     recap["hypa"] = hypa
     recap["model_param"] = model_param
-    recap["model_path"] = model_path
+    recap["model_name"] = model_name
     logg.debug(f"recap: {recap}")
+    recap_path = info_folder / "recap.json"
+    recap_path.write_text(json.dumps(recap, indent=4))
 
     model.compile(
         optimizer="adam",
