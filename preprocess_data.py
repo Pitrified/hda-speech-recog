@@ -116,7 +116,7 @@ def preprocess_mfcc():
 
             word_mfcc[which].append(log_mfcc)
 
-        for which in ["validation", "training", "testing"]:
+        for which in ["training", "validation", "testing"]:
             # logg.debug(f"word_mfcc[{which}][0].shape: {word_mfcc[which][0].shape}")
             # np_mfcc = np.vstack(word_mfcc[which])
             # np_mfcc = np.array(word_mfcc[which], dtype=object)
@@ -135,7 +135,7 @@ def load_processed(processed_path, words):
     loaded_labels = {"validation": [], "training": [], "testing": []}
     for word in words:
         loaded_words[word] = {}
-        for which in ["validation", "training", "testing"]:
+        for which in ["training", "validation", "testing"]:
             word_path = processed_path / f"{word}_{which}.npy"
             word_data = np.load(word_path, allow_pickle=True)
             loaded_words[which].append(word_data)
@@ -144,7 +144,7 @@ def load_processed(processed_path, words):
 
     data = {}
     labels = {}
-    for which in ["validation", "training", "testing"]:
+    for which in ["training", "validation", "testing"]:
         # data have shape (*, 20, 32) so we use vstack
         data[which] = np.vstack(loaded_words[which])
         # labels have shape (*, ) so we use hstack
@@ -153,7 +153,7 @@ def load_processed(processed_path, words):
         # logg.debug(f"data[{which}].shape: {data[which].shape}")
         # logg.debug(f"labels[{which}].shape: {labels[which].shape}")
 
-    for which in ["validation", "training", "testing"]:
+    for which in ["training", "validation", "testing"]:
         data[which] = np.reshape(data[which], (*data[which].shape, 1))
         y = LabelEncoder().fit_transform(labels[which])
         labels[which] = to_categorical(y)

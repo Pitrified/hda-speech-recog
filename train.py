@@ -69,6 +69,16 @@ def run_train(args):
 
     setup_gpus()
 
+    # setup the hyperparameters (WILL ARRIVE FROM GRID)
+    hypa = {}
+    hypa["base_filters"] = 20
+    hypa["kernel_size_type"] = "01"
+    hypa["pool_size_type"] = "01"
+    hypa["base_dense_width"] = 32
+    hypa["dropout_type"] = "01"
+    hypa["batch_size"] = 64
+    hypa["epoch_num"] = 30
+
     # input data
     processed_path = Path("data_proc/mfcc")
     words = WORDS_ALL
@@ -77,49 +87,53 @@ def run_train(args):
     words = ["happy", "learn", "wow", "visual"]
     data, labels = load_processed(processed_path, words)
 
-    # model_name = "CNNmodel_002"
-    model_name = "AttRNNmodel_001"
+    # from hypa extract model param
+    model_param = {}
+    model_param["num_labels"] = len(words)
+    model_param["input_shape"] = data["training"][0].shape
+    model_param["base_filters"] = hypa["base_filters"]
+    model_param["base_dense_width"] = hypa["base_dense_width"]
+
+    if hypa["kernel_size_type"] == "01":
+        model_param["kernel_sizes"] = [(2, 2), (2, 2), (2, 2)]
+
+    if hypa["pool_size_type"] == "01":
+        model_param["pool_sizes"] = [(2, 2), (2, 2), (2, 2)]
+
+    if hypa["dropout_type"] == "01":
+        model_param["dropouts"] = [0.03, 0.01]
+
+    # create the model
+    model = CNNmodel(**model_param)
+
+    # name the model
+    model_name = "CNN"
+    model_name += f"_nf{hypa['base_filters']}"
+    model_name += f"_ks{hypa['kernel_size_type']}"
+    model_name += f"_ps{hypa['pool_size_type']}"
+    model_name += f"_dw{hypa['base_dense_width']}"
+    model_name += f"_dr{hypa['dropout_type']}"
+    logg.debug(f"model_name: {model_name}")
 
     # save the trained model here
-    model_folder = Path("models")
+    model_folder = Path("trained_models")
     if not model_folder.exists():
         model_folder.mkdir(parents=True, exist_ok=True)
     model_path = model_folder / f"{model_name}.h5"
     logg.debug(f"model_path: {model_path}")
 
-    # save info regarding the model training
+    # save info regarding the model training in this folder
     info_folder = Path("info") / model_name
     if not info_folder.exists():
         info_folder.mkdir(parents=True, exist_ok=True)
 
-    # setup the hyperparameters
-    num_labels = len(words)
-    input_shape = data["training"][0].shape
-    base_filters = 20
-    kernel_sizes = [(2, 2), (2, 2), (2, 2)]
-    pool_sizes = [(2, 2), (2, 2), (2, 2)]
-    base_dense_width = 32
-    dropouts = [0.03, 0.01]
-
-    # create the model
-    model_type = "CNN"
-    # model_type = "AttRNN"
-    if model_type == "CNN":
-        logg.debug(f"Loading model_type: {model_type}")
-        model = CNNmodel(
-            num_labels=num_labels,
-            input_shape=input_shape,
-            base_filters=base_filters,
-            kernel_sizes=kernel_sizes,
-            pool_sizes=pool_sizes,
-            base_dense_width=base_dense_width,
-            dropouts=dropouts,
-        )
-    elif model_type == "AttRNN":
-        model = AttRNNmodel(len(words), input_shape=data["training"][0].shape)
-    else:
-        logg.error(f"Unrecognized model_type: {model_type}, defaulting to CNN")
-        model = CNNmodel(len(words), input_shape=data["training"][0].shape)
+    # a dict to recreate this training
+    recap = {}
+    recap["words"] = words
+    recap["hypa"] = hypa
+    recap["model_param"] = model_param
+    recap["model_path"] = model_path
+    logg.debug(f"recap: {recap}")
 
     model.compile(
         optimizer="adam",
@@ -129,14 +143,16 @@ def run_train(args):
     model.summary()
 
     # training parameters
-    BATCH_SIZE = 128
+    # BATCH_SIZE = 128
     # BATCH_SIZE = 64
-    SHUFFLE_BUFFER_SIZE = 200
-    EPOCH_NUM = 30
+    # EPOCH_NUM = 30
+    BATCH_SIZE = hypa["batch_size"]
+    SHUFFLE_BUFFER_SIZE = BATCH_SIZE
+    EPOCH_NUM = hypa["epoch_num"]
 
     # load the datasets
     datasets = {}
-    for which in ["validation", "training", "testing"]:
+    for which in ["training", "validation", "testing"]:
         logg.debug(f"data[{which}].shape: {data[which].shape}")
         datasets[which] = Dataset.from_tensor_slices((data[which], labels[which]))
         datasets[which] = datasets[which].shuffle(SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE)
@@ -165,7 +181,7 @@ def run_train(args):
 
     # quickly evaluate the results
     logg.debug(f"\nmodel.metrics_names: {model.metrics_names}")
-    for which in ["validation", "training", "testing"]:
+    for which in ["training", "validation", "testing"]:
         model_eval = model.evaluate(datasets[which])
         logg.debug(f"{which}: model_eval: {model_eval}")
 
@@ -186,10 +202,6 @@ def run_train(args):
     )
     plot_cat_acc_path = info_folder / "train_cat_acc.png"
     fig.savefig(plot_cat_acc_path)
-
-    # a dict to recreate this training
-    recap = {}
-    recap["words"] = words
 
     # compute the confusion matrix
     y_pred = model.predict(datasets["testing"])

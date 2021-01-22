@@ -1,5 +1,5 @@
 data_proc/
 data_raw/
 __pycache__/
-models/
+trained_models/
 info/
