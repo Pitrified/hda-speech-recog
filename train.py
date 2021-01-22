@@ -78,14 +78,17 @@ def run_train(args):
     hypa["dropout_type"] = "01"
     hypa["batch_size"] = 64
     hypa["epoch_num"] = 30
+    hypa["dataset"] = "mfcc1"
 
-    # input data
-    processed_path = Path("data_proc/mfcc")
     words = WORDS_ALL
     words = WORDS_DIRECTION
-    words = WORDS_NUMBERS
     words = ["happy", "learn", "wow", "visual"]
-    data, labels = load_processed(processed_path, words)
+    words = WORDS_NUMBERS
+    hypa["words"] = words
+
+    # input data
+    processed_path = Path(f"data_proc/{hypa['dataset']}")
+    data, labels = load_processed(processed_path, hypa["words"])
 
     # from hypa extract model param
     model_param = {}
