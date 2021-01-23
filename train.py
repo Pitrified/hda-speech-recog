@@ -187,7 +187,7 @@ def train_model(hypa):
         validation_data=datasets["validation"],
         batch_size=BATCH_SIZE,
         epochs=EPOCH_NUM,
-        verbose=2,
+        verbose=1,
         callbacks=[early_stop],
     )
     model.save(model_path)
@@ -269,8 +269,10 @@ def run_train(args):
     hypa_grid["pool_size_type"] = ["01", "02"]
     hypa_grid["base_dense_width"] = [16, 32, 64]
     hypa_grid["dropout_type"] = ["01", "02"]
-    hypa_grid["batch_size"] = [32, 64, 128]
-    hypa_grid["epoch_num"] = [15, 30, 60]
+    # hypa_grid["batch_size"] = [32, 64, 128]
+    hypa_grid["batch_size"] = [32]
+    # hypa_grid["epoch_num"] = [15, 30, 60]
+    hypa_grid["epoch_num"] = [60]
     # hypa_grid["dataset"] = ["mfcc01", "mfcc02", "mfcc03"]
     hypa_grid["dataset"] = ["mfcc01"]
     hypa_grid["words"] = ["f1"]
@@ -287,10 +289,11 @@ def run_train(args):
     # hypa_grid_test["words"] = ["f1"]
 
     the_grid = list(ParameterGrid(hypa_grid))
-    logg.debug(f"len(the_grid): {len(the_grid)}")
+    num_hypa = len(the_grid)
+    logg.debug(f"num_hypa: {num_hypa}")
 
-    for hypa in the_grid:
-        logg.debug(f"\n\nSTARTING hypa: {hypa}")
+    for i, hypa in enumerate(the_grid):
+        logg.debug(f"\n\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
         results_recap = train_model(hypa)
         logg.debug(f"results_recap: {results_recap}")
 
