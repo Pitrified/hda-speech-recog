@@ -53,10 +53,10 @@ def setup_env():
     return args
 
 
-def run_visualize(args):
-    """TODO: What is visualize doing?"""
-    logg = logging.getLogger(f"c.{__name__}.run_visualize")
-    logg.debug("Starting run_visualize")
+def visualize_spec():
+    """TODO: what is visualize_spec doing?"""
+    logg = logging.getLogger(f"c.{__name__}.visualize_spec")
+    logg.debug("Start visualize_spec")
 
     dataset_path = Path("data_raw")
     logg.debug(f"dataset_path: {dataset_path}")
@@ -82,6 +82,34 @@ def run_visualize(args):
     plot_spec(sample_log_mfcc, ax[2])
 
     plt.tight_layout()
+
+
+def visualize_datasets():
+    """TODO: what is visualize_datasets doing?"""
+    logg = logging.getLogger(f"c.{__name__}.visualize_datasets")
+    logg.debug("Start visualize_datasets")
+
+    datasets = ["mfcc01", "mfcc02", "mfcc03", "mfcc04"]
+    fig, ax = plt.subplots(len(datasets), 1, figsize=(12, 12))
+
+    for i, dataset_name in enumerate(datasets):
+        processed_path = Path(f"data_proc/{dataset_name}")
+        word_path = processed_path / "happy_training.npy"
+        word_data = np.load(word_path, allow_pickle=True)
+        logg.debug(f"word_data[0].shape: {word_data[0].shape}")
+        plot_spec(word_data[0], ax[i])
+
+    fig.tight_layout()
+
+
+def run_visualize(args):
+    """TODO: What is visualize doing?"""
+    logg = logging.getLogger(f"c.{__name__}.run_visualize")
+    logg.debug("Starting run_visualize")
+
+    # visualize_spec()
+    visualize_datasets()
+
     plt.show()
 
 

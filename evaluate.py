@@ -173,7 +173,7 @@ def evaluate_results_recap():
 
     df = pd.DataFrame(pandito)
     logg.info(f"{df.sort_values('fscore', ascending=False)[:10]}")
-    logg.info(f"{df.sort_values('categorical_accuracy', ascending=False)[:10]}")
+    # logg.info(f"{df.sort_values('categorical_accuracy', ascending=False)[:10]}")
 
 
 def evaluate_model():
@@ -234,25 +234,18 @@ def evaluate_model():
     # evaluate on the words you trained on
     logg.debug("Evaluate on test data:")
     model.evaluate(data["testing"], labels["testing"])
+    # model.evaluate(data["validation"], labels["validation"])
 
     # predict labels
     y_pred = model.predict(data["testing"])
     cm = pred_hot_2_cm(labels["testing"], y_pred, sel_words)
+    # y_pred = model.predict(data["validation"])
+    # cm = pred_hot_2_cm(labels["validation"], y_pred, sel_words)
     fig, ax = plt.subplots(figsize=(12, 12))
     plot_confusion_matrix(cm, ax, model_name, sel_words)
 
-    # evaluate on NEW words! (it sucks, duh)
-    sel_words = words_types["f2"]
-    processed_path = Path(f"data_proc/{dataset}")
-    data, labels = load_processed(processed_path, sel_words)
-    logg.debug("Evaluate on new data:")
-    model.evaluate(data["testing"], labels["testing"])
-
-    # predict the words
-    y_pred = model.predict(data["testing"])
-    cm = pred_hot_2_cm(labels["testing"], y_pred, sel_words)
-    fig, ax = plt.subplots(figsize=(12, 12))
-    plot_confusion_matrix(cm, ax, model_name, sel_words)
+    fscore = analyze_confusion(cm, sel_words)
+    logg.debug(f"fscore: {fscore}")
 
     plt.show()
 
@@ -262,8 +255,8 @@ def run_evaluate(args):
     logg = logging.getLogger(f"c.{__name__}.run_evaluate")
     logg.debug("Starting run_evaluate")
 
-    # evaluate_results_recap()
-    evaluate_model()
+    evaluate_results_recap()
+    # evaluate_model()
 
 
 if __name__ == "__main__":

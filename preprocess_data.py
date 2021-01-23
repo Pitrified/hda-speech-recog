@@ -83,6 +83,8 @@ def preprocess_mfcc():
         mfcc_kwargs = {"n_mfcc": 40, "n_fft": 2048, "hop_length": 512}
     elif dataset_name == "mfcc03":
         mfcc_kwargs = {"n_mfcc": 40, "n_fft": 2048, "hop_length": 256}
+    elif dataset_name == "mfcc04":
+        mfcc_kwargs = {"n_mfcc": 80, "n_fft": 1024, "hop_length": 128}
 
     # original / processed dataset base locations
     dataset_path = Path("data_raw")
@@ -115,8 +117,8 @@ def preprocess_mfcc():
 
     words = WORDS_ALL
     # words = ["happy", "learn"]
-    words = ["happy", "learn", "wow", "visual"]
-    words = ["backward", "eight", "go", "yes"]
+    # words = ["happy", "learn", "wow", "visual"]
+    # words = ["backward", "eight", "go", "yes"]
     for word in words:
         word_in_path = dataset_path / word
         logg.debug(f"Processing folder: {word_in_path}")

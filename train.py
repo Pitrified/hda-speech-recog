@@ -15,6 +15,7 @@ from sklearn.model_selection import ParameterGrid  # type: ignore
 from models import CNNmodel
 
 # from models import AttRNNmodel
+from evaluate import analyze_confusion
 from preprocess_data import load_processed
 from utils import setup_logger
 from utils import WORDS_ALL, WORDS_NUMBERS, WORDS_DIRECTION
@@ -174,7 +175,6 @@ def train_model(hypa):
 
     # train the model
     results = model.fit(
-        # datasets["training"],
         data["training"],
         labels["training"],
         validation_data=datasets["validation"],
@@ -183,6 +183,8 @@ def train_model(hypa):
         verbose=1,
         callbacks=[early_stop],
     )
+
+    # save the trained model
     model.save(model_path)
 
     results_recap = {}
@@ -209,6 +211,7 @@ def train_model(hypa):
     plot_loss(results.history["loss"], results.history["val_loss"], ax, model_name)
     plot_loss_path = info_folder / "train_loss.png"
     fig.savefig(plot_loss_path)
+    plt.close(fig)
 
     # categorical accuracy
     fig, ax = plt.subplots(figsize=(12, 12))
@@ -220,6 +223,7 @@ def train_model(hypa):
     )
     plot_cat_acc_path = info_folder / "train_cat_acc.png"
     fig.savefig(plot_cat_acc_path)
+    plt.close(fig)
 
     # compute the confusion matrix
     y_pred = model.predict(datasets["testing"])
@@ -232,6 +236,11 @@ def train_model(hypa):
     plot_confusion_matrix(cm, ax, model_name, words)
     plot_cm_path = info_folder / "test_confusion_matrix.png"
     fig.savefig(plot_cm_path)
+    plt.close(fig)
+
+    # compute the fscore
+    fscore = analyze_confusion(cm, words)
+    logg.debug(f"fscore: {fscore}")
 
     # save the histories
     results_recap["history"] = {
@@ -258,6 +267,19 @@ def run_train(args):
     setup_gpus()
 
     hypa_grid = {}
+    hypa_grid["base_filters"] = [20, 32]
+    hypa_grid["kernel_size_type"] = ["01", "02"]
+    hypa_grid["pool_size_type"] = ["01", "02"]
+    hypa_grid["base_dense_width"] = [16, 32]
+    hypa_grid["dropout_type"] = ["01", "02"]
+    hypa_grid["batch_size"] = [32, 64]
+    hypa_grid["epoch_num"] = [15, 30, 60]
+    hypa_grid["dataset"] = ["mfcc04"]
+    hypa_grid["words"] = ["f1"]
+    # hypa_grid["words"] = ["dir"]
+    the_grid = list(ParameterGrid(hypa_grid))
+
+    hypa_grid = {}
     hypa_grid["base_filters"] = [20, 32, 64]
     hypa_grid["kernel_size_type"] = ["01", "02"]
     hypa_grid["pool_size_type"] = ["01", "02"]
@@ -265,21 +287,20 @@ def run_train(args):
     hypa_grid["dropout_type"] = ["01", "02"]
     hypa_grid["batch_size"] = [32, 64, 128]
     hypa_grid["epoch_num"] = [15, 30, 60]
-    # hypa_grid["dataset"] = ["mfcc01", "mfcc02", "mfcc03"]
-    hypa_grid["dataset"] = ["mfcc02"]
+    hypa_grid["dataset"] = ["mfcc03"]
     hypa_grid["words"] = ["f1"]
-    the_grid = list(ParameterGrid(hypa_grid))
+    # the_grid = list(ParameterGrid(hypa_grid))
 
     hypa_grid_test = {}
     hypa_grid_test["base_filters"] = [30]
     hypa_grid_test["kernel_size_type"] = ["01"]
-    hypa_grid_test["pool_size_type"] = ["02"]
-    hypa_grid_test["base_dense_width"] = [16]
-    hypa_grid_test["dropout_type"] = ["01"]
-    hypa_grid_test["batch_size"] = [64]
-    hypa_grid_test["epoch_num"] = [15]
+    hypa_grid_test["pool_size_type"] = ["01"]
+    hypa_grid_test["base_dense_width"] = [32]
+    hypa_grid_test["dropout_type"] = ["02"]
+    hypa_grid_test["batch_size"] = [32]
+    hypa_grid_test["epoch_num"] = [31]
     hypa_grid_test["dataset"] = ["mfcc01"]
-    hypa_grid_test["words"] = ["f1"]
+    hypa_grid_test["words"] = ["all"]
     # the_grid = list(ParameterGrid(hypa_grid_test))
 
     num_hypa = len(the_grid)
