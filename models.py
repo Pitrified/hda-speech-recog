@@ -90,8 +90,15 @@ def AttRNNmodel(num_labels, input_shape, rnn_func=layers.LSTM):
     # x = layers.Permute((2, 1, 3))(x)
 
     x = layers.BatchNormalization()(inputs)
-    x = layers.Conv2D(10, (5, 1), activation="relu", padding="same")(x)
+
+    # x = layers.Conv2D(10, (5, 1), activation="relu", padding="same")(x)
+    x = layers.Conv2D(64, (5, 1), activation="relu", padding="same")(x)
     x = layers.BatchNormalization()(x)
+
+    # x = layers.Conv2D(1, (5, 1), activation="relu", padding="same")(x)
+    x = layers.Conv2D(16, (3, 3), activation="relu", padding="same")(x)
+    x = layers.BatchNormalization()(x)
+
     x = layers.Conv2D(1, (5, 1), activation="relu", padding="same")(x)
     x = layers.BatchNormalization()(x)
 
