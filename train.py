@@ -68,19 +68,7 @@ def hyper_train():
 def train_model(hypa):
     """TODO: What is train_model doing?"""
     logg = logging.getLogger(f"c.{__name__}.train_model")
-    logg.debug("Starting train_model")
-
-    # setup the hyperparameters (WILL ARRIVE FROM GRID)
-    # hypa = {}
-    # hypa["base_filters"] = 64
-    # hypa["kernel_size_type"] = "02"
-    # hypa["pool_size_type"] = "02"
-    # hypa["base_dense_width"] = 32
-    # hypa["dropout_type"] = "01"
-    # hypa["batch_size"] = 64
-    # hypa["epoch_num"] = 30
-    # hypa["dataset"] = "mfcc03"
-    # hypa["words"] = "f1"
+    # logg.debug("Starting train_model")
 
     # get the words
     words_types = {
@@ -113,10 +101,6 @@ def train_model(hypa):
     dropout_types = {"01": [0.03, 0.01], "02": [0.3, 0.1]}
     model_param["dropouts"] = dropout_types[hypa["dropout_type"]]
 
-    # create the model
-    model = CNNmodel(**model_param)
-    # model = AttRNNmodel(len(words), data["training"][0].shape)
-
     # name the model
     model_name = "CNN"
     model_name += f"_nf{hypa['base_filters']}"
@@ -127,6 +111,7 @@ def train_model(hypa):
     model_name += f"_ds{hypa['dataset']}"
     model_name += f"_bs{hypa['batch_size']}"
     model_name += f"_en{hypa['epoch_num']}"
+    model_name += f"_w{hypa['words']}"
     logg.debug(f"model_name: {model_name}")
 
     # save the trained model here
@@ -134,7 +119,11 @@ def train_model(hypa):
     if not model_folder.exists():
         model_folder.mkdir(parents=True, exist_ok=True)
     model_path = model_folder / f"{model_name}.h5"
-    logg.debug(f"model_path: {model_path}")
+    # logg.debug(f"model_path: {model_path}")
+
+    # check if this model has already been trained
+    if model_path.exists():
+        return "Already trained"
 
     # save info regarding the model training in this folder
     info_folder = Path("info") / model_name
@@ -147,9 +136,13 @@ def train_model(hypa):
     recap["hypa"] = hypa
     recap["model_param"] = model_param
     recap["model_name"] = model_name
-    logg.debug(f"recap: {recap}")
+    # logg.debug(f"recap: {recap}")
     recap_path = info_folder / "recap.json"
     recap_path.write_text(json.dumps(recap, indent=4))
+
+    # create the model
+    model = CNNmodel(**model_param)
+    # model = AttRNNmodel(len(words), data["training"][0].shape)
 
     model.compile(
         optimizer="adam",
@@ -166,7 +159,7 @@ def train_model(hypa):
     # load the datasets
     datasets = {}
     for which in ["training", "validation", "testing"]:
-        logg.debug(f"data[{which}].shape: {data[which].shape}")
+        # logg.debug(f"data[{which}].shape: {data[which].shape}")
         datasets[which] = Dataset.from_tensor_slices((data[which], labels[which]))
         datasets[which] = datasets[which].shuffle(SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE)
 
@@ -205,6 +198,7 @@ def train_model(hypa):
     #     logg.debug(f"{which}: model_eval: {model_eval}")
 
     # save the evaluation results
+    logg.debug("Evaluate on test data:")
     eval_testing = model.evaluate(datasets["testing"])
     results_recap[model.metrics_names[0]] = eval_testing[0]
     results_recap[model.metrics_names[1]] = eval_testing[1]
@@ -264,38 +258,36 @@ def run_train(args):
     setup_gpus()
 
     hypa_grid = {}
-    hypa_grid["base_filters"] = [20, 32, 128]
+    hypa_grid["base_filters"] = [20, 32, 64]
     hypa_grid["kernel_size_type"] = ["01", "02"]
     hypa_grid["pool_size_type"] = ["01", "02"]
-    hypa_grid["base_dense_width"] = [16, 32, 64]
+    hypa_grid["base_dense_width"] = [16, 32]
     hypa_grid["dropout_type"] = ["01", "02"]
-    # hypa_grid["batch_size"] = [32, 64, 128]
-    hypa_grid["batch_size"] = [32]
-    # hypa_grid["epoch_num"] = [15, 30, 60]
-    hypa_grid["epoch_num"] = [60]
+    hypa_grid["batch_size"] = [32, 64, 128]
+    hypa_grid["epoch_num"] = [15, 30, 60]
     # hypa_grid["dataset"] = ["mfcc01", "mfcc02", "mfcc03"]
-    hypa_grid["dataset"] = ["mfcc01"]
+    hypa_grid["dataset"] = ["mfcc02"]
     hypa_grid["words"] = ["f1"]
-
-    # hypa_grid_test = {}
-    # hypa_grid_test["base_filters"] = [20, 32]
-    # hypa_grid_test["kernel_size_type"] = ["01"]
-    # hypa_grid_test["pool_size_type"] = ["01"]
-    # hypa_grid_test["base_dense_width"] = [16]
-    # hypa_grid_test["dropout_type"] = ["01"]
-    # hypa_grid_test["batch_size"] = [32]
-    # hypa_grid_test["epoch_num"] = [15]
-    # hypa_grid_test["dataset"] = ["mfcc01"]
-    # hypa_grid_test["words"] = ["f1"]
-
     the_grid = list(ParameterGrid(hypa_grid))
+
+    hypa_grid_test = {}
+    hypa_grid_test["base_filters"] = [30]
+    hypa_grid_test["kernel_size_type"] = ["01"]
+    hypa_grid_test["pool_size_type"] = ["02"]
+    hypa_grid_test["base_dense_width"] = [16]
+    hypa_grid_test["dropout_type"] = ["01"]
+    hypa_grid_test["batch_size"] = [64]
+    hypa_grid_test["epoch_num"] = [15]
+    hypa_grid_test["dataset"] = ["mfcc01"]
+    hypa_grid_test["words"] = ["f1"]
+    # the_grid = list(ParameterGrid(hypa_grid_test))
+
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
 
     for i, hypa in enumerate(the_grid):
-        logg.debug(f"\n\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
-        results_recap = train_model(hypa)
-        logg.debug(f"results_recap: {results_recap}")
+        logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
+        train_model(hypa)
 
 
 if __name__ == "__main__":

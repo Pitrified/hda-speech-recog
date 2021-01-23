@@ -116,6 +116,7 @@ def preprocess_mfcc():
     words = WORDS_ALL
     # words = ["happy", "learn"]
     words = ["happy", "learn", "wow", "visual"]
+    words = ["backward", "eight", "go", "yes"]
     for word in words:
         word_in_path = dataset_path / word
         logg.debug(f"Processing folder: {word_in_path}")
