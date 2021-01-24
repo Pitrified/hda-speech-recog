@@ -1,8 +1,9 @@
-import argparse
-import logging
+from multiprocessing import Pool
 from pathlib import Path
-import matplotlib.pyplot as plt  # type: ignore
+import argparse
 import json
+import logging
+import matplotlib.pyplot as plt  # type: ignore
 
 # import numpy as np  # type: ignore
 # from tensorflow.data.Dataset import from_tensor_slices  # type: ignore
@@ -81,27 +82,6 @@ def train_model(hypa):
     }
     words = words_types[hypa["words"]]
 
-    # input data
-    processed_path = Path(f"data_proc/{hypa['dataset']}")
-    data, labels = load_processed(processed_path, words)
-
-    # from hypa extract model param
-    model_param = {}
-    model_param["num_labels"] = len(words)
-    model_param["input_shape"] = data["training"][0].shape
-    model_param["base_filters"] = hypa["base_filters"]
-    model_param["base_dense_width"] = hypa["base_dense_width"]
-
-    # translate types to actual values
-    kernel_size_types = {"01": [(2, 2), (2, 2), (2, 2)], "02": [(5, 1), (3, 3), (3, 3)]}
-    model_param["kernel_sizes"] = kernel_size_types[hypa["kernel_size_type"]]
-
-    pool_size_types = {"01": [(2, 2), (2, 2), (2, 2)], "02": [(2, 1), (2, 2), (2, 2)]}
-    model_param["pool_sizes"] = pool_size_types[hypa["pool_size_type"]]
-
-    dropout_types = {"01": [0.03, 0.01], "02": [0.3, 0.1]}
-    model_param["dropouts"] = dropout_types[hypa["dropout_type"]]
-
     # name the model
     model_name = "CNN"
     model_name += f"_nf{hypa['base_filters']}"
@@ -125,6 +105,30 @@ def train_model(hypa):
     # check if this model has already been trained
     if model_path.exists():
         return "Already trained"
+
+    # magic to fix the GPUs
+    setup_gpus()
+
+    # input data
+    processed_path = Path(f"data_proc/{hypa['dataset']}")
+    data, labels = load_processed(processed_path, words)
+
+    # from hypa extract model param
+    model_param = {}
+    model_param["num_labels"] = len(words)
+    model_param["input_shape"] = data["training"][0].shape
+    model_param["base_filters"] = hypa["base_filters"]
+    model_param["base_dense_width"] = hypa["base_dense_width"]
+
+    # translate types to actual values
+    kernel_size_types = {"01": [(2, 2), (2, 2), (2, 2)], "02": [(5, 1), (3, 3), (3, 3)]}
+    model_param["kernel_sizes"] = kernel_size_types[hypa["kernel_size_type"]]
+
+    pool_size_types = {"01": [(2, 2), (2, 2), (2, 2)], "02": [(2, 1), (2, 2), (2, 2)]}
+    model_param["pool_sizes"] = pool_size_types[hypa["pool_size_type"]]
+
+    dropout_types = {"01": [0.03, 0.01], "02": [0.3, 0.1]}
+    model_param["dropouts"] = dropout_types[hypa["dropout_type"]]
 
     # save info regarding the model training in this folder
     info_folder = Path("info") / model_name
@@ -263,9 +267,6 @@ def run_train(args):
     logg = logging.getLogger(f"c.{__name__}.run_train")
     logg.debug("Start run_train")
 
-    # magic to fix the GPUs
-    setup_gpus()
-
     hypa_grid = {}
     hypa_grid["base_filters"] = [20, 32]
     hypa_grid["kernel_size_type"] = ["01", "02"]
@@ -308,7 +309,8 @@ def run_train(args):
 
     for i, hypa in enumerate(the_grid):
         logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
-        train_model(hypa)
+        with Pool(1) as p:
+            p.apply(train_model, (hypa,))
 
 
 if __name__ == "__main__":
