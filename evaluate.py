@@ -122,18 +122,20 @@ def evaluate_results_recap():
     info_folder = Path("info")
 
     pandito = {
-        "base_dense_width": [],
-        "base_filters": [],
+        "dense_width": [],
+        "filters": [],
         "batch_size": [],
         "dataset": [],
-        "dropout_type": [],
+        "dropout": [],
         "epoch_num": [],
-        "kernel_size_type": [],
-        "pool_size_type": [],
+        "kernel_size": [],
+        "pool_size": [],
+        "lr": [],
+        "opt": [],
         "words": [],
         "fscore": [],
         "loss": [],
-        "categorical_accuracy": [],
+        "cat_acc": [],
         "model_name": [],
     }
 
@@ -157,22 +159,31 @@ def evaluate_results_recap():
         categorical_accuracy = results_recap["categorical_accuracy"]
         logg.debug(f"categorical_accuracy: {categorical_accuracy}")
 
-        pandito["base_dense_width"].append(recap["hypa"]["base_dense_width"])
-        pandito["base_filters"].append(recap["hypa"]["base_filters"])
+        pandito["dense_width"].append(recap["hypa"]["base_dense_width"])
+        pandito["filters"].append(recap["hypa"]["base_filters"])
         pandito["batch_size"].append(recap["hypa"]["batch_size"])
         pandito["dataset"].append(recap["hypa"]["dataset"])
-        pandito["dropout_type"].append(recap["hypa"]["dropout_type"])
+        pandito["dropout"].append(recap["hypa"]["dropout_type"])
         pandito["epoch_num"].append(recap["hypa"]["epoch_num"])
-        pandito["kernel_size_type"].append(recap["hypa"]["kernel_size_type"])
-        pandito["pool_size_type"].append(recap["hypa"]["pool_size_type"])
+        pandito["kernel_size"].append(recap["hypa"]["kernel_size_type"])
+        pandito["pool_size"].append(recap["hypa"]["pool_size_type"])
         pandito["words"].append(recap["hypa"]["words"])
-        pandito["categorical_accuracy"].append(results_recap["categorical_accuracy"])
+        pandito["cat_acc"].append(results_recap["categorical_accuracy"])
         pandito["loss"].append(results_recap["loss"])
         pandito["model_name"].append(results_recap["model_name"])
         pandito["fscore"].append(fscore)
 
+        if "version" in recap:
+            if recap["version"] == "001":
+                pandito["lr"].append(recap["hypa"]["learning_rate_type"])
+                pandito["opt"].append(recap["hypa"]["optimizer_type"])
+        else:
+            pandito["lr"].append("default")
+            pandito["opt"].append("default")
+
+    pd.set_option("max_colwidth", 100)
     df = pd.DataFrame(pandito)
-    logg.info(f"{df.sort_values('fscore', ascending=False)[:10]}")
+    logg.info(f"{df.sort_values('fscore', ascending=False)[:30]}")
     # logg.info(f"{df.sort_values('categorical_accuracy', ascending=False)[:10]}")
 
 

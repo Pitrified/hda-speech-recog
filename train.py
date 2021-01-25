@@ -11,21 +11,24 @@ import matplotlib.pyplot as plt  # type: ignore
 # from tensorflow import data as tfdata  # type: ignore
 from tensorflow.data import Dataset  # type: ignore
 from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
-from sklearn.model_selection import ParameterGrid  # type: ignore
+from tensorflow.keras.optimizers import Adam  # type: ignore
+from tensorflow.keras.optimizers.schedules import ExponentialDecay  # type: ignore
 
-from models import CNNmodel
+from sklearn.model_selection import ParameterGrid  # type: ignore
 
 # from models import AttRNNmodel
 # from models import AttentionModel
+from models import CNNmodel
+
 from evaluate import analyze_confusion
+from plot_utils import plot_cat_acc
+from plot_utils import plot_confusion_matrix
+from plot_utils import plot_loss
 from preprocess_data import load_processed
-from utils import setup_logger
 from utils import WORDS_ALL, WORDS_NUMBERS, WORDS_DIRECTION
 from utils import pred_hot_2_cm
 from utils import setup_gpus
-from plot_utils import plot_loss
-from plot_utils import plot_cat_acc
-from plot_utils import plot_confusion_matrix
+from utils import setup_logger
 
 
 def parse_arguments():
@@ -91,6 +94,8 @@ def train_model(hypa):
     model_name += f"_ps{hypa['pool_size_type']}"
     model_name += f"_dw{hypa['base_dense_width']}"
     model_name += f"_dr{hypa['dropout_type']}"
+    model_name += f"_lr{hypa['learning_rate_type']}"
+    model_name += f"_op{hypa['optimizer_type']}"
     model_name += f"_ds{hypa['dataset']}"
     model_name += f"_bs{hypa['batch_size']}"
     model_name += f"_en{hypa['epoch_num']}"
@@ -132,6 +137,14 @@ def train_model(hypa):
     dropout_types = {"01": [0.03, 0.01], "02": [0.3, 0.1]}
     model_param["dropouts"] = dropout_types[hypa["dropout_type"]]
 
+    # setup learning rates
+    e1 = ExponentialDecay(0.1, decay_steps=100000, decay_rate=0.96, staircase=True)
+    learning_rate_types = {"01": 0.01, "02": 0.001, "03": 0.0001, "e1": e1}
+    lr = learning_rate_types[hypa["learning_rate_type"]]
+
+    optimizer_types = {"a1": Adam(learning_rate=lr)}
+    opt = optimizer_types[hypa["optimizer_type"]]
+
     # save info regarding the model training in this folder
     info_folder = Path("info") / model_name
     if not info_folder.exists():
@@ -143,6 +156,7 @@ def train_model(hypa):
     recap["hypa"] = hypa
     recap["model_param"] = model_param
     recap["model_name"] = model_name
+    recap["version"] = "001"
     # logg.debug(f"recap: {recap}")
     recap_path = info_folder / "recap.json"
     recap_path.write_text(json.dumps(recap, indent=4))
@@ -154,7 +168,7 @@ def train_model(hypa):
     # model = AttentionModel(len(words), data["training"][0].shape)
 
     model.compile(
-        optimizer="adam",
+        optimizer=opt,
         loss=["categorical_crossentropy"],
         metrics=["categorical_accuracy"],
     )
@@ -286,17 +300,18 @@ def run_train(args):
     # the_grid = list(ParameterGrid(hypa_grid))
 
     hypa_grid = {}
-    hypa_grid["base_filters"] = [20, 32, 64]
+    hypa_grid["base_filters"] = [20, 32]
     hypa_grid["kernel_size_type"] = ["01", "02"]
     hypa_grid["pool_size_type"] = ["01", "02"]
-    hypa_grid["base_dense_width"] = [16, 32]
+    hypa_grid["base_dense_width"] = [32]
     hypa_grid["dropout_type"] = ["01", "02"]
-    # hypa_grid["batch_size"] = [32, 64, 128]
-    hypa_grid["batch_size"] = [32, 64]
-    hypa_grid["epoch_num"] = [15, 30, 60]
+    hypa_grid["batch_size"] = [32]
+    hypa_grid["epoch_num"] = [30]
+    hypa_grid["learning_rate_type"] = ["01", "02", "03"]
+    hypa_grid["optimizer_type"] = ["a1"]
     hypa_grid["dataset"] = ["mel01"]
     hypa_grid["words"] = ["f1"]
-    # the_grid = list(ParameterGrid(hypa_grid))
+    the_grid = list(ParameterGrid(hypa_grid))
 
     hypa_grid_best = {}
     hypa_grid_best["base_filters"] = [20]
@@ -309,7 +324,7 @@ def run_train(args):
     hypa_grid_best["dataset"] = ["mfcc01"]
     # hypa_grid_best["dataset"] = ["mel01"]
     hypa_grid_best["words"] = ["f1"]
-    the_grid = list(ParameterGrid(hypa_grid_best))
+    # the_grid = list(ParameterGrid(hypa_grid_best))
 
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
