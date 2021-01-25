@@ -26,7 +26,7 @@ from plot_utils import plot_cat_acc
 from plot_utils import plot_confusion_matrix
 from plot_utils import plot_loss
 from preprocess_data import load_processed
-from utils import WORDS_ALL, WORDS_NUMBERS, WORDS_DIRECTION
+from utils import words_types
 from utils import pred_hot_2_cm
 from utils import setup_gpus
 from utils import setup_logger
@@ -78,13 +78,6 @@ def train_model(hypa):
     # logg.debug("Starting train_model")
 
     # get the words
-    words_types = {
-        "all": WORDS_ALL,
-        "dir": WORDS_DIRECTION,
-        "num": WORDS_NUMBERS,
-        "f1": ["happy", "learn", "wow", "visual"],
-        "f2": ["backward", "eight", "go", "yes"],
-    }
     words = words_types[hypa["words"]]
 
     # name the model
@@ -312,8 +305,8 @@ def run_train(args):
     hypa_grid["batch_size"] = [32]
     hypa_grid["epoch_num"] = [15, 30, 60]
     hypa_grid["learning_rate_type"] = ["01", "02", "03"]
-    hypa_grid["optimizer_type"] = ["r1"]
-    hypa_grid["dataset"] = ["mel01", "mel02"]
+    hypa_grid["optimizer_type"] = ["a1"]
+    hypa_grid["dataset"] = ["mel04"]
     hypa_grid["words"] = ["f1"]
     the_grid = list(ParameterGrid(hypa_grid))
 

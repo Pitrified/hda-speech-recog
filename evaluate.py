@@ -1,19 +1,26 @@
 from pathlib import Path
+from time import sleep
 import argparse
 import json
 import logging
-import matplotlib.pyplot as plt  # type: ignore
 
+from scipy.io.wavfile import write  # type: ignore
+import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 import tensorflow as tf  # type: ignore
 
 from plot_utils import plot_confusion_matrix
+from plot_utils import plot_pred
+from plot_utils import plot_spec
+from plot_utils import plot_waveform
+from preprocess_data import get_spec_dict
 from preprocess_data import load_processed
-from utils import WORDS_ALL, WORDS_NUMBERS, WORDS_DIRECTION
+from preprocess_data import wav2mel
 from utils import pred_hot_2_cm
 from utils import setup_gpus
 from utils import setup_logger
+from utils import words_types
 
 
 def parse_arguments():
@@ -179,12 +186,57 @@ def evaluate_results_recap():
                 pandito["opt"].append(recap["hypa"]["optimizer_type"])
         else:
             pandito["lr"].append("default")
-            pandito["opt"].append("default")
+            pandito["opt"].append("adam")
 
     pd.set_option("max_colwidth", 100)
     df = pd.DataFrame(pandito)
     logg.info(f"{df.sort_values('fscore', ascending=False)[:30]}")
     # logg.info(f"{df.sort_values('categorical_accuracy', ascending=False)[:10]}")
+
+
+def load_trained_model(
+    base_filters,
+    kernel_size_type,
+    pool_size_type,
+    base_dense_width,
+    dropout_type,
+    batch_size,
+    epoch_num,
+    dataset,
+    words,
+    learning_rate_type,
+    optimizer_type,
+):
+    """TODO: what is load_trained_model doing?"""
+    logg = logging.getLogger(f"c.{__name__}.load_trained_model")
+    logg.debug("Start load_trained_model")
+
+    # name the model
+    model_name = "CNN"
+    model_name += f"_nf{base_filters}"
+    model_name += f"_ks{kernel_size_type}"
+    model_name += f"_ps{pool_size_type}"
+    model_name += f"_dw{base_dense_width}"
+    model_name += f"_dr{dropout_type}"
+    if learning_rate_type != "default":
+        model_name += f"_lr{learning_rate_type}"
+    if optimizer_type != "adam":
+        model_name += f"_op{optimizer_type}"
+    model_name += f"_ds{dataset}"
+    model_name += f"_bs{batch_size}"
+    model_name += f"_en{epoch_num}"
+    model_name += f"_w{words}"
+
+    logg.debug(f"model_name: {model_name}")
+
+    model_folder = Path("trained_models")
+    model_path = model_folder / f"{model_name}.h5"
+    if not model_path.exists():
+        logg.error(f"Model not found at: {model_path}")
+        raise FileNotFoundError
+
+    model = tf.keras.models.load_model(model_path)
+    return model, model_name
 
 
 def evaluate_model():
@@ -202,45 +254,34 @@ def evaluate_model():
     base_dense_width = 32
     dropout_type = "02"
     batch_size = 32
-    epoch_num = 60
-    dataset = "mfcc01"
+    epoch_num = 30
+    dataset = "mel01"
     words = "f1"
+    learning_rate_type = "01"
+    optimizer_type = "a1"
 
     # get the words
-    words_types = {
-        "all": WORDS_ALL,
-        "dir": WORDS_DIRECTION,
-        "num": WORDS_NUMBERS,
-        "f1": ["happy", "learn", "wow", "visual"],
-        "f2": ["backward", "eight", "go", "yes"],
-    }
     sel_words = words_types[words]
 
-    # name the model
-    model_name = "CNN"
-    model_name += f"_nf{base_filters}"
-    model_name += f"_ks{kernel_size_type}"
-    model_name += f"_ps{pool_size_type}"
-    model_name += f"_dw{base_dense_width}"
-    model_name += f"_dr{dropout_type}"
-    model_name += f"_ds{dataset}"
-    model_name += f"_bs{batch_size}"
-    model_name += f"_en{epoch_num}"
-    model_name += f"_w{words}"
-    logg.debug(f"model_name: {model_name}")
-
-    model_folder = Path("trained_models")
-    model_path = model_folder / f"{model_name}.h5"
-    if not model_path.exists():
-        logg.error(f"Model not found at: {model_path}")
-        return
-
-    model = tf.keras.models.load_model(model_path)
+    model, model_name = load_trained_model(
+        base_filters,
+        kernel_size_type,
+        pool_size_type,
+        base_dense_width,
+        dropout_type,
+        batch_size,
+        epoch_num,
+        dataset,
+        words,
+        learning_rate_type,
+        optimizer_type,
+    )
     model.summary()
 
     # input data
     processed_path = Path(f"data_proc/{dataset}")
     data, labels = load_processed(processed_path, sel_words)
+    logg.debug(f"data['testing'].shape: {data['testing'].shape}")
 
     # evaluate on the words you trained on
     logg.debug("Evaluate on test data:")
@@ -261,13 +302,106 @@ def evaluate_model():
     plt.show()
 
 
+def evaluate_audio():
+    """TODO: what is evaluate_audio doing?"""
+    logg = logging.getLogger(f"c.{__name__}.evaluate_audio")
+    logg.debug("Start evaluate_audio")
+
+    # magic to fix the GPUs
+    setup_gpus()
+
+    # importing sounddevice takes time, only do it if needed
+    import sounddevice as sd  # type: ignore
+
+    # where to save the audios
+    audio_folder = Path("recorded_audio")
+    if not audio_folder.exists():
+        audio_folder.mkdir(parents=True, exist_ok=True)
+    audio_path = audio_folder / "output.wav"
+
+    # need to know on which dataset the model was trained to compute specs
+    dataset_name = "mel01"
+    words = "f1"
+
+    # input parameters
+    fs = 16000  # Sample rate
+    seconds = 1  # Duration of recording
+
+    # get ready
+    for i in range(3, 0, -1):
+        logg.debug(f"Start recording in {i}s")
+        sleep(1)
+    logg.debug("Start recording NOW!")
+
+    # record
+    myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1)
+    sd.wait()  # Wait until recording is finished
+
+    logg.debug("Stop recording")
+
+    # save the audio
+    write(audio_path, fs, myrecording)  # Save as WAV file
+
+    # convert it to mel
+    p2d_kwargs = {"ref": np.max}
+    spec_dict = get_spec_dict()
+    spec_kwargs = spec_dict[dataset_name]
+    log_spec = wav2mel(audio_path, spec_kwargs, p2d_kwargs)
+
+    logg.debug(f"log_spec.shape: {log_spec.shape}")  # log_spec.shape: (128, 32)
+    # the data needs to look like this data['testing'].shape: (735, 128, 32, 1)
+
+    data = log_spec.reshape((1, *log_spec.shape, 1))
+    logg.debug(f"data.shape: {data.shape}")
+
+    # parameters of the model
+    base_filters = 20
+    kernel_size_type = "01"
+    pool_size_type = "01"
+    base_dense_width = 32
+    dropout_type = "02"
+    batch_size = 32
+    epoch_num = 30
+    learning_rate_type = "01"
+    optimizer_type = "a1"
+
+    model, model_name = load_trained_model(
+        base_filters,
+        kernel_size_type,
+        pool_size_type,
+        base_dense_width,
+        dropout_type,
+        batch_size,
+        epoch_num,
+        dataset_name,
+        words,
+        learning_rate_type,
+        optimizer_type,
+    )
+
+    pred = model.predict(data)
+    logg.debug(f"pred: {pred}")
+
+    sel_words = words_types[words]
+
+    # plot the thing
+    fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(14, 14))
+    fig.suptitle("Recorded audio")
+    plot_waveform(myrecording, axes.flat[0])
+    plot_spec(log_spec, axes.flat[1])
+    plot_pred(pred[0], sel_words, axes.flat[2])
+    fig.tight_layout()
+    plt.show()
+
+
 def run_evaluate(args):
     """TODO: What is evaluate doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate")
     logg.debug("Starting run_evaluate")
 
-    evaluate_results_recap()
+    # evaluate_results_recap()
     # evaluate_model()
+    evaluate_audio()
 
 
 if __name__ == "__main__":

@@ -48,6 +48,12 @@ def plot_loss(train_loss, val_loss, ax, model_name):
     ax.legend(["Train", "Val"], loc="upper right")
 
 
+def plot_pred(pred, words, ax):
+    """"""
+    x = np.arange(len(words))
+    ax.bar(x, pred, tick_label=words)
+
+
 def plot_cat_acc(train_cat_acc, val_cat_acc, ax, model_name):
     """TODO: what is plot_cat_acc doing?"""
     # logg = logging.getLogger(f"c.{__name__}.plot_cat_acc")

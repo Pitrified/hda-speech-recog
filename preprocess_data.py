@@ -11,7 +11,7 @@ from tensorflow.keras.utils import to_categorical  # type: ignore
 import numpy as np  # type: ignore
 
 from utils import setup_logger
-from utils import WORDS_ALL
+from utils import words_types
 
 
 def parse_arguments():
@@ -81,6 +81,23 @@ def wav2mel(wav_path, mel_kwargs, p2d_kwargs):
     return padded_log_mel
 
 
+def get_spec_dict():
+    """TODO: what is get_spec_dict doing?"""
+
+    spec_dict = {
+        "mfcc01": {"n_mfcc": 20, "n_fft": 2048, "hop_length": 512},
+        "mfcc02": {"n_mfcc": 40, "n_fft": 2048, "hop_length": 512},
+        "mfcc03": {"n_mfcc": 40, "n_fft": 2048, "hop_length": 256},
+        "mfcc04": {"n_mfcc": 80, "n_fft": 1024, "hop_length": 128},
+        "mfcc05": {"n_mfcc": 10, "n_fft": 4096, "hop_length": 1024},
+        "mel01": {"n_mels": 128, "n_fft": 2048, "hop_length": 512},
+        "mel02": {"n_mels": 64, "n_fft": 4096, "hop_length": 1024},
+        "mel03": {"n_mels": 64, "n_fft": 2048, "hop_length": 512},
+        "mel04": {"n_mels": 64, "n_fft": 1024, "hop_length": 256},
+    }
+    return spec_dict
+
+
 def preprocess_spec():
     """TODO: what is preprocess_spec doing?"""
     logg = logging.getLogger(f"c.{__name__}.preprocess_spec")
@@ -93,26 +110,8 @@ def preprocess_spec():
     p2d_kwargs = {"ref": np.max}
 
     # args for the mfcc spec
-    if dataset_name == "mfcc01":
-        spec_kwargs = {"n_mfcc": 20, "n_fft": 2048, "hop_length": 512}
-    elif dataset_name == "mfcc02":
-        spec_kwargs = {"n_mfcc": 40, "n_fft": 2048, "hop_length": 512}
-    elif dataset_name == "mfcc03":
-        spec_kwargs = {"n_mfcc": 40, "n_fft": 2048, "hop_length": 256}
-    elif dataset_name == "mfcc04":
-        spec_kwargs = {"n_mfcc": 80, "n_fft": 1024, "hop_length": 128}
-    elif dataset_name == "mfcc05":
-        spec_kwargs = {"n_mfcc": 10, "n_fft": 4096, "hop_length": 1024}
-
-    # args for the mel spec
-    elif dataset_name == "mel01":
-        spec_kwargs = {"n_mels": 128, "n_fft": 2048, "hop_length": 512}
-    elif dataset_name == "mel02":
-        spec_kwargs = {"n_mels": 64, "n_fft": 4096, "hop_length": 1024}
-    elif dataset_name == "mel03":
-        spec_kwargs = {"n_mels": 64, "n_fft": 2048, "hop_length": 512}
-    elif dataset_name == "mel04":
-        spec_kwargs = {"n_mels": 64, "n_fft": 1024, "hop_length": 256}
+    spec_dict = get_spec_dict()
+    spec_kwargs = spec_dict[dataset_name]
 
     # original / processed dataset base locations
     dataset_path = Path("data_raw")
@@ -143,10 +142,8 @@ def preprocess_spec():
             testing_names.append(line.strip())
     # logg.debug(f"testing_names: {testing_names[:10]}")
 
-    words = WORDS_ALL
-    # words = ["happy", "learn"]
-    words = ["happy", "learn", "wow", "visual"]
-    # words = ["backward", "eight", "go", "yes"]
+    # words = words_types["all"]
+    words = words_types["f1"]
     for word in words:
         word_in_path = dataset_path / word
         logg.debug(f"Processing folder: {word_in_path}")

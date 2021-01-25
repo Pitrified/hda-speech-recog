@@ -56,6 +56,14 @@ WORDS_NUMBERS = [
 
 WORDS_DIRECTION = ["up", "down", "forward", "backward", "left", "right"]
 
+words_types = {
+    "all": WORDS_ALL,
+    "dir": WORDS_DIRECTION,
+    "num": WORDS_NUMBERS,
+    "f1": ["happy", "learn", "wow", "visual"],
+    "f2": ["backward", "eight", "go", "yes"],
+}
+
 
 def setup_logger(logLevel="DEBUG"):
     """Setup logger that outputs to console for the module"""
