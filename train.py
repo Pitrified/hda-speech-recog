@@ -6,9 +6,9 @@ import logging
 import matplotlib.pyplot as plt  # type: ignore
 
 # import numpy as np  # type: ignore
+# import tensorflow as tf  # type: ignore
 # from tensorflow.data.Dataset import from_tensor_slices  # type: ignore
 # from tensorflow import data as tfdata  # type: ignore
-# import tensorflow as tf  # type: ignore
 from tensorflow.data import Dataset  # type: ignore
 from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
 from sklearn.model_selection import ParameterGrid  # type: ignore
@@ -16,6 +16,7 @@ from sklearn.model_selection import ParameterGrid  # type: ignore
 from models import CNNmodel
 
 # from models import AttRNNmodel
+# from models import AttentionModel
 from evaluate import analyze_confusion
 from preprocess_data import load_processed
 from utils import setup_logger
@@ -84,6 +85,7 @@ def train_model(hypa):
 
     # name the model
     model_name = "CNN"
+    # model_name = "Att"
     model_name += f"_nf{hypa['base_filters']}"
     model_name += f"_ks{hypa['kernel_size_type']}"
     model_name += f"_ps{hypa['pool_size_type']}"
@@ -147,7 +149,9 @@ def train_model(hypa):
 
     # create the model
     model = CNNmodel(**model_param)
+
     # model = AttRNNmodel(len(words), data["training"][0].shape)
+    # model = AttentionModel(len(words), data["training"][0].shape)
 
     model.compile(
         optimizer="adam",
@@ -172,7 +176,7 @@ def train_model(hypa):
     early_stop = EarlyStopping(
         # monitor="val_categorical_accuracy",
         monitor="val_loss",
-        patience=10,
+        patience=4,
         verbose=1,
         restore_best_weights=True,
     )
@@ -273,12 +277,13 @@ def run_train(args):
     hypa_grid["pool_size_type"] = ["01", "02"]
     hypa_grid["base_dense_width"] = [16, 32]
     hypa_grid["dropout_type"] = ["01", "02"]
-    hypa_grid["batch_size"] = [32, 64]
+    # hypa_grid["batch_size"] = [32, 64]
+    hypa_grid["batch_size"] = [32]
     hypa_grid["epoch_num"] = [15, 30, 60]
     hypa_grid["dataset"] = ["mfcc04"]
     hypa_grid["words"] = ["f1"]
     # hypa_grid["words"] = ["dir"]
-    the_grid = list(ParameterGrid(hypa_grid))
+    # the_grid = list(ParameterGrid(hypa_grid))
 
     hypa_grid = {}
     hypa_grid["base_filters"] = [20, 32, 64]
@@ -286,23 +291,25 @@ def run_train(args):
     hypa_grid["pool_size_type"] = ["01", "02"]
     hypa_grid["base_dense_width"] = [16, 32]
     hypa_grid["dropout_type"] = ["01", "02"]
-    hypa_grid["batch_size"] = [32, 64, 128]
+    # hypa_grid["batch_size"] = [32, 64, 128]
+    hypa_grid["batch_size"] = [32, 64]
     hypa_grid["epoch_num"] = [15, 30, 60]
-    hypa_grid["dataset"] = ["mfcc03"]
+    hypa_grid["dataset"] = ["mel01"]
     hypa_grid["words"] = ["f1"]
     # the_grid = list(ParameterGrid(hypa_grid))
 
-    hypa_grid_test = {}
-    hypa_grid_test["base_filters"] = [30]
-    hypa_grid_test["kernel_size_type"] = ["01"]
-    hypa_grid_test["pool_size_type"] = ["01"]
-    hypa_grid_test["base_dense_width"] = [32]
-    hypa_grid_test["dropout_type"] = ["02"]
-    hypa_grid_test["batch_size"] = [32]
-    hypa_grid_test["epoch_num"] = [31]
-    hypa_grid_test["dataset"] = ["mfcc01"]
-    hypa_grid_test["words"] = ["all"]
-    # the_grid = list(ParameterGrid(hypa_grid_test))
+    hypa_grid_best = {}
+    hypa_grid_best["base_filters"] = [20]
+    hypa_grid_best["kernel_size_type"] = ["01"]
+    hypa_grid_best["pool_size_type"] = ["01"]
+    hypa_grid_best["base_dense_width"] = [32]
+    hypa_grid_best["dropout_type"] = ["02"]
+    hypa_grid_best["batch_size"] = [32]
+    hypa_grid_best["epoch_num"] = [59]
+    hypa_grid_best["dataset"] = ["mfcc01"]
+    # hypa_grid_best["dataset"] = ["mel01"]
+    hypa_grid_best["words"] = ["f1"]
+    the_grid = list(ParameterGrid(hypa_grid_best))
 
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")

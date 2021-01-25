@@ -1,6 +1,7 @@
 from tensorflow.keras import models  # type: ignore
 from tensorflow.keras import layers  # type: ignore
 from tensorflow.keras import backend  # type: ignore
+from tensorflow.keras import utils  # type: ignore
 
 
 def CNNmodel(
@@ -41,38 +42,9 @@ def CNNmodel(
     x = layers.BatchNormalization()(x)
     x = layers.MaxPooling2D(pool_size=ps)(x)
 
-    # 1st layer
-    # x = layers.Conv2D(64, kernel_size=(2, 2), activation="relu", padding="same")(x)
-    # x = layers.Conv2D(20, kernel_size=(5, 1), activation="relu", padding="same")(x)
-    # x = layers.Conv2D(20, kernel_size=(8, 2), activation="relu", padding="same")(x)
-    # x = layers.Conv2D(64, kernel_size=(5, 1), activation="relu", padding="same")(x)
-    # x = layers.BatchNormalization()(x)
-    # x = layers.MaxPooling2D(pool_size=(2, 2))(x)
-    # x = layers.MaxPooling2D(pool_size=(2, 1))(x)
-    # x = layers.Dropout(0.03)(x)
-
-    # 2nd layer
-    # x = layers.Conv2D(128, kernel_size=(2, 2), activation="relu", padding="same")(x)
-    # x = layers.Conv2D(40, kernel_size=(3, 3), activation="relu", padding="same")(x)
-    # x = layers.Conv2D(40, kernel_size=(4, 4), activation="relu", padding="same")(x)
-    # x = layers.Conv2D(128, kernel_size=(3, 3), activation="relu", padding="same")(x)
-    # x = layers.BatchNormalization()(x)
-    # x = layers.MaxPooling2D(pool_size=(2, 2))(x)
-    # x = layers.Dropout(0.01)(x)
-
-    # 3rd layer
-    # x = layers.Conv2D(256, kernel_size=(2, 2), activation="relu", padding="same")(x)
-    # x = layers.Conv2D(80, kernel_size=(3, 3), activation="relu", padding="same")(x)
-    # x = layers.Conv2D(256, kernel_size=(3, 3), activation="relu", padding="same")(x)
-    # x = layers.BatchNormalization()(x)
-    # x = layers.MaxPooling2D(pool_size=(2, 2))(x)
-
     x = layers.Flatten()(x)
     x = layers.Dense(base_dense_width * 2, activation="relu")(x)
     x = layers.Dense(base_dense_width * 1, activation="relu")(x)
-
-    # x = layers.Dense(64, activation="relu")(x)
-    # x = layers.Dense(32, activation="relu")(x)
 
     output = layers.Dense(num_labels, activation="softmax")(x)
 
@@ -129,3 +101,64 @@ def AttRNNmodel(num_labels, input_shape, rnn_func=layers.LSTM):
     model = models.Model(inputs=[inputs], outputs=[output])
 
     return model
+
+
+def AttentionModel(num_labels, input_shape):
+    inputs = layers.Input(shape=input_shape, name="input")
+    # (?, mel_dim, time_steps, 1)
+
+    x = layers.BatchNormalization()(inputs)
+
+    x = layers.Conv2D(10, (5, 1), activation="relu", padding="same")(x)
+    x = layers.BatchNormalization()(x)
+    # (?, mel_dim, time_steps, 10)
+
+    x = layers.Conv2D(1, (5, 1), activation="relu", padding="same")(x)
+    x = layers.BatchNormalization()(x)
+    # (?, mel_dim, time_steps, 1)
+
+    x = layers.Lambda(lambda q: backend.squeeze(q, axis=-1), name="squeeze_last_dim")(x)
+    # (?, mel_dim, time_steps)
+
+    units = 64
+    x = layers.Bidirectional(layers.LSTM(units, return_sequences=True))(x)
+    # (?, mel_dim, units * 2)
+
+    xFirst = layers.Lambda(lambda q: q[:, -1], name="x_first")(x)
+    # (?, units * 2)
+    query = layers.Dense(128, name="query")(xFirst)
+    # (?, units * 2)
+
+    attScores = layers.Dot(axes=[1, 2], name="att_scores_dot")([query, x])
+    # (?, mel_dim)
+    attScores = layers.Softmax(name="att_softmax")(attScores)
+    # (?, mel_dim)
+
+    attVector = layers.Dot(axes=[1, 1], name="att_vector_dot")([attScores, x])
+    # (?, units * 2)
+
+    x = layers.Dense(64, activation="relu")(attVector)
+    x = layers.Dense(32)(x)
+
+    output = layers.Dense(num_labels, activation="softmax", name="output")(x)
+    model = models.Model(inputs=[inputs], outputs=[output])
+
+    return model
+
+
+def main():
+    num_labels = 4
+    input_shape = (20, 30, 1)
+
+    # attrnn_model = AttRNNmodel(num_labels, input_shape)
+    # attrnn_model.summary()
+
+    attention_model = AttentionModel(num_labels, input_shape)
+    attention_model.summary()
+
+    model_pic_name = "plot_models/attention_model.png"
+    utils.plot_model(attention_model, model_pic_name, show_shapes=True, dpi=400)
+
+
+if __name__ == "__main__":
+    main()

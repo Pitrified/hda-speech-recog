@@ -66,25 +66,45 @@ def wav2mfcc(wav_path, mfcc_kwargs, p2d_kwargs):
     return padded_log_mfcc
 
 
-def preprocess_mfcc():
-    """TODO: what is preprocess_mfcc doing?"""
-    logg = logging.getLogger(f"c.{__name__}.preprocess_mfcc")
-    logg.debug("Start preprocess_mfcc")
+def wav2mel(wav_path, mel_kwargs, p2d_kwargs):
+    """TODO: what is wav2mel doing?"""
+    sig, sample_rate = librosa.load(wav_path, sr=None)
+    mel = librosa.feature.melspectrogram(sig, sr=sample_rate, **mel_kwargs)
+    log_mel = librosa.power_to_db(mel, **p2d_kwargs)
 
-    dataset_name = "mfcc01"
+    # the shape is not consistent, pad it
+    pad_needed = 16384 // mel_kwargs["hop_length"] - log_mel.shape[1]
+    # print(f"pad_needed: {pad_needed}")
+    # number of values padded to the edges of each axis.
+    pad_width = ((0, 0), (0, pad_needed))
+    padded_log_mel = np.pad(log_mel, pad_width=pad_width)
+    return padded_log_mel
+
+
+def preprocess_spec():
+    """TODO: what is preprocess_spec doing?"""
+    logg = logging.getLogger(f"c.{__name__}.preprocess_spec")
+    logg.debug("Start preprocess_spec")
+
+    dataset_name = "mel01"
 
     # args for the power_to_db function
     p2d_kwargs = {"ref": np.max}
 
     # args for the mfcc spec
     if dataset_name == "mfcc01":
-        mfcc_kwargs = {"n_mfcc": 20, "n_fft": 2048, "hop_length": 512}
+        spec_kwargs = {"n_mfcc": 20, "n_fft": 2048, "hop_length": 512}
     elif dataset_name == "mfcc02":
-        mfcc_kwargs = {"n_mfcc": 40, "n_fft": 2048, "hop_length": 512}
+        spec_kwargs = {"n_mfcc": 40, "n_fft": 2048, "hop_length": 512}
     elif dataset_name == "mfcc03":
-        mfcc_kwargs = {"n_mfcc": 40, "n_fft": 2048, "hop_length": 256}
+        spec_kwargs = {"n_mfcc": 40, "n_fft": 2048, "hop_length": 256}
     elif dataset_name == "mfcc04":
-        mfcc_kwargs = {"n_mfcc": 80, "n_fft": 1024, "hop_length": 128}
+        spec_kwargs = {"n_mfcc": 80, "n_fft": 1024, "hop_length": 128}
+    elif dataset_name == "mfcc05":
+        spec_kwargs = {"n_mfcc": 10, "n_fft": 4096, "hop_length": 1024}
+
+    elif dataset_name == "mel01":
+        spec_kwargs = {"n_fft": 2048, "hop_length": 512}
 
     # original / processed dataset base locations
     dataset_path = Path("data_raw")
@@ -94,7 +114,7 @@ def preprocess_mfcc():
 
     # write info regarding the dataset generation
     recap = {}
-    recap["mfcc_kwargs"] = mfcc_kwargs
+    recap["spec_kwargs"] = spec_kwargs
     logg.debug(f"recap: {recap}")
     recap_path = processed_path / "recap.json"
     recap_path.write_text(json.dumps(recap, indent=4))
@@ -117,20 +137,24 @@ def preprocess_mfcc():
 
     words = WORDS_ALL
     # words = ["happy", "learn"]
-    # words = ["happy", "learn", "wow", "visual"]
+    words = ["happy", "learn", "wow", "visual"]
     # words = ["backward", "eight", "go", "yes"]
     for word in words:
         word_in_path = dataset_path / word
         logg.debug(f"Processing folder: {word_in_path}")
 
-        word_mfcc = {"validation": [], "training": [], "testing": []}
+        word_spec = {"validation": [], "training": [], "testing": []}
 
         all_wavs = list(word_in_path.iterdir())
         for wav_path in tqdm(all_wavs):
             # logg.debug(f"wav_path: {wav_path}")
             wav_name = f"{word}/{wav_path.name}"
             # logg.debug(f"wav_name: {wav_name}")
-            log_mfcc = wav2mfcc(wav_path, mfcc_kwargs, p2d_kwargs)
+
+            if dataset_name.startswith("mfcc"):
+                log_spec = wav2mfcc(wav_path, spec_kwargs, p2d_kwargs)
+            elif dataset_name.startswith("mel"):
+                log_spec = wav2mel(wav_path, spec_kwargs, p2d_kwargs)
 
             if wav_name in validation_names:
                 which = "validation"
@@ -139,16 +163,14 @@ def preprocess_mfcc():
             else:
                 which = "training"
 
-            word_mfcc[which].append(log_mfcc)
+            word_spec[which].append(log_spec)
 
         for which in ["training", "validation", "testing"]:
-            # logg.debug(f"word_mfcc[{which}][0].shape: {word_mfcc[which][0].shape}")
-            # np_mfcc = np.vstack(word_mfcc[which])
-            # np_mfcc = np.array(word_mfcc[which], dtype=object)
-            np_mfcc = np.stack(word_mfcc[which])
-            # logg.debug(f"{which} np_mfcc.shape: {np_mfcc.shape}")
+            # logg.debug(f"word_spec[{which}][0].shape: {word_spec[which][0].shape}")
+            np_spec = np.stack(word_spec[which])
+            # logg.debug(f"{which} np_spec.shape: {np_spec.shape}")
             word_out_path = processed_path / f"{word}_{which}.npy"
-            np.save(word_out_path, np_mfcc)
+            np.save(word_out_path, np_spec)
 
 
 def load_processed(processed_path, words):
@@ -192,7 +214,7 @@ def test_load_processed():
     """TODO: what is test_load_processed doing?"""
     logg = logging.getLogger(f"c.{__name__}.test_load_processed")
     logg.debug("Start test_load_processed")
-    processed_path = Path("data_proc/mfcc")
+    processed_path = Path("data_proc/mfcc01")
     words = ["happy", "learn"]
     # words = WORDS_ALL
     load_processed(processed_path, words)
@@ -203,7 +225,7 @@ def run_preprocess_data(args):
     logg = logging.getLogger(f"c.{__name__}.run_preprocess_data")
     logg.debug("Starting run_preprocess_data")
 
-    preprocess_mfcc()
+    preprocess_spec()
     # test_load_processed()
 
 

@@ -89,8 +89,10 @@ def visualize_datasets():
     logg = logging.getLogger(f"c.{__name__}.visualize_datasets")
     logg.debug("Start visualize_datasets")
 
-    datasets = ["mfcc01", "mfcc02", "mfcc03", "mfcc04"]
-    fig, ax = plt.subplots(len(datasets), 1, figsize=(12, 12))
+    # show different datasets
+    # datasets = ["mfcc01", "mfcc02", "mfcc03", "mfcc04", "mfcc05"]
+    datasets = ["mfcc01", "mfcc02", "mfcc03", "mfcc04", "mel01"]
+    fig, ax = plt.subplots(len(datasets), 1, figsize=(18, 18))
 
     for i, dataset_name in enumerate(datasets):
         processed_path = Path(f"data_proc/{dataset_name}")
@@ -98,6 +100,21 @@ def visualize_datasets():
         word_data = np.load(word_path, allow_pickle=True)
         logg.debug(f"word_data[0].shape: {word_data[0].shape}")
         plot_spec(word_data[0], ax[i])
+
+    fig.tight_layout()
+
+    # show different words
+    # dataset_name = "mfcc01"
+    dataset_name = "mel01"
+    processed_path = Path(f"data_proc/{dataset_name}")
+    words = ["happy", "learn", "wow", "visual"]
+
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(18, 18))
+    for i, ax in enumerate(axes.flat):
+        word_path = processed_path / f"{words[i]}_training.npy"
+        word_data = np.load(word_path, allow_pickle=True)
+        logg.debug(f"word_data[0].shape: {word_data[0].shape}")
+        plot_spec(word_data[0], ax, title=words[i])
 
     fig.tight_layout()
 
