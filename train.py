@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt  # type: ignore
 from tensorflow.data import Dataset  # type: ignore
 from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
 from tensorflow.keras.optimizers import Adam  # type: ignore
+from tensorflow.keras.optimizers import RMSprop  # type: ignore
 from tensorflow.keras.optimizers.schedules import ExponentialDecay  # type: ignore
 
 from sklearn.model_selection import ParameterGrid  # type: ignore
@@ -142,7 +143,10 @@ def train_model(hypa):
     learning_rate_types = {"01": 0.01, "02": 0.001, "03": 0.0001, "e1": e1}
     lr = learning_rate_types[hypa["learning_rate_type"]]
 
-    optimizer_types = {"a1": Adam(learning_rate=lr)}
+    optimizer_types = {
+        "a1": Adam(learning_rate=lr),
+        "r1": RMSprop(learning_rate=lr),
+    }
     opt = optimizer_types[hypa["optimizer_type"]]
 
     # save info regarding the model training in this folder
@@ -306,10 +310,10 @@ def run_train(args):
     hypa_grid["base_dense_width"] = [32]
     hypa_grid["dropout_type"] = ["01", "02"]
     hypa_grid["batch_size"] = [32]
-    hypa_grid["epoch_num"] = [30]
+    hypa_grid["epoch_num"] = [15, 30, 60]
     hypa_grid["learning_rate_type"] = ["01", "02", "03"]
-    hypa_grid["optimizer_type"] = ["a1"]
-    hypa_grid["dataset"] = ["mel01"]
+    hypa_grid["optimizer_type"] = ["r1"]
+    hypa_grid["dataset"] = ["mel01", "mel02"]
     hypa_grid["words"] = ["f1"]
     the_grid = list(ParameterGrid(hypa_grid))
 

@@ -31,7 +31,7 @@ def plot_spec(log_spec, ax, title="Spectrogram", sample_rate=16000):
     ax.set_title(title)
     ax.set_xlabel("Time (s)")
     # the ticks are wrong if the sample is not 1 sec
-    ax.set_xticks(np.linspace(0, 1, 11))
+    # ax.set_xticks(np.linspace(0, 1, 11))
     return ax
 
 

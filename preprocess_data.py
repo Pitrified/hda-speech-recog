@@ -86,7 +86,8 @@ def preprocess_spec():
     logg = logging.getLogger(f"c.{__name__}.preprocess_spec")
     logg.debug("Start preprocess_spec")
 
-    dataset_name = "mel01"
+    dataset_name = "mel04"
+    logg.debug(f"dataset_name: {dataset_name}")
 
     # args for the power_to_db function
     p2d_kwargs = {"ref": np.max}
@@ -103,8 +104,15 @@ def preprocess_spec():
     elif dataset_name == "mfcc05":
         spec_kwargs = {"n_mfcc": 10, "n_fft": 4096, "hop_length": 1024}
 
+    # args for the mel spec
     elif dataset_name == "mel01":
-        spec_kwargs = {"n_fft": 2048, "hop_length": 512}
+        spec_kwargs = {"n_mels": 128, "n_fft": 2048, "hop_length": 512}
+    elif dataset_name == "mel02":
+        spec_kwargs = {"n_mels": 64, "n_fft": 4096, "hop_length": 1024}
+    elif dataset_name == "mel03":
+        spec_kwargs = {"n_mels": 64, "n_fft": 2048, "hop_length": 512}
+    elif dataset_name == "mel04":
+        spec_kwargs = {"n_mels": 64, "n_fft": 1024, "hop_length": 256}
 
     # original / processed dataset base locations
     dataset_path = Path("data_raw")
