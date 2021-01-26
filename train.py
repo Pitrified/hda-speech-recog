@@ -321,7 +321,7 @@ def run_train(args):
     hypa_grid_best["pool_size_type"] = ["02"]
     hypa_grid_best["learning_rate_type"] = ["02"]
     hypa_grid_best["optimizer_type"] = ["a1"]
-    hypa_grid_best["words"] = ["all"]
+    hypa_grid_best["words"] = ["k1"]
     the_grid = list(ParameterGrid(hypa_grid_best))
 
     num_hypa = len(the_grid)

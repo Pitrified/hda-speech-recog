@@ -56,10 +56,36 @@ WORDS_NUMBERS = [
 
 WORDS_DIRECTION = ["up", "down", "forward", "backward", "left", "right"]
 
+WORDS_KAGGLE_1 = ["yes", "no", "up", "down", "left", "right", "on", "off", "stop", "go"]
+
+WORDS_TASK_20 = [
+    "down",
+    "eight",
+    "five",
+    "four",
+    "go",
+    "left",
+    "nine",
+    "no",
+    "off",
+    "on",
+    "one",
+    "right",
+    "seven",
+    "six",
+    "stop",
+    "three",
+    "two",
+    "up",
+    "yes",
+    "zero",
+]
+
 words_types = {
     "all": WORDS_ALL,
     "dir": WORDS_DIRECTION,
     "num": WORDS_NUMBERS,
+    "k1": WORDS_KAGGLE_1,
     "f1": ["happy", "learn", "wow", "visual"],
     "f2": ["backward", "eight", "go", "yes"],
 }

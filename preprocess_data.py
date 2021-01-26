@@ -19,13 +19,29 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="")
 
     parser.add_argument(
-        "-i",
-        "--path_input",
+        "-dn",
+        "--dataset_name",
         type=str,
-        default="hp.jpg",
-        help="path to input image to use",
+        default="mel01",
+        help="Name of the output dataset folder",
     )
 
+    parser.add_argument(
+        "-wt",
+        "--words_type",
+        type=str,
+        default="f2",
+        choices=["all", "dir", "num", "k1", "f1", "f2"],
+        help="Words to preprocess",
+    )
+
+    parser.add_argument(
+        "-fp",
+        "--force_preprocess",
+        type=bool,
+        default=False,
+        help="Force the preprocess and overwrite the previous results",
+    )
     # last line to parse the args
     args = parser.parse_args()
     return args
@@ -98,12 +114,13 @@ def get_spec_dict():
     return spec_dict
 
 
-def preprocess_spec():
+def preprocess_spec(args):
     """TODO: what is preprocess_spec doing?"""
     logg = logging.getLogger(f"c.{__name__}.preprocess_spec")
     logg.debug("Start preprocess_spec")
 
-    dataset_name = "mel01"
+    # dataset_name = "mel01"
+    dataset_name = args.dataset_name
     logg.debug(f"dataset_name: {dataset_name}")
 
     # args for the power_to_db function
@@ -142,15 +159,21 @@ def preprocess_spec():
             testing_names.append(line.strip())
     # logg.debug(f"testing_names: {testing_names[:10]}")
 
-    words = words_types["all"]
-    # words = words_types["f2"]
-    # words = words_types["num"]
-    # words = words_types["dir"]
+    words_type = args.words_type
+    words = words_types[words_type]
     for word in words:
         word_in_path = dataset_path / word
         logg.debug(f"Processing folder: {word_in_path}")
 
         word_spec = {"validation": [], "training": [], "testing": []}
+
+        word_out_path = processed_path / f"{word}_testing.npy"
+        if word_out_path.exists():
+            logg.debug(f"word_out_path {word_out_path} already preprocessed")
+            if args.force_preprocess:
+                logg.debug("OVERWRITING the previous results")
+            else:
+                continue
 
         all_wavs = list(word_in_path.iterdir())
         for wav_path in tqdm(all_wavs):
@@ -232,7 +255,7 @@ def run_preprocess_data(args):
     logg = logging.getLogger(f"c.{__name__}.run_preprocess_data")
     logg.debug("Starting run_preprocess_data")
 
-    preprocess_spec()
+    preprocess_spec(args)
     # test_load_processed()
 
 
