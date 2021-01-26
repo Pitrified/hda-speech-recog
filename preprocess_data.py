@@ -103,7 +103,7 @@ def preprocess_spec():
     logg = logging.getLogger(f"c.{__name__}.preprocess_spec")
     logg.debug("Start preprocess_spec")
 
-    dataset_name = "mel04"
+    dataset_name = "mel01"
     logg.debug(f"dataset_name: {dataset_name}")
 
     # args for the power_to_db function
@@ -142,8 +142,10 @@ def preprocess_spec():
             testing_names.append(line.strip())
     # logg.debug(f"testing_names: {testing_names[:10]}")
 
-    # words = words_types["all"]
-    words = words_types["f1"]
+    words = words_types["all"]
+    # words = words_types["f2"]
+    # words = words_types["num"]
+    # words = words_types["dir"]
     for word in words:
         word_in_path = dataset_path / word
         logg.debug(f"Processing folder: {word_in_path}")

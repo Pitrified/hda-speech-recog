@@ -10,9 +10,10 @@ import matplotlib.pyplot as plt  # type: ignore
 import librosa  # type: ignore
 from pathlib import Path
 
-from utils import setup_logger
-from plot_utils import plot_waveform
 from plot_utils import plot_spec
+from plot_utils import plot_waveform
+from utils import setup_logger
+from utils import words_types
 
 
 def parse_arguments():
@@ -111,8 +112,7 @@ def visualize_datasets():
 
     for dataset_name in datasets:
         processed_path = Path(f"data_proc/{dataset_name}")
-        words = ["happy", "learn", "wow", "visual"]
-
+        words = words_types['f1']
         fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(14, 14))
         fig.suptitle(dataset_name)
         for i, ax in enumerate(axes.flat):

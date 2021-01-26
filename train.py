@@ -311,17 +311,18 @@ def run_train(args):
     the_grid = list(ParameterGrid(hypa_grid))
 
     hypa_grid_best = {}
-    hypa_grid_best["base_filters"] = [20]
-    hypa_grid_best["kernel_size_type"] = ["01"]
-    hypa_grid_best["pool_size_type"] = ["01"]
     hypa_grid_best["base_dense_width"] = [32]
-    hypa_grid_best["dropout_type"] = ["02"]
+    hypa_grid_best["base_filters"] = [20]
     hypa_grid_best["batch_size"] = [32]
-    hypa_grid_best["epoch_num"] = [59]
-    hypa_grid_best["dataset"] = ["mfcc01"]
-    # hypa_grid_best["dataset"] = ["mel01"]
-    hypa_grid_best["words"] = ["f1"]
-    # the_grid = list(ParameterGrid(hypa_grid_best))
+    hypa_grid_best["dataset"] = ["mel01"]
+    hypa_grid_best["dropout_type"] = ["01"]
+    hypa_grid_best["epoch_num"] = [16]
+    hypa_grid_best["kernel_size_type"] = ["02"]
+    hypa_grid_best["pool_size_type"] = ["02"]
+    hypa_grid_best["learning_rate_type"] = ["02"]
+    hypa_grid_best["optimizer_type"] = ["a1"]
+    hypa_grid_best["words"] = ["all"]
+    the_grid = list(ParameterGrid(hypa_grid_best))
 
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")

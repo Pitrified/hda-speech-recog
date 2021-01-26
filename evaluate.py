@@ -28,11 +28,30 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="")
 
     parser.add_argument(
-        "-i",
-        "--path_input",
+        "-et",
+        "--evaluation_type",
         type=str,
-        default="hp.jpg",
-        help="path to input image to use",
+        default="results",
+        choices=["results", "model", "audio"],
+        help="Which evaluation to perform",
+    )
+
+    parser.add_argument(
+        "-tw",
+        "--train_words_type",
+        type=str,
+        default="f2",
+        choices=["all", "dir", "num", "f1", "f2"],
+        help="Words the dataset was trained on",
+    )
+
+    parser.add_argument(
+        "-rw",
+        "--rec_words_type",
+        type=str,
+        default="dataset",
+        choices=["all", "dir", "num", "f1", "f2", "dataset"],
+        help="Words to record and test",
     )
 
     # last line to parse the args
@@ -120,7 +139,7 @@ def row_fmt(header, iterable, formatter=""):
     return row
 
 
-def evaluate_results_recap():
+def evaluate_results_recap(args):
     """TODO: what is evaluate_results_recap doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_results_recap")
     logg.setLevel("INFO")
@@ -239,29 +258,31 @@ def load_trained_model(
     return model, model_name
 
 
-def evaluate_model():
+def evaluate_model(args):
     """TODO: what is evaluate_model doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_model")
+    # logg.setLevel("INFO")
     logg.debug("Start evaluate_model")
 
     # magic to fix the GPUs
     setup_gpus()
 
     # setup the parameters
-    base_filters = 20
-    kernel_size_type = "01"
-    pool_size_type = "01"
-    base_dense_width = 32
-    dropout_type = "02"
-    batch_size = 32
-    epoch_num = 30
     dataset = "mel01"
-    words = "f1"
-    learning_rate_type = "01"
+    words = args.train_words_type
+
+    base_dense_width = 32
+    base_filters = 20
+    batch_size = 32
+    dropout_type = "01"
+    epoch_num = 16
+    kernel_size_type = "02"
+    pool_size_type = "02"
+    learning_rate_type = "02"
     optimizer_type = "a1"
 
     # get the words
-    sel_words = words_types[words]
+    train_words = words_types[words]
 
     model, model_name = load_trained_model(
         base_filters,
@@ -280,7 +301,7 @@ def evaluate_model():
 
     # input data
     processed_path = Path(f"data_proc/{dataset}")
-    data, labels = load_processed(processed_path, sel_words)
+    data, labels = load_processed(processed_path, train_words)
     logg.debug(f"data['testing'].shape: {data['testing'].shape}")
 
     # evaluate on the words you trained on
@@ -288,21 +309,21 @@ def evaluate_model():
     model.evaluate(data["testing"], labels["testing"])
     # model.evaluate(data["validation"], labels["validation"])
 
-    # predict labels
+    # predict labels/cm/fscore
     y_pred = model.predict(data["testing"])
-    cm = pred_hot_2_cm(labels["testing"], y_pred, sel_words)
+    cm = pred_hot_2_cm(labels["testing"], y_pred, train_words)
     # y_pred = model.predict(data["validation"])
-    # cm = pred_hot_2_cm(labels["validation"], y_pred, sel_words)
-    fig, ax = plt.subplots(figsize=(12, 12))
-    plot_confusion_matrix(cm, ax, model_name, sel_words)
-
-    fscore = analyze_confusion(cm, sel_words)
+    # cm = pred_hot_2_cm(labels["validation"], y_pred, train_words)
+    fscore = analyze_confusion(cm, train_words)
     logg.debug(f"fscore: {fscore}")
+
+    fig, ax = plt.subplots(figsize=(12, 12))
+    plot_confusion_matrix(cm, ax, model_name, train_words, fscore)
 
     plt.show()
 
 
-def evaluate_audio():
+def evaluate_audio(args):
     """TODO: what is evaluate_audio doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_audio")
     logg.debug("Start evaluate_audio")
@@ -317,52 +338,72 @@ def evaluate_audio():
     audio_folder = Path("recorded_audio")
     if not audio_folder.exists():
         audio_folder.mkdir(parents=True, exist_ok=True)
-    audio_path = audio_folder / "output.wav"
 
     # need to know on which dataset the model was trained to compute specs
     dataset_name = "mel01"
-    words = "f1"
+
+    # words that the dataset was trained on
+    train_words_type = args.train_words_type
+    train_words = words_types[train_words_type]
+
+    rec_words_type = args.rec_words_type
+    if rec_words_type == "dataset":
+        rec_words = train_words
+    else:
+        rec_words = words_types[rec_words_type]
+    num_rec_words = len(rec_words)
 
     # input parameters
     fs = 16000  # Sample rate
     seconds = 1  # Duration of recording
 
-    # get ready
-    for i in range(3, 0, -1):
-        logg.debug(f"Start recording in {i}s")
+    audios = []
+    specs = []
+
+    timeout = 0  # time to get ready to talk for each word
+    if timeout == 0:  # if there is no time give it at least in the beginning
+        logg.debug(f"Get ready to start recording {rec_words[0]}")
         sleep(1)
-    logg.debug("Start recording NOW!")
+    for word in rec_words:
+        for i in range(timeout, 0, -1):
+            logg.debug(f"Start recording {word} in {i}s")
+            sleep(1)
+        logg.debug(f"Start recording {word} NOW!")
 
-    # record
-    myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1)
-    sd.wait()  # Wait until recording is finished
+        # record
+        myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1)
+        sd.wait()  # Wait until recording is finished
+        logg.debug("Stop recording")
 
-    logg.debug("Stop recording")
+        # save the audio
+        audio_path = audio_folder / f"{word}_01.wav"
+        write(audio_path, fs, myrecording)  # Save as WAV file
 
-    # save the audio
-    write(audio_path, fs, myrecording)  # Save as WAV file
+        # convert it to mel
+        p2d_kwargs = {"ref": np.max}
+        spec_dict = get_spec_dict()
+        spec_kwargs = spec_dict[dataset_name]
+        log_spec = wav2mel(audio_path, spec_kwargs, p2d_kwargs)
+        img_spec = log_spec.reshape((*log_spec.shape, 1))
+        logg.debug(f"img_spec.shape: {img_spec.shape}")  # img_spec.shape: (128, 32, 1)
 
-    # convert it to mel
-    p2d_kwargs = {"ref": np.max}
-    spec_dict = get_spec_dict()
-    spec_kwargs = spec_dict[dataset_name]
-    log_spec = wav2mel(audio_path, spec_kwargs, p2d_kwargs)
+        audios.append(myrecording)
+        specs.append(log_spec)
 
-    logg.debug(f"log_spec.shape: {log_spec.shape}")  # log_spec.shape: (128, 32)
     # the data needs to look like this data['testing'].shape: (735, 128, 32, 1)
-
-    data = log_spec.reshape((1, *log_spec.shape, 1))
+    # data = log_spec.reshape((1, *log_spec.shape, 1))
+    data = np.stack(specs)
     logg.debug(f"data.shape: {data.shape}")
 
     # parameters of the model
-    base_filters = 20
-    kernel_size_type = "01"
-    pool_size_type = "01"
     base_dense_width = 32
-    dropout_type = "02"
+    base_filters = 20
     batch_size = 32
-    epoch_num = 30
-    learning_rate_type = "01"
+    dropout_type = "01"
+    epoch_num = 16
+    kernel_size_type = "02"
+    pool_size_type = "02"
+    learning_rate_type = "02"
     optimizer_type = "a1"
 
     model, model_name = load_trained_model(
@@ -374,34 +415,48 @@ def evaluate_audio():
         batch_size,
         epoch_num,
         dataset_name,
-        words,
+        train_words_type,
         learning_rate_type,
         optimizer_type,
     )
 
     pred = model.predict(data)
-    logg.debug(f"pred: {pred}")
-
-    sel_words = words_types[words]
+    # logg.debug(f"pred: {pred}")
 
     # plot the thing
-    fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(14, 14))
-    fig.suptitle("Recorded audio")
-    plot_waveform(myrecording, axes.flat[0])
-    plot_spec(log_spec, axes.flat[1])
-    plot_pred(pred[0], sel_words, axes.flat[2])
-    fig.tight_layout()
-    plt.show()
+    plot_size = 5
+    fw = plot_size * 3
+    fh = plot_size * num_rec_words
+    fig, axes = plt.subplots(nrows=num_rec_words, ncols=3, figsize=(fw, fh))
+    fig.suptitle("Recorded audios", fontsize=18)
+
+    for i, word in enumerate(rec_words):
+        plot_waveform(audios[i], axes[i][0])
+        plot_spec(specs[i], axes[i][1])
+        plot_pred(pred[i], train_words, axes[i][2], f"Prediction for {rec_words[i]}", i)
+
+    # https://stackoverflow.com/q/8248467
+    # https://stackoverflow.com/q/2418125
+    fig.tight_layout(h_pad=3, rect=[0, 0.03, 1, 0.97])
+
+    results_path = audio_folder / f"results_{train_words_type}_{rec_words_type}.png"
+    fig.savefig(results_path)
+
+    if num_rec_words <= 6:
+        plt.show()
 
 
-def run_evaluate(args):
+def run_evaluate(args) -> None:
     """TODO: What is evaluate doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate")
     logg.debug("Starting run_evaluate")
 
-    # evaluate_results_recap()
-    # evaluate_model()
-    evaluate_audio()
+    if args.evaluation_type == "results":
+        evaluate_results_recap(args)
+    elif args.evaluation_type == "model":
+        evaluate_model(args)
+    elif args.evaluation_type == "audio":
+        evaluate_audio(args)
 
 
 if __name__ == "__main__":
