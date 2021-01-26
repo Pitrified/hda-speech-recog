@@ -6,7 +6,8 @@ import logging
 import matplotlib.pyplot as plt  # type: ignore
 
 # import numpy as np  # type: ignore
-# import tensorflow as tf  # type: ignore
+import tensorflow as tf  # type: ignore
+
 # from tensorflow.data.Dataset import from_tensor_slices  # type: ignore
 # from tensorflow import data as tfdata  # type: ignore
 from tensorflow.data import Dataset  # type: ignore
@@ -14,6 +15,7 @@ from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
 from tensorflow.keras.optimizers import Adam  # type: ignore
 from tensorflow.keras.optimizers import RMSprop  # type: ignore
 from tensorflow.keras.optimizers.schedules import ExponentialDecay  # type: ignore
+from tensorflow.keras.applications import Xception  # type: ignore
 
 from sklearn.model_selection import ParameterGrid  # type: ignore
 
@@ -26,6 +28,7 @@ from plot_utils import plot_cat_acc
 from plot_utils import plot_confusion_matrix
 from plot_utils import plot_loss
 from preprocess_data import load_processed
+from preprocess_data import load_triple
 from utils import words_types
 from utils import pred_hot_2_cm
 from utils import setup_gpus
@@ -37,11 +40,20 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="")
 
     parser.add_argument(
-        "-i",
-        "--path_input",
+        "-wt",
+        "--words_type",
         type=str,
-        default="hp.jpg",
-        help="path to input image to use",
+        default="f2",
+        choices=words_types.keys(),
+        help="Words to preprocess",
+    )
+
+    parser.add_argument(
+        "-ft",
+        "--force_retrain",
+        type=bool,
+        default=False,
+        help="Force the training and overwrite the previous results",
     )
 
     # last line to parse the args
@@ -66,10 +78,60 @@ def setup_env():
     return args
 
 
-def hyper_train():
+def hyper_train(args):
     """TODO: what is hyper_train doing?"""
     logg = logging.getLogger(f"c.{__name__}.hyper_train")
     logg.debug("Start hyper_train")
+
+    hypa_grid = {}
+    hypa_grid["base_filters"] = [20, 32]
+    hypa_grid["kernel_size_type"] = ["01", "02"]
+    hypa_grid["pool_size_type"] = ["01", "02"]
+    hypa_grid["base_dense_width"] = [16, 32]
+    hypa_grid["dropout_type"] = ["01", "02"]
+    # hypa_grid["batch_size"] = [32, 64]
+    hypa_grid["batch_size"] = [32]
+    hypa_grid["epoch_num"] = [15, 30, 60]
+    hypa_grid["dataset"] = ["mfcc04"]
+    hypa_grid["words"] = ["f1"]
+    # hypa_grid["words"] = ["dir"]
+    # the_grid = list(ParameterGrid(hypa_grid))
+
+    hypa_grid = {}
+    hypa_grid["base_filters"] = [20, 32]
+    hypa_grid["kernel_size_type"] = ["01", "02"]
+    hypa_grid["pool_size_type"] = ["01", "02"]
+    hypa_grid["base_dense_width"] = [32]
+    hypa_grid["dropout_type"] = ["01", "02"]
+    hypa_grid["batch_size"] = [32]
+    hypa_grid["epoch_num"] = [15, 30, 60]
+    hypa_grid["learning_rate_type"] = ["01", "02", "03"]
+    hypa_grid["optimizer_type"] = ["a1"]
+    hypa_grid["dataset"] = ["mel04"]
+    hypa_grid["words"] = ["f1"]
+    the_grid = list(ParameterGrid(hypa_grid))
+
+    hypa_grid_best = {}
+    hypa_grid_best["base_dense_width"] = [32]
+    hypa_grid_best["base_filters"] = [20]
+    hypa_grid_best["batch_size"] = [32]
+    hypa_grid_best["dataset"] = ["mel01"]
+    hypa_grid_best["dropout_type"] = ["01"]
+    hypa_grid_best["epoch_num"] = [16]
+    hypa_grid_best["kernel_size_type"] = ["02"]
+    hypa_grid_best["pool_size_type"] = ["02"]
+    hypa_grid_best["learning_rate_type"] = ["02"]
+    hypa_grid_best["optimizer_type"] = ["a1"]
+    hypa_grid_best["words"] = ["k1"]
+    the_grid = list(ParameterGrid(hypa_grid_best))
+
+    num_hypa = len(the_grid)
+    logg.debug(f"num_hypa: {num_hypa}")
+
+    for i, hypa in enumerate(the_grid):
+        logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
+        with Pool(1) as p:
+            p.apply(train_model, (hypa,))
 
 
 def train_model(hypa):
@@ -277,60 +339,143 @@ def train_model(hypa):
     return results_recap
 
 
+def train_transfer(args: argparse.Namespace) -> None:
+    """TODO: what is train_transfer doing?
+
+    https://www.tensorflow.org/guide/keras/transfer_learning/#build_a_model
+    """
+    logg = logging.getLogger(f"c.{__name__}.train_transfer")
+    # logg.setLevel("INFO")
+    logg.debug("Start train_transfer")
+
+    hypa = {}
+    hypa["words"] = args.words_type
+
+    # name the model
+    model_name = "TRA"
+    model_name += f"_w{hypa['words']}"
+
+    # save the trained model here
+    model_folder = Path("trained_models")
+    if not model_folder.exists():
+        model_folder.mkdir(parents=True, exist_ok=True)
+    model_path = model_folder / f"{model_name}.h5"
+    # logg.debug(f"model_path: {model_path}")
+
+    # check if this model has already been trained
+    if model_path.exists():
+        if args.force_retrain:
+            pass
+        else:
+            return
+
+    # magic to fix the GPUs
+    setup_gpus()
+
+    # get the word list
+    words = words_types[hypa["words"]]
+    num_labels = len(words)
+
+    # load datasets
+    dataset_names = ["mel05", "mel09", "mel10"]
+    processed_folder = Path("data_proc")
+    data_paths = [processed_folder / f"{dn}" for dn in dataset_names]
+    data, labels = load_triple(data_paths, words)
+
+    input_shape = data["testing"][0].shape
+
+    # load weights pre-trained on ImageNet
+    # do not include the ImageNet classifier at the top
+    base_model = Xception(
+        weights="imagenet", input_shape=input_shape, include_top=False,
+    )
+
+    # freeze the base_model
+    base_model.trainable = False
+
+    # create new model on top
+    inputs = tf.keras.Input(shape=input_shape)
+
+    # normalize the data for xception
+    # https://www.tensorflow.org/api_docs/python/tf/keras/layers/experimental/preprocessing/Normalization
+    norm_layer = tf.keras.layers.experimental.preprocessing.Normalization()
+    norm_layer.adapt(data["training"])
+
+    x = norm_layer(inputs)
+
+    # The base model contains batchnorm layers. We want to keep them in inference mode
+    # when we unfreeze the base model for fine-tuning, so we make sure that the
+    # base_model is running in inference mode here.
+    x = base_model(x, training=False)
+    x = tf.keras.layers.GlobalAveragePooling2D()(x)
+    x = tf.keras.layers.Dropout(0.2)(x)  # Regularize with dropout
+
+    x = tf.keras.layers.Dense(4)(x)
+    outputs = tf.keras.layers.Dense(num_labels, activation="softmax")(x)
+
+    model = tf.keras.models.Model(inputs=[inputs], outputs=[outputs], name="TRAmodel")
+
+    model.summary()
+
+    metrics = [
+        tf.keras.metrics.CategoricalAccuracy(),
+        tf.keras.metrics.Precision(),
+        tf.keras.metrics.Recall(),
+    ]
+
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(),
+        loss=["categorical_crossentropy"],
+        metrics=metrics,
+    )
+
+    epochs = 2
+    batch_size = 32
+    model.fit(
+        data["training"],
+        labels["training"],
+        validation_data=(data["validation"], labels["validation"]),
+        epochs=epochs,
+        batch_size=batch_size,
+    )
+
+    # Unfreeze the base_model. Note that it keeps running in inference mode
+    # since we passed `training=False` when calling it. This means that
+    # the batchnorm layers will not update their batch statistics.
+    # This prevents the batchnorm layers from undoing all the training
+    # we've done so far.
+    base_model.trainable = True
+    model.summary()
+
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(1e-5),  # Low learning rate
+        loss=tf.keras.losses.CategoricalCrossentropy(),
+        metrics=metrics,
+    )
+
+    epochs = 1
+
+    model.fit(
+        data["training"],
+        labels["training"],
+        validation_data=(data["validation"], labels["validation"]),
+        epochs=epochs,
+        batch_size=batch_size,
+    )
+
+    eval_testing = model.evaluate(data["testing"])
+    for metrics_name, value in zip(model.metrics_names, eval_testing):
+        logg.debug(f"{metrics_name}: {value}")
+
+
 def run_train(args):
     """TODO: what is run_train doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_train")
     logg.debug("Start run_train")
 
-    hypa_grid = {}
-    hypa_grid["base_filters"] = [20, 32]
-    hypa_grid["kernel_size_type"] = ["01", "02"]
-    hypa_grid["pool_size_type"] = ["01", "02"]
-    hypa_grid["base_dense_width"] = [16, 32]
-    hypa_grid["dropout_type"] = ["01", "02"]
-    # hypa_grid["batch_size"] = [32, 64]
-    hypa_grid["batch_size"] = [32]
-    hypa_grid["epoch_num"] = [15, 30, 60]
-    hypa_grid["dataset"] = ["mfcc04"]
-    hypa_grid["words"] = ["f1"]
-    # hypa_grid["words"] = ["dir"]
-    # the_grid = list(ParameterGrid(hypa_grid))
+    # hyper_train(args)
 
-    hypa_grid = {}
-    hypa_grid["base_filters"] = [20, 32]
-    hypa_grid["kernel_size_type"] = ["01", "02"]
-    hypa_grid["pool_size_type"] = ["01", "02"]
-    hypa_grid["base_dense_width"] = [32]
-    hypa_grid["dropout_type"] = ["01", "02"]
-    hypa_grid["batch_size"] = [32]
-    hypa_grid["epoch_num"] = [15, 30, 60]
-    hypa_grid["learning_rate_type"] = ["01", "02", "03"]
-    hypa_grid["optimizer_type"] = ["a1"]
-    hypa_grid["dataset"] = ["mel04"]
-    hypa_grid["words"] = ["f1"]
-    the_grid = list(ParameterGrid(hypa_grid))
-
-    hypa_grid_best = {}
-    hypa_grid_best["base_dense_width"] = [32]
-    hypa_grid_best["base_filters"] = [20]
-    hypa_grid_best["batch_size"] = [32]
-    hypa_grid_best["dataset"] = ["mel01"]
-    hypa_grid_best["dropout_type"] = ["01"]
-    hypa_grid_best["epoch_num"] = [16]
-    hypa_grid_best["kernel_size_type"] = ["02"]
-    hypa_grid_best["pool_size_type"] = ["02"]
-    hypa_grid_best["learning_rate_type"] = ["02"]
-    hypa_grid_best["optimizer_type"] = ["a1"]
-    hypa_grid_best["words"] = ["k1"]
-    the_grid = list(ParameterGrid(hypa_grid_best))
-
-    num_hypa = len(the_grid)
-    logg.debug(f"num_hypa: {num_hypa}")
-
-    for i, hypa in enumerate(the_grid):
-        logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
-        with Pool(1) as p:
-            p.apply(train_model, (hypa,))
+    train_transfer(args)
 
 
 if __name__ == "__main__":

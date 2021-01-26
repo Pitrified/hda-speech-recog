@@ -91,34 +91,49 @@ def visualize_datasets():
     logg.debug("Start visualize_datasets")
 
     # show different datasets
-    # datasets = ["mfcc01", "mfcc02", "mfcc03", "mfcc04", "mfcc05"]
-    datasets = ["mel01", "mel02", "mel03", "mel04"]
-    fig, axes = plt.subplots(2, 2, figsize=(14, 14))
+
+    # datasets = ["mfcc01", "mfcc02", "mfcc03", "mfcc04", "mfcc05", "mfcc06"]
+    datasets = [
+        "mel01",
+        "mel02",
+        "mel03",
+        "mel04",
+        "mel05",
+        "mel06",
+        "mel07",
+        "mel08",
+        "mel09",
+        "mel10",
+        "mel11",
+        "melc1",
+    ]
+
+    fig, axes = plt.subplots(3, 4, figsize=(12, 12))
     fig.suptitle("happy")
 
-    for i, ax in enumerate(axes.flat):
+    for i, ax in enumerate(axes.flat[: len(datasets)]):
         dataset_name = datasets[i]
         processed_path = Path(f"data_proc/{dataset_name}")
         word_path = processed_path / "happy_training.npy"
         word_data = np.load(word_path, allow_pickle=True)
         logg.debug(f"{dataset_name} word shape: {word_data[0].shape}")
-        plot_spec(word_data[0], ax, title=dataset_name)
+        title = f"{dataset_name} shape {word_data[0].shape}"
+        plot_spec(word_data[0], ax, title=title)
 
     fig.tight_layout()
 
     # show different words
-    datasets = ["mfcc01", "mfcc02", "mfcc03", "mfcc04", "mfcc05"]
-    # datasets = ["mel01", "mel02", "mel03", "mel04"]
 
     for dataset_name in datasets:
         processed_path = Path(f"data_proc/{dataset_name}")
-        words = words_types['f1']
+        words = words_types["f1"]
         fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(14, 14))
-        fig.suptitle(dataset_name)
+        title = f"{dataset_name} shape {word_data[0].shape}"
+        fig.suptitle(title)
         for i, ax in enumerate(axes.flat):
             word_path = processed_path / f"{words[i]}_training.npy"
             word_data = np.load(word_path, allow_pickle=True)
-            logg.debug(f"{dataset_name} word shape: {word_data[0].shape}")
+            # logg.debug(f"{dataset_name} word shape: {word_data[0].shape}")
             plot_spec(word_data[0], ax, title=words[i])
 
         fig.tight_layout()

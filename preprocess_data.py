@@ -13,6 +13,11 @@ import numpy as np  # type: ignore
 from utils import setup_logger
 from utils import words_types
 
+from typing import Iterable
+from typing import Dict
+from typing import List
+from typing import Tuple
+
 
 def parse_arguments():
     """Setup CLI interface"""
@@ -31,7 +36,7 @@ def parse_arguments():
         "--words_type",
         type=str,
         default="f2",
-        choices=["all", "dir", "num", "k1", "f1", "f2"],
+        choices=words_types.keys(),
         help="Words to preprocess",
     )
 
@@ -101,16 +106,25 @@ def get_spec_dict():
     """TODO: what is get_spec_dict doing?"""
 
     spec_dict = {
-        "mfcc01": {"n_mfcc": 20, "n_fft": 2048, "hop_length": 512},
-        "mfcc02": {"n_mfcc": 40, "n_fft": 2048, "hop_length": 512},
-        "mfcc03": {"n_mfcc": 40, "n_fft": 2048, "hop_length": 256},
-        "mfcc04": {"n_mfcc": 80, "n_fft": 1024, "hop_length": 128},
-        "mfcc05": {"n_mfcc": 10, "n_fft": 4096, "hop_length": 1024},
-        "mel01": {"n_mels": 128, "n_fft": 2048, "hop_length": 512},
-        "mel02": {"n_mels": 64, "n_fft": 4096, "hop_length": 1024},
-        "mel03": {"n_mels": 64, "n_fft": 2048, "hop_length": 512},
-        "mel04": {"n_mels": 64, "n_fft": 1024, "hop_length": 256},
+        "mfcc01": {"n_mfcc": 20, "n_fft": 2048, "hop_length": 512},  # (20, 32)
+        "mfcc02": {"n_mfcc": 40, "n_fft": 2048, "hop_length": 512},  # (40, 32)
+        "mfcc03": {"n_mfcc": 40, "n_fft": 2048, "hop_length": 256},  # (40, 64)
+        "mfcc04": {"n_mfcc": 80, "n_fft": 1024, "hop_length": 128},  # (80, 128)
+        "mfcc05": {"n_mfcc": 10, "n_fft": 4096, "hop_length": 1024},  # (10, 16)
+        "mfcc06": {"n_mfcc": 128, "n_fft": 1024, "hop_length": 128},  # (128, 128)
+        "mel01": {"n_mels": 128, "n_fft": 2048, "hop_length": 512},  # (128, 32)
+        "mel02": {"n_mels": 64, "n_fft": 4096, "hop_length": 1024},  # (64, 16)
+        "mel03": {"n_mels": 64, "n_fft": 2048, "hop_length": 512},  # (64, 32)
+        "mel04": {"n_mels": 64, "n_fft": 1024, "hop_length": 256},  # (64, 64)
+        "mel05": {"n_mels": 128, "n_fft": 1024, "hop_length": 128},  # (128, 128)
+        "mel06": {"n_mels": 128, "n_fft": 1024, "hop_length": 256},  # (128, 64)
+        "mel07": {"n_mels": 128, "n_fft": 2048, "hop_length": 256},  # (128, 64)
+        "mel08": {"n_mels": 128, "n_fft": 512, "hop_length": 256},  # (128, 64)
+        "mel09": {"n_mels": 128, "n_fft": 512, "hop_length": 128},  # (128, 128)
+        "mel10": {"n_mels": 128, "n_fft": 2048, "hop_length": 128},  # (128, 128)
+        "mel11": {"n_mels": 128, "n_fft": 256, "hop_length": 128},  # (128, 128)
     }
+
     return spec_dict
 
 
@@ -250,13 +264,130 @@ def test_load_processed():
     load_processed(processed_path, words)
 
 
-def run_preprocess_data(args):
+def compose_spec(args: argparse.Namespace) -> None:
+    """TODO: what is compose_spec doing?"""
+    logg = logging.getLogger(f"c.{__name__}.compose_spec")
+    # logg.setLevel("INFO")
+    logg.debug("Start compose_spec")
+
+    # the two dataset to compose
+    dataset_name_1 = "mel06"
+    dataset_name_2 = "mel08"
+    dataset_name_out = "melc1"
+
+    processed_path_1 = Path("data_proc") / f"{dataset_name_1}"
+    processed_path_2 = Path("data_proc") / f"{dataset_name_2}"
+
+    processed_path_out = Path("data_proc") / f"{dataset_name_out}"
+    if not processed_path_out.exists():
+        processed_path_out.mkdir(parents=True, exist_ok=True)
+
+    # write info regarding the dataset generation
+    recap = {}
+    recap["dataset_name_1"] = dataset_name_1
+    recap["dataset_name_2"] = dataset_name_2
+    recap["dataset_name_out"] = dataset_name_out
+    logg.debug(f"recap: {recap}")
+    recap_path = processed_path_out / "recap.json"
+    recap_path.write_text(json.dumps(recap, indent=4))
+
+    words = words_types[args.words_type]
+
+    for which in ["training", "validation", "testing"]:
+        for word in words:
+            word_path_1 = processed_path_1 / f"{word}_{which}.npy"
+            word_path_2 = processed_path_2 / f"{word}_{which}.npy"
+
+            word_data_1 = np.load(word_path_1, allow_pickle=True)
+            word_data_2 = np.load(word_path_2, allow_pickle=True)
+            logg.debug(f"word_data_1.shape: {word_data_1.shape}")
+            logg.debug(f"word_data_2.shape: {word_data_2.shape}")
+
+            word_comp = np.dstack((word_data_1, word_data_2))
+            logg.debug(f"word_comp.shape: {word_comp.shape}")
+
+            word_path_out = processed_path_out / f"{word}_{which}.npy"
+            np.save(word_path_out, word_comp)
+
+
+def load_triple(
+    data_paths: Iterable[Path], words: Iterable[str]
+) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
+    """TODO: what is load_triple doing?"""
+    # logg = logging.getLogger(f"c.{__name__}.load_triple")
+    # logg.setLevel("INFO")
+    # logg.debug("Start load_triple")
+
+    all_loaded_words: Dict[str, np.ndarray] = {}
+    all_loaded_labels: Dict[str, np.ndarray] = {}
+
+    for which in ["training", "validation", "testing"]:
+        # logg.debug(f"\nwhich: {which}")
+
+        data: List[np.ndarray] = []
+        labels: List[np.ndarray] = []
+
+        for this_path in data_paths:
+            # this_name = this_path.name
+            # logg.debug(f"this_name: {this_name}")
+
+            loaded_words = []
+            loaded_labels = []
+            for word in words:
+                word_path = this_path / f"{word}_{which}.npy"
+                word_data = np.load(word_path, allow_pickle=True)
+                loaded_words.append(word_data)
+                word_label = np.full(word_data.shape[0], fill_value=word)
+                loaded_labels.append(word_label)
+
+            data.append(np.vstack(loaded_words))
+            labels.append(np.hstack(loaded_labels))
+
+        # stack the three specs as a 3 channel "image"
+        data_3ch = np.stack(data, axis=-1)
+        # logg.debug(f"data_3ch.shape: {data_3ch.shape}")
+        # logg.debug(f"data_3ch[0].shape: {data_3ch[0].shape}")
+        all_loaded_words[which] = data_3ch
+
+        # the labels should be the same for all datasets
+        # logg.debug(f"np.sum(labels[0]!=labels[1]): {np.sum(labels[0]!=labels[1])}")
+        # logg.debug(f"np.sum(labels[1]!=labels[2]): {np.sum(labels[1]!=labels[2])}")
+
+        # we transform with to_categorical into one hot encoded
+        y = LabelEncoder().fit_transform(labels[0])
+        all_loaded_labels[which] = to_categorical(y)
+        # logg.debug(f"labels[0].shape: {labels[0].shape}")
+        # logg.debug(f"all_loaded_labels[which].shape: {all_loaded_labels[which].shape}")
+        # logg.debug(f"all_loaded_labels[which][0]: {all_loaded_labels[which][0]}")
+        # logg.debug(f"all_loaded_labels[which][-1]: {all_loaded_labels[which][-1]}")
+
+    return all_loaded_words, all_loaded_labels
+
+
+def test_load_triple(args: argparse.Namespace) -> None:
+    """TODO: what is test_load_triple doing?"""
+    logg = logging.getLogger(f"c.{__name__}.test_load_triple")
+    # logg.setLevel("INFO")
+    logg.debug("Start test_load_triple")
+
+    dataset_names = ["mel05", "mel09", "mel10"]
+    processed_folder = Path("data_proc")
+    data_paths = [processed_folder / f"{dn}" for dn in dataset_names]
+    logg.debug(f"data_paths: {data_paths}")
+
+    words = ["happy", "learn"]
+    load_triple(data_paths, words)
+
+
+def run_preprocess_data(args) -> None:
     """TODO: What is preprocess_data doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_preprocess_data")
     logg.debug("Starting run_preprocess_data")
 
-    preprocess_spec(args)
+    # preprocess_spec(args)
     # test_load_processed()
+    # compose_spec(args)
+    test_load_triple(args)
 
 
 if __name__ == "__main__":
