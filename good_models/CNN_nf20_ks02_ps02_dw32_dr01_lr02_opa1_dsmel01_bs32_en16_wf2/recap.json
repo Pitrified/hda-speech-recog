@@ -1,0 +1,65 @@
+{
+    "words": [
+        "backward",
+        "eight",
+        "go",
+        "yes"
+    ],
+    "hypa": {
+        "base_dense_width": 32,
+        "base_filters": 20,
+        "batch_size": 32,
+        "dataset": "mel01",
+        "dropout_type": "01",
+        "epoch_num": 16,
+        "kernel_size_type": "02",
+        "learning_rate_type": "02",
+        "optimizer_type": "a1",
+        "pool_size_type": "02",
+        "words": "f2"
+    },
+    "model_param": {
+        "num_labels": 4,
+        "input_shape": [
+            128,
+            32,
+            1
+        ],
+        "base_filters": 20,
+        "base_dense_width": 32,
+        "kernel_sizes": [
+            [
+                5,
+                1
+            ],
+            [
+                3,
+                3
+            ],
+            [
+                3,
+                3
+            ]
+        ],
+        "pool_sizes": [
+            [
+                2,
+                1
+            ],
+            [
+                2,
+                2
+            ],
+            [
+                2,
+                2
+            ]
+        ],
+        "dropouts": [
+            0.03,
+            0.01
+        ]
+    },
+    "model_name": "CNN_nf20_ks02_ps02_dw32_dr01_lr02_opa1_dsmel01_bs32_en16_wf2",
+    "version": "001"
+}
