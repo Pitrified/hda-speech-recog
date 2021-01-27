@@ -27,7 +27,8 @@ from utils import words_types
 from typing import Dict
 from typing import List
 from typing import Tuple
-from typing import Optional
+
+# from typing import Optional
 
 
 def parse_arguments():
@@ -44,6 +45,7 @@ def parse_arguments():
             "results_transfer",
             "model",
             "audio",
+            "audio_transfer",
             "delete",
             "delete_transfer",
         ],
@@ -499,8 +501,7 @@ def delete_bad_models(args) -> None:
             model_path = trained_folder / f"{model_name}.h5"
 
             if model_path.exists():
-                # manually uncomment when ready to delete to be safe
-                # model_path.unlink()
+                model_path.unlink()
                 deleted += 1
                 logg.debug(f"Deleting model_path: {model_path}")
                 logg.debug(f"fscore: {fscore}")
@@ -518,8 +519,8 @@ def delete_bad_models(args) -> None:
 
 
 def load_transfer_model(
-    hypa: Dict[str, str], use_validation: bool, do_load: bool
-) -> Tuple[Optional[Model], str]:
+    hypa: Dict[str, str], use_validation: bool
+) -> Tuple[Model, str]:
     """TODO: what is load_transfer_model doing?"""
     logg = logging.getLogger(f"c.{__name__}.load_transfer_model")
     # logg.setLevel("INFO")
@@ -540,10 +541,8 @@ def load_transfer_model(
 
     model_folder = Path("trained_models")
     model_path = model_folder / f"{model_name}.h5"
-    if do_load and model_path.exists():
+    if model_path.exists():
         model = tf.keras.models.load_model(model_path)
-    else:
-        model = None
 
     return model, model_name
 
@@ -625,7 +624,7 @@ def delete_bad_transfer(args: argparse.Namespace) -> None:
 
     info_folder = Path("info")
     trained_folder = Path("trained_models")
-    f_tresh = 0.92
+    f_tresh = 0.93
     deleted = 0
     recreated = 0
 
@@ -643,8 +642,7 @@ def delete_bad_transfer(args: argparse.Namespace) -> None:
             model_path = trained_folder / f"{model_name}.h5"
 
             if model_path.exists():
-                # manually uncomment when ready to delete to be safe
-                # model_path.unlink()
+                model_path.unlink()
                 deleted += 1
                 logg.debug(f"Deleting model_path: {model_path}")
                 logg.debug(f"fscore: {fscore}")
@@ -660,22 +658,170 @@ def delete_bad_transfer(args: argparse.Namespace) -> None:
     logg.debug(f"recreated: {recreated}")
 
 
+def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
+    """TODO: what is evaluate_audio_transfer doing?"""
+    logg = logging.getLogger(f"c.{__name__}.evaluate_audio_transfer")
+    # logg.setLevel("INFO")
+    logg.debug("Start evaluate_audio_transfer")
+
+    # magic to fix the GPUs
+    setup_gpus()
+
+    # importing sounddevice takes time, only do it if needed
+    import sounddevice as sd  # type: ignore
+
+    # where to save the audios
+    audio_folder = Path("recorded_audio")
+    if not audio_folder.exists():
+        audio_folder.mkdir(parents=True, exist_ok=True)
+
+    datasets_type = "01"
+    datasets_types = {
+        "01": ["mel05", "mel09", "mel10"],
+        "02": ["mel05", "mel10", "mfcc07"],
+        "03": ["mfcc06", "mfcc07", "mfcc08"],
+        "04": ["mel05", "mfcc06", "melc1"],
+        "05": ["melc1", "melc2", "melc4"],
+    }
+    dataset_names = datasets_types[datasets_type]
+
+    # we do not support composed datasets for now
+    for dn in dataset_names:
+        if dn.startswith("melc"):
+            logg.error(f"not supported: {dataset_names}")
+            return
+
+    # words that the dataset was trained on
+    train_words_type = args.train_words_type
+    train_words = words_types[train_words_type]
+
+    if rec_words_type == "dataset":
+        rec_words = train_words
+    else:
+        rec_words = words_types[rec_words_type]
+    num_rec_words = len(rec_words)
+
+    # input parameters
+    fs = 16000  # Sample rate
+    seconds = 1  # Duration of recording
+
+    # recorded signals and specs
+    audios: List[np.ndarray] = []
+    specs_3ch: List[np.ndarray] = []
+
+    # params for the mel conversion
+    p2d_kwargs = {"ref": np.max}
+    spec_dict = get_spec_dict()
+
+    timeout = 0  # time to get ready to talk for each word
+    if timeout == 0:  # if there is no time give it at least in the beginning
+        logg.debug(f"Get ready to start recording {rec_words[0]}")
+        sleep(1)
+    for word in rec_words:
+        for i in range(timeout, 0, -1):
+            logg.debug(f"Start recording {word} in {i}s")
+            sleep(1)
+        logg.debug(f"Start recording {word} NOW!")
+
+        # record
+        myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1)
+        sd.wait()  # Wait until recording is finished
+        logg.debug("Stop recording")
+
+        # save the audio
+        audio_path = audio_folder / f"{word}_01.wav"
+        write(audio_path, fs, myrecording)  # Save as WAV file
+
+        # convert it to mel for each type of dataset
+        specs: List[np.ndarray] = []
+        for dataset_name in dataset_names:
+            spec_kwargs = spec_dict[dataset_name]
+            log_spec = wav2mel(audio_path, spec_kwargs, p2d_kwargs)
+            specs.append(log_spec)
+        img_spec = np.stack(specs, axis=2)
+        # logg.debug(f"img_spec.shape: {img_spec.shape}")  # (128, 128, 3)
+
+        audios.append(myrecording)
+        specs_3ch.append(img_spec)
+
+    data = np.stack(specs_3ch)
+    logg.debug(f"data.shape: {data.shape}")
+
+    hypa: Dict[str, str] = {}
+    hypa["dense_width_type"] = "03"
+    hypa["dropout_type"] = "01"
+    hypa["batch_size_type"] = "01"
+    hypa["epoch_num_type"] = "01"
+    hypa["learning_rate_type"] = "01"
+    hypa["optimizer_type"] = "a1"
+    hypa["datasets_type"] = datasets_type
+    hypa["words_type"] = train_words_type
+    use_validation = False
+
+    # hypa: Dict[str, str] = {}
+    # hypa["dense_width_type"] = "02"
+    # hypa["dropout_type"] = "01"
+    # hypa["batch_size_type"] = "01"
+    # hypa["epoch_num_type"] = "01"
+    # hypa["learning_rate_type"] = "01"
+    # hypa["optimizer_type"] = "a1"
+    # hypa["datasets_type"] = datasets_type
+    # hypa["words_type"] = train_words_type
+    # use_validation = True
+
+    # load the model
+    model, model_name = load_transfer_model(hypa, use_validation)
+
+    pred = model.predict(data)
+
+    plot_size = 5
+    fw = plot_size * 5
+    fh = plot_size * num_rec_words
+    fig, axes = plt.subplots(nrows=num_rec_words, ncols=5, figsize=(fw, fh))
+    fig.suptitle("Recorded audios", fontsize=18)
+
+    for i, word in enumerate(rec_words):
+        plot_waveform(audios[i], axes[i][0])
+        img_spec = specs_3ch[i]
+        plot_spec(img_spec[:, :, 0], axes[i][1])
+        plot_spec(img_spec[:, :, 1], axes[i][2])
+        plot_spec(img_spec[:, :, 2], axes[i][3])
+        plot_pred(pred[i], train_words, axes[i][4], f"Prediction for {rec_words[i]}", i)
+
+    # https://stackoverflow.com/q/8248467
+    # https://stackoverflow.com/q/2418125
+    fig.tight_layout(h_pad=3, rect=[0, 0.03, 1, 0.97])
+
+    fig_name = f"{model_name}_{train_words_type}_{rec_words_type}.png"
+    results_path = audio_folder / fig_name
+    fig.savefig(results_path)
+
+    if num_rec_words <= 6:
+        plt.show()
+
+
 def run_evaluate(args) -> None:
     """TODO: What is evaluate doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate")
     logg.debug("Starting run_evaluate")
 
-    if args.evaluation_type == "results":
+    evaluation_type = args.evaluation_type
+    train_words_type = args.train_words_type
+    rec_words_type = args.rec_words_type
+
+    if evaluation_type == "results":
         evaluate_results_recap(args)
-    elif args.evaluation_type == "results_transfer":
+    elif evaluation_type == "results_transfer":
         evaluate_results_transfer(args)
-    elif args.evaluation_type == "model":
+    elif evaluation_type == "model":
         evaluate_model(args)
-    elif args.evaluation_type == "audio":
+    elif evaluation_type == "audio":
         evaluate_audio(args)
-    elif args.evaluation_type == "delete":
+    elif evaluation_type == "audio_transfer":
+        evaluate_audio_transfer(train_words_type, rec_words_type)
+    elif evaluation_type == "delete":
         delete_bad_models(args)
-    elif args.evaluation_type == "delete_transfer":
+    elif evaluation_type == "delete_transfer":
         delete_bad_transfer(args)
 
 

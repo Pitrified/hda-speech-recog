@@ -102,50 +102,55 @@ def visualize_datasets():
         "mfcc07",
         "mfcc08",
     ]
-    # datasets = [
-    #     "mel01",
-    #     "mel02",
-    #     "mel03",
-    #     "mel04",
-    #     "mel05",
-    #     "mel06",
-    #     "mel07",
-    #     "mel08",
-    #     "mel09",
-    #     "mel10",
-    #     "mel11",
-    #     "melc1",
-    # ]
+    datasets = [
+        "mel01",
+        "mel02",
+        "mel03",
+        "mel04",
+        "mel05",
+        "mel06",
+        "mel07",
+        "mel08",
+        "mel09",
+        "mel10",
+        "mel11",
+        "mel12",
+        "mel13",
+        "mel14",
+        "mel15",
+        "melc1",
+        "melc2",
+        "melc3",
+        "melc4",
+    ]
 
-    fig, axes = plt.subplots(3, 4, figsize=(12, 12))
-    fig.suptitle("happy")
+    words = words_types["f1"]
+    a_word = words[0]
 
+    fig, axes = plt.subplots(4, 5, figsize=(12, 15))
+    fig.suptitle(f"{a_word}")
     for i, ax in enumerate(axes.flat[: len(datasets)]):
         dataset_name = datasets[i]
         processed_path = Path(f"data_proc/{dataset_name}")
-        word_path = processed_path / "happy_training.npy"
+        word_path = processed_path / f"{a_word}_training.npy"
         word_data = np.load(word_path, allow_pickle=True)
         logg.debug(f"{dataset_name} word shape: {word_data[0].shape}")
         title = f"{dataset_name} shape {word_data[0].shape}"
         plot_spec(word_data[0], ax, title=title)
-
     fig.tight_layout()
 
     # show different words
-
-    for dataset_name in datasets:
-        processed_path = Path(f"data_proc/{dataset_name}")
-        words = words_types["f1"]
-        fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(14, 14))
-        for i, ax in enumerate(axes.flat):
-            word_path = processed_path / f"{words[i]}_training.npy"
-            word_data = np.load(word_path, allow_pickle=True)
-            # logg.debug(f"{dataset_name} word shape: {word_data[0].shape}")
-            plot_spec(word_data[0], ax, title=words[i])
-
-        title = f"{dataset_name} shape {word_data[0].shape}"
-        fig.suptitle(title)
-        fig.tight_layout()
+    # for dataset_name in datasets:
+    #     processed_path = Path(f"data_proc/{dataset_name}")
+    #     fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(14, 14))
+    #     for i, ax in enumerate(axes.flat):
+    #         word_path = processed_path / f"{words[i]}_training.npy"
+    #         word_data = np.load(word_path, allow_pickle=True)
+    #         # logg.debug(f"{dataset_name} word shape: {word_data[0].shape}")
+    #         plot_spec(word_data[0], ax, title=words[i])
+    #     title = f"{dataset_name} shape {word_data[0].shape}"
+    #     fig.suptitle(title)
+    #     fig.tight_layout()
 
 
 def run_visualize(args):

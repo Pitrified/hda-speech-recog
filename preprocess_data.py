@@ -134,12 +134,31 @@ def get_spec_dict():
         "mel09": {"n_mels": 128, "n_fft": 512, "hop_length": 128},  # (128, 128)
         "mel10": {"n_mels": 128, "n_fft": 2048, "hop_length": 128},  # (128, 128)
         "mel11": {"n_mels": 128, "n_fft": 256, "hop_length": 128},  # (128, 128)
+        "mel12": {"n_mels": 128, "n_fft": 4096, "hop_length": 256},  # (128, 64)
+        "mel13": {"n_mels": 128, "n_fft": 512, "hop_length": 256},  # (128, 64)
+        "mel14": {"n_mels": 128, "n_fft": 256, "hop_length": 256},  # (128, 64)
+        "mel15": {"n_mels": 128, "n_fft": 3072, "hop_length": 256},  # (128, 64)
     }
 
     return spec_dict
 
 
-def preprocess_spec(args):
+def get_compose_types():
+    """TODO: what is get_compose_types doing?"""
+
+    compose_types = {
+        "melc1": ["mel06", "mel08"],
+        "melc2": ["mel07", "mel12"],
+        "melc3": ["mel13", "mel14"],
+        "melc4": ["mel13", "mel15"],
+    }
+
+    return compose_types
+
+
+def preprocess_spec(
+    which_dataset: str, words_type: str, force_preprocess: bool
+) -> None:
     """TODO: what is preprocess_spec doing?"""
     logg = logging.getLogger(f"c.{__name__}.preprocess_spec")
     logg.debug("Start preprocess_spec")
@@ -150,11 +169,9 @@ def preprocess_spec(args):
     # args for the mfcc spec
     spec_dict = get_spec_dict()
 
-    # dataset_name = "mel01"
-    # dataset_name = args.dataset_name
-    if args.dataset_name == "all":
+    if which_dataset == "all":
         dataset_names = spec_dict.keys()
-    elif args.dataset_name == "ch3":
+    elif which_dataset == "ch3":
         dataset_names = [
             "mel05",
             "mel09",
@@ -164,7 +181,7 @@ def preprocess_spec(args):
             "mfcc08",
         ]
     else:
-        dataset_names = [args.dataset_name]
+        dataset_names = [which_dataset]
 
     for dataset_name in dataset_names:
         logg.debug(f"\ndataset_name: {dataset_name}")
@@ -200,18 +217,21 @@ def preprocess_spec(args):
                 testing_names.append(line.strip())
         # logg.debug(f"testing_names: {testing_names[:10]}")
 
-        words_type = args.words_type
         words = words_types[words_type]
         for word in words:
             word_in_path = dataset_path / word
             logg.debug(f"Processing folder: {word_in_path}")
 
-            word_spec = {"validation": [], "training": [], "testing": []}
+            word_spec: Dict[str, List[np.ndarray]] = {
+                "training": [],
+                "validation": [],
+                "testing": [],
+            }
 
             word_out_path = processed_path / f"{word}_testing.npy"
             if word_out_path.exists():
                 logg.debug(f"word_out_path {word_out_path} already preprocessed")
-                if args.force_preprocess:
+                if force_preprocess:
                     logg.debug("OVERWRITING the previous results")
                 else:
                     continue
@@ -291,16 +311,22 @@ def test_load_processed():
     load_processed(processed_path, words)
 
 
-def compose_spec(args: argparse.Namespace) -> None:
+def compose_spec(which_dataset: str, words_type: str, force_preprocess: bool) -> None:
     """TODO: what is compose_spec doing?"""
     logg = logging.getLogger(f"c.{__name__}.compose_spec")
     # logg.setLevel("INFO")
     logg.debug("Start compose_spec")
 
-    # the two dataset to compose
-    dataset_name_1 = "mel06"
-    dataset_name_2 = "mel08"
-    dataset_name_out = "melc1"
+    dataset_name_out = which_dataset
+
+    compose_types = get_compose_types()
+
+    # get the two dataset to compose
+    dataset_name_1, dataset_name_2 = compose_types[dataset_name_out]
+
+    # be sure that the datasets to compose are available
+    preprocess_spec(dataset_name_1, words_type, force_preprocess)
+    preprocess_spec(dataset_name_2, words_type, force_preprocess)
 
     processed_path_1 = Path("data_proc") / f"{dataset_name_1}"
     processed_path_2 = Path("data_proc") / f"{dataset_name_2}"
@@ -318,7 +344,7 @@ def compose_spec(args: argparse.Namespace) -> None:
     recap_path = processed_path_out / "recap.json"
     recap_path.write_text(json.dumps(recap, indent=4))
 
-    words = words_types[args.words_type]
+    words = words_types[words_type]
 
     for which in ["training", "validation", "testing"]:
         for word in words:
@@ -420,10 +446,15 @@ def run_preprocess_data(args) -> None:
     logg = logging.getLogger(f"c.{__name__}.run_preprocess_data")
     logg.debug("Starting run_preprocess_data")
 
-    if args.preprocess_type == "preprocess_spec":
-        preprocess_spec(args)
-    elif args.preprocess_type == "compose_spec":
-        compose_spec(args)
+    which_dataset = args.dataset_name
+    words_type = args.words_type
+    force_preprocess = args.force_preprocess
+    preprocess_type = args.preprocess_type
+
+    if preprocess_type == "preprocess_spec":
+        preprocess_spec(which_dataset, words_type, force_preprocess)
+    elif preprocess_type == "compose_spec":
+        compose_spec(which_dataset, words_type, force_preprocess)
     # test_load_processed()
     # test_load_triple(args)
 
