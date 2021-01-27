@@ -43,8 +43,8 @@ def parse_arguments():
     parser.add_argument(
         "-fp",
         "--force_preprocess",
-        type=bool,
-        default=False,
+        dest="force_preprocess",
+        action="store_true",
         help="Force the preprocess and overwrite the previous results",
     )
     # last line to parse the args
@@ -196,6 +196,7 @@ def preprocess_spec(args):
                 if args.force_preprocess:
                     logg.debug("OVERWRITING the previous results")
                 else:
+                    logg.debug("Leaving the previous results")
                     continue
 
             all_wavs = list(word_in_path.iterdir())

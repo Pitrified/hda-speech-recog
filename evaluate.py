@@ -10,6 +10,8 @@ import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 import tensorflow as tf  # type: ignore
 
+from tensorflow.keras.models import Model  # type: ignore
+
 from plot_utils import plot_confusion_matrix
 from plot_utils import plot_pred
 from plot_utils import plot_spec
@@ -22,6 +24,11 @@ from utils import setup_gpus
 from utils import setup_logger
 from utils import words_types
 
+from typing import Dict
+from typing import List
+from typing import Tuple
+from typing import Optional
+
 
 def parse_arguments():
     """Setup CLI interface"""
@@ -32,7 +39,14 @@ def parse_arguments():
         "--evaluation_type",
         type=str,
         default="results",
-        choices=["results", "model", "audio", "delete"],
+        choices=[
+            "results",
+            "results_transfer",
+            "model",
+            "audio",
+            "delete",
+            "delete_transfer",
+        ],
         help="Which evaluation to perform",
     )
 
@@ -454,7 +468,7 @@ def delete_bad_models(args) -> None:
 
     info_folder = Path("info")
     trained_folder = Path("trained_models")
-    f_tresh = 0.83
+    f_tresh = 0.87
     ca_tresh = 0.95
     deleted = 0
 
@@ -494,6 +508,140 @@ def delete_bad_models(args) -> None:
     logg.debug(f"deleted: {deleted}")
 
 
+def load_transfer_model(
+    hypa: Dict[str, str], use_validation: bool, do_load: bool
+) -> Tuple[Optional[Model], str]:
+    """TODO: what is load_transfer_model doing?"""
+    logg = logging.getLogger(f"c.{__name__}.load_transfer_model")
+    # logg.setLevel("INFO")
+    logg.debug("Start load_transfer_model")
+
+    model_name = "TRA"
+    model_name += f"_dw{hypa['dense_width_type']}"
+    model_name += f"_dr{hypa['dropout_type']}"
+    model_name += f"_bs{hypa['batch_size_type']}"
+    model_name += f"_en{hypa['epoch_num_type']}"
+    model_name += f"_lr{hypa['learning_rate_type']}"
+    model_name += f"_op{hypa['optimizer_type']}"
+    model_name += f"_ds{hypa['datasets_type']}"
+    model_name += f"_w{hypa['words_type']}"
+    if not use_validation:
+        model_name += "_noval"
+    logg.debug(f"model_name: {model_name}")
+
+    model_folder = Path("trained_models")
+    model_path = model_folder / f"{model_name}.h5"
+    if do_load and model_path.exists():
+        model = tf.keras.models.load_model(model_path)
+    else:
+        model = None
+
+    return model, model_name
+
+
+def evaluate_results_transfer(args: argparse.Namespace) -> None:
+    """TODO: what is evaluate_results_transfer doing?"""
+    logg = logging.getLogger(f"c.{__name__}.evaluate_results_transfer")
+    logg.setLevel("INFO")
+    logg.debug("Start evaluate_results_transfer")
+
+    pandito: Dict[str, List[str]] = {
+        "dense_width": [],
+        "dropout": [],
+        "batch_size": [],
+        "epoch_num": [],
+        "learning_rate": [],
+        "optimizer": [],
+        "datasets": [],
+        "words": [],
+        "use_val": [],
+        "loss": [],
+        "cat_acc": [],
+        "precision": [],
+        "recall": [],
+        "fscore": [],
+        "model_name": [],
+    }
+    info_folder = Path("info")
+
+    for model_folder in info_folder.iterdir():
+        # logg.debug(f"model_folder: {model_folder}")
+        model_name = model_folder.name
+        if not model_name.startswith("TRA"):
+            continue
+        logg.debug(f"model_name: {model_name}")
+
+        # res_freeze_path = model_folder / "results_freeze_recap.json"
+        # res_freeze = json.loads(res_freeze_path.read_text())
+
+        res_full_path = model_folder / "results_full_recap.json"
+        res_full = json.loads(res_full_path.read_text())
+        logg.debug(f"res_full['fscore']: {res_full['fscore']}")
+
+        recap_path = model_folder / "recap.json"
+        recap = json.loads(recap_path.read_text())
+        logg.debug(f"recap['words']: {recap['words']}")
+
+        hypa = recap["hypa"]
+        pandito["dense_width"].append(hypa["dense_width_type"])
+        pandito["dropout"].append(hypa["dropout_type"])
+        pandito["batch_size"].append(hypa["batch_size_type"])
+        pandito["epoch_num"].append(hypa["epoch_num_type"])
+        pandito["learning_rate"].append(hypa["learning_rate_type"])
+        pandito["optimizer"].append(hypa["optimizer_type"])
+        pandito["datasets"].append(hypa["datasets_type"])
+        pandito["words"].append(hypa["words_type"])
+        if recap["version"] == "001":
+            pandito["use_val"].append("True")
+        elif recap["version"] == "002":
+            pandito["use_val"].append(recap["use_validation"])
+        pandito["loss"].append(res_full["loss"])
+        pandito["cat_acc"].append(res_full["categorical_accuracy"])
+        pandito["precision"].append(res_full["precision"])
+        pandito["recall"].append(res_full["recall"])
+        pandito["fscore"].append(res_full["fscore"])
+
+        pandito["model_name"].append(res_full["model_name"])
+
+    pd.set_option("max_colwidth", 100)
+    df = pd.DataFrame(pandito)
+    logg.info(f"{df.sort_values('fscore', ascending=False)[:30]}")
+
+
+def delete_bad_transfer(args: argparse.Namespace) -> None:
+    """TODO: what is delete_bad_transfer doing?"""
+    logg = logging.getLogger(f"c.{__name__}.delete_bad_transfer")
+    # logg.setLevel("INFO")
+    logg.debug("Start delete_bad_transfer")
+
+    info_folder = Path("info")
+    trained_folder = Path("trained_models")
+    f_tresh = 0.92
+    deleted = 0
+
+    for model_folder in info_folder.iterdir():
+
+        model_name = model_folder.name
+        if not model_name.startswith("TRA"):
+            continue
+
+        res_full_path = model_folder / "results_full_recap.json"
+        res_full = json.loads(res_full_path.read_text())
+        fscore = res_full["fscore"]
+
+        if fscore < f_tresh:
+            model_path = trained_folder / f"{model_name}.h5"
+
+            if model_path.exists():
+                # manually uncomment when ready to delete to be safe
+                # model_path.unlink()
+                deleted += 1
+                logg.debug(f"Deleting model_path: {model_path}")
+                logg.debug(f"fscore: {fscore}")
+
+    logg.debug(f"deleted: {deleted}")
+
+
 def run_evaluate(args) -> None:
     """TODO: What is evaluate doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate")
@@ -501,12 +649,16 @@ def run_evaluate(args) -> None:
 
     if args.evaluation_type == "results":
         evaluate_results_recap(args)
+    elif args.evaluation_type == "results_transfer":
+        evaluate_results_transfer(args)
     elif args.evaluation_type == "model":
         evaluate_model(args)
     elif args.evaluation_type == "audio":
         evaluate_audio(args)
     elif args.evaluation_type == "delete":
         delete_bad_models(args)
+    elif args.evaluation_type == "delete_transfer":
+        delete_bad_transfer(args)
 
 
 if __name__ == "__main__":

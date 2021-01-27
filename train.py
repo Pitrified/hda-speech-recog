@@ -5,11 +5,9 @@ import json
 import logging
 import matplotlib.pyplot as plt  # type: ignore
 
-# import numpy as np  # type: ignore
+import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
 
-# from tensorflow.data.Dataset import from_tensor_slices  # type: ignore
-# from tensorflow import data as tfdata  # type: ignore
 from tensorflow.data import Dataset  # type: ignore
 from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
 from tensorflow.keras.optimizers import Adam  # type: ignore
@@ -56,9 +54,17 @@ def parse_arguments():
     parser.add_argument(
         "-ft",
         "--force_retrain",
-        type=bool,
-        default=False,
+        dest="force_retrain",
+        action="store_true",
         help="Force the training and overwrite the previous results",
+    )
+
+    parser.add_argument(
+        "-nv",
+        "--no_use_validation",
+        dest="use_validation",
+        action="store_false",
+        help="Do not use validation data while training",
     )
 
     # last line to parse the args
@@ -350,18 +356,23 @@ def hyper_train_transfer(args: argparse.Namespace) -> None:
     # logg.setLevel("INFO")
     logg.debug("Start hyper_train_transfer")
 
+    words_type = args.words_type
+    force_retrain = args.force_retrain
+    use_validation = args.use_validation
+
     hypa_grid: Dict[str, List[str]] = {}
-    hypa_grid["dense_width_type"] = ["01", "02", "03", "04"]
-    # hypa_grid["dense_width_type"] = ["04"]
-    hypa_grid["dropout_type"] = ["01", "03"]
-    # hypa_grid["dropout_type"] = ["01"]
+    # hypa_grid["dense_width_type"] = ["01", "02", "03", "04"]
+    hypa_grid["dense_width_type"] = ["03"]
+    # hypa_grid["dropout_type"] = ["01", "03"]
+    hypa_grid["dropout_type"] = ["01"]
+    # hypa_grid["batch_size_type"] = ["01", "02"]
     hypa_grid["batch_size_type"] = ["01"]
     hypa_grid["epoch_num_type"] = ["01"]
     hypa_grid["learning_rate_type"] = ["01"]
     hypa_grid["optimizer_type"] = ["a1"]
-    hypa_grid["datasets_type"] = ["01", "02", "03", "04"]
-    # hypa_grid["datasets_type"] = ["04"]
-    hypa_grid["words_type"] = [args.words_type]
+    # hypa_grid["datasets_type"] = ["01", "02", "03", "04"]
+    hypa_grid["datasets_type"] = ["01"]
+    hypa_grid["words_type"] = [words_type]
     the_grid = list(ParameterGrid(hypa_grid))
 
     num_hypa = len(the_grid)
@@ -370,10 +381,12 @@ def hyper_train_transfer(args: argparse.Namespace) -> None:
     for i, hypa in enumerate(the_grid):
         logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
         with Pool(1) as p:
-            p.apply(train_transfer, (hypa, args.force_retrain))
+            p.apply(train_transfer, (hypa, force_retrain, use_validation))
 
 
-def train_transfer(hypa: Dict[str, str], force_retrain: bool) -> None:
+def train_transfer(
+    hypa: Dict[str, str], force_retrain: bool, use_validation: bool
+) -> None:
     """TODO: what is train_transfer doing?
 
     https://www.tensorflow.org/guide/keras/transfer_learning/#build_a_model
@@ -392,6 +405,8 @@ def train_transfer(hypa: Dict[str, str], force_retrain: bool) -> None:
     model_name += f"_op{hypa['optimizer_type']}"
     model_name += f"_ds{hypa['datasets_type']}"
     model_name += f"_w{hypa['words_type']}"
+    if not use_validation:
+        model_name += "_noval"
     logg.debug(f"model_name: {model_name}")
 
     # save the trained model here
@@ -404,8 +419,9 @@ def train_transfer(hypa: Dict[str, str], force_retrain: bool) -> None:
     # check if this model has already been trained
     if model_path.exists():
         if force_retrain:
-            logg.warn("\n\nRETRAINING MODEL!!\n\n")
+            logg.warn("\nRETRAINING MODEL!!\n")
         else:
+            logg.debug("Already trained")
             return
 
     # magic to fix the GPUs
@@ -428,6 +444,24 @@ def train_transfer(hypa: Dict[str, str], force_retrain: bool) -> None:
     processed_folder = Path("data_proc")
     data_paths = [processed_folder / f"{dn}" for dn in dataset_names]
     data, labels = load_triple(data_paths, words)
+
+    val_data = None
+    if use_validation:
+        x = data["training"]
+        y = labels["training"]
+        val_data = (data["validation"], labels["validation"])
+        logg.debug("Using validation data")
+        # logg.debug(f"val_data[0].shape: {val_data[0].shape}")
+    else:
+        logg.debug("NOT using validation data")
+        # logg.debug(f"data['training'].shape: {data['training'].shape}")
+        # logg.debug(f"data['validation'].shape: {data['validation'].shape}")
+        # logg.debug(f"labels['training'].shape: {labels['training'].shape}")
+        # logg.debug(f"labels['validation'].shape: {labels['validation'].shape}")
+        x = np.concatenate((data["training"], data["validation"]))
+        y = np.concatenate((labels["training"], labels["validation"]))
+        # logg.debug(f"x.shape: {x.shape}")
+        # logg.debug(f"y.shape: {y.shape}")
 
     model_param: Dict[str, Union[List[int], int, float]] = {}
     model_param["num_labels"] = num_labels
@@ -455,8 +489,9 @@ def train_transfer(hypa: Dict[str, str], force_retrain: bool) -> None:
     recap["words"] = words
     recap["hypa"] = hypa
     recap["model_param"] = model_param
+    recap["use_validation"] = use_validation
     recap["model_name"] = model_name
-    recap["version"] = "001"
+    recap["version"] = "002"
     # logg.debug(f"recap: {recap}")
     recap_path = info_folder / "recap.json"
     recap_path.write_text(json.dumps(recap, indent=4))
@@ -487,9 +522,9 @@ def train_transfer(hypa: Dict[str, str], force_retrain: bool) -> None:
     )
 
     results_freeze = model.fit(
-        data["training"],
-        labels["training"],
-        validation_data=(data["validation"], labels["validation"]),
+        x,
+        y,
+        validation_data=val_data,
         epochs=epoch_nums[0],
         batch_size=batch_sizes[0],
     )
@@ -500,9 +535,10 @@ def train_transfer(hypa: Dict[str, str], force_retrain: bool) -> None:
     results_freeze_recap["history_train"] = {
         mn: results_freeze.history[mn] for mn in model.metrics_names
     }
-    results_freeze_recap["history_val"] = {
-        f"val_{mn}": results_freeze.history[f"val_{mn}"] for mn in model.metrics_names
-    }
+    if use_validation:
+        results_freeze_recap["history_val"] = {
+            f"val_{mn}": results_freeze.history[f"val_{mn}"] for mn in model.metrics_names
+        }
 
     # save the results
     res_recap_path = info_folder / "results_freeze_recap.json"
@@ -523,9 +559,9 @@ def train_transfer(hypa: Dict[str, str], force_retrain: bool) -> None:
     )
 
     results_full = model.fit(
-        data["training"],
-        labels["training"],
-        validation_data=(data["validation"], labels["validation"]),
+        x,
+        y,
+        validation_data=val_data,
         epochs=epoch_nums[1],
         batch_size=batch_sizes[1],
     )
@@ -560,9 +596,10 @@ def train_transfer(hypa: Dict[str, str], force_retrain: bool) -> None:
     results_full_recap["history_train"] = {
         mn: results_full.history[mn] for mn in model.metrics_names
     }
-    results_full_recap["history_val"] = {
-        f"val_{mn}": results_full.history[f"val_{mn}"] for mn in model.metrics_names
-    }
+    if use_validation:
+        results_full_recap["history_val"] = {
+            f"val_{mn}": results_full.history[f"val_{mn}"] for mn in model.metrics_names
+        }
 
     # save the results
     res_recap_path = info_folder / "results_full_recap.json"
