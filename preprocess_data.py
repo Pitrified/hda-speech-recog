@@ -157,7 +157,7 @@ def get_compose_types():
 
 
 def preprocess_spec(
-    which_dataset: str, words_type: str, force_preprocess: bool
+    which_dataset: str, words_type: str, force_preprocess: bool = False
 ) -> None:
     """TODO: what is preprocess_spec doing?"""
     logg = logging.getLogger(f"c.{__name__}.preprocess_spec")
@@ -311,7 +311,9 @@ def test_load_processed():
     load_processed(processed_path, words)
 
 
-def compose_spec(which_dataset: str, words_type: str, force_preprocess: bool) -> None:
+def compose_spec(
+    which_dataset: str, words_type: str, force_preprocess: bool = False
+) -> None:
     """TODO: what is compose_spec doing?"""
     logg = logging.getLogger(f"c.{__name__}.compose_spec")
     # logg.setLevel("INFO")
@@ -353,11 +355,11 @@ def compose_spec(which_dataset: str, words_type: str, force_preprocess: bool) ->
 
             word_data_1 = np.load(word_path_1, allow_pickle=True)
             word_data_2 = np.load(word_path_2, allow_pickle=True)
-            logg.debug(f"word_data_1.shape: {word_data_1.shape}")
-            logg.debug(f"word_data_2.shape: {word_data_2.shape}")
+            # logg.debug(f"word_data_1.shape: {word_data_1.shape}")
+            # logg.debug(f"word_data_2.shape: {word_data_2.shape}")
 
             word_comp = np.dstack((word_data_1, word_data_2))
-            logg.debug(f"word_comp.shape: {word_comp.shape}")
+            # logg.debug(f"word_comp.shape: {word_comp.shape}")
 
             word_path_out = processed_path_out / f"{word}_{which}.npy"
             np.save(word_path_out, word_comp)

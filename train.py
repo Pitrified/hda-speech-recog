@@ -27,6 +27,8 @@ from plot_utils import plot_confusion_matrix
 from plot_utils import plot_loss
 from preprocess_data import load_processed
 from preprocess_data import load_triple
+from preprocess_data import preprocess_spec
+from preprocess_data import compose_spec
 from utils import words_types
 from utils import pred_hot_2_cm
 from utils import setup_gpus
@@ -350,6 +352,18 @@ def train_model(hypa):
     return results_recap
 
 
+def get_datasets_types():
+    """"""
+    datasets_types = {
+        "01": ["mel05", "mel09", "mel10"],
+        "02": ["mel05", "mel10", "mfcc07"],
+        "03": ["mfcc06", "mfcc07", "mfcc08"],
+        "04": ["mel05", "mfcc06", "melc1"],
+        "05": ["melc1", "melc2", "melc4"],
+    }
+    return datasets_types
+
+
 def hyper_train_transfer(args: argparse.Namespace) -> None:
     """TODO: what is hyper_train_transfer doing?"""
     logg = logging.getLogger(f"c.{__name__}.hyper_train_transfer")
@@ -363,7 +377,7 @@ def hyper_train_transfer(args: argparse.Namespace) -> None:
     hypa_grid: Dict[str, List[str]] = {}
 
     # hypa_grid["dense_width_type"] = ["01", "02", "03", "04"]
-    hypa_grid["dense_width_type"] = ["01", "02", "03"]
+    hypa_grid["dense_width_type"] = ["01", "02"]
     # hypa_grid["dense_width_type"] = ["03"]
 
     # hypa_grid["dropout_type"] = ["01", "03"]
@@ -376,17 +390,31 @@ def hyper_train_transfer(args: argparse.Namespace) -> None:
     hypa_grid["epoch_num_type"] = ["01"]
     hypa_grid["learning_rate_type"] = ["01"]
 
-    # hypa_grid["optimizer_type"] = ["a1", "r1"]
-    hypa_grid["optimizer_type"] = ["a1"]
+    hypa_grid["optimizer_type"] = ["a1", "r1"]
+    # hypa_grid["optimizer_type"] = ["a1"]
 
     # hypa_grid["datasets_type"] = ["01", "02", "03", "04", "05"]
-    hypa_grid["datasets_type"] = ["05"]
+    hypa_grid["datasets_type"] = ["01"]
 
     hypa_grid["words_type"] = [words_type]
     the_grid = list(ParameterGrid(hypa_grid))
 
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
+
+    # for each type of dataset that will be used
+    datasets_types = get_datasets_types()
+    for dt in hypa_grid["datasets_type"]:
+        # get the dataset name list
+        dataset_names = datasets_types[dt]
+        for dn in dataset_names:
+            # and check that the data is available
+            if dn.startswith("melc"):
+                compose_spec(dn, words_type)
+            else:
+                preprocess_spec(dn, words_type)
+
+    return
 
     for i, hypa in enumerate(the_grid):
         logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
@@ -442,13 +470,7 @@ def train_transfer(
     num_labels = len(words)
 
     # get the dataset name list
-    datasets_types = {
-        "01": ["mel05", "mel09", "mel10"],
-        "02": ["mel05", "mel10", "mfcc07"],
-        "03": ["mfcc06", "mfcc07", "mfcc08"],
-        "04": ["mel05", "mfcc06", "melc1"],
-        "05": ["melc1", "melc2", "melc4"],
-    }
+    datasets_types = get_datasets_types()
     dataset_names = datasets_types[hypa["datasets_type"]]
 
     # load datasets
