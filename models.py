@@ -177,7 +177,9 @@ def TRAmodel(num_labels, input_shape, dense_widths, dropout, data):
     # base_model is running in inference mode here.
     x = base_model(x, training=False)
     x = tf.keras.layers.GlobalAveragePooling2D()(x)
-    x = tf.keras.layers.Dropout(dropout)(x)  # Regularize with dropout
+
+    if dropout > 0:
+        x = tf.keras.layers.Dropout(dropout)(x)  # Regularize with dropout
 
     if dense_widths[0] > 0:
         x = tf.keras.layers.Dense(dense_widths[0], activation="relu")(x)

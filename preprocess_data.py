@@ -351,6 +351,7 @@ def load_triple(
 
             data.append(np.vstack(loaded_words))
             labels.append(np.hstack(loaded_labels))
+            # logg.debug(f"data[-1].shape: {data[-1].shape}")
 
         # stack the three specs as a 3 channel "image"
         data_3ch = np.stack(data, axis=-1)
@@ -379,7 +380,15 @@ def test_load_triple(args: argparse.Namespace) -> None:
     # logg.setLevel("INFO")
     logg.debug("Start test_load_triple")
 
-    dataset_names = ["mel05", "mel09", "mel10"]
+    datasets_types = {
+        "01": ["mel05", "mel09", "mel10"],
+        "02": ["mel05", "mel10", "mfcc07"],
+        "03": ["mfcc06", "mfcc07", "mfcc08"],
+        "04": ["mel05", "mfcc06", "melc1"],
+    }
+    # dataset_names = ["mel05", "mel09", "mel10"]
+    dataset_names = datasets_types["04"]
+
     processed_folder = Path("data_proc")
     data_paths = [processed_folder / f"{dn}" for dn in dataset_names]
     logg.debug(f"data_paths: {data_paths}")

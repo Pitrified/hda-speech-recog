@@ -32,7 +32,7 @@ def parse_arguments():
         "--evaluation_type",
         type=str,
         default="results",
-        choices=["results", "model", "audio"],
+        choices=["results", "model", "audio", "delete"],
         help="Which evaluation to perform",
     )
 
@@ -446,6 +446,54 @@ def evaluate_audio(args):
         plt.show()
 
 
+def delete_bad_models(args) -> None:
+    """TODO: what is delete_bad_models doing?"""
+    logg = logging.getLogger(f"c.{__name__}.delete_bad_models")
+    # logg.setLevel("INFO")
+    logg.debug("Start delete_bad_models")
+
+    info_folder = Path("info")
+    trained_folder = Path("trained_models")
+    f_tresh = 0.83
+    ca_tresh = 0.95
+    deleted = 0
+
+    for model_folder in info_folder.iterdir():
+        # logg.debug(f"model_folder: {model_folder}")
+
+        res_recap_path = model_folder / "results_recap.json"
+        if not res_recap_path.exists():
+            continue
+
+        results_recap = json.loads(res_recap_path.read_text())
+        # logg.debug(f"results_recap['cm']: {results_recap['cm']}")
+
+        recap_path = model_folder / "recap.json"
+        recap = json.loads(recap_path.read_text())
+        # logg.debug(f"recap['words']: {recap['words']}")
+
+        cm = np.array(results_recap["cm"])
+        fscore = analyze_confusion(cm, recap["words"])
+        # logg.debug(f"fscore: {fscore}")
+
+        categorical_accuracy = results_recap["categorical_accuracy"]
+        # logg.debug(f"categorical_accuracy: {categorical_accuracy}")
+
+        if fscore < f_tresh and categorical_accuracy < ca_tresh:
+            model_name = model_folder.name
+            model_path = trained_folder / f"{model_name}.h5"
+
+            if model_path.exists():
+                # manually uncomment when ready to delete to be safe
+                # model_path.unlink()
+                deleted += 1
+                logg.debug(f"Deleting model_path: {model_path}")
+                logg.debug(f"fscore: {fscore}")
+                logg.debug(f"categorical_accuracy: {categorical_accuracy}")
+
+    logg.debug(f"deleted: {deleted}")
+
+
 def run_evaluate(args) -> None:
     """TODO: What is evaluate doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate")
@@ -457,6 +505,8 @@ def run_evaluate(args) -> None:
         evaluate_model(args)
     elif args.evaluation_type == "audio":
         evaluate_audio(args)
+    elif args.evaluation_type == "delete":
+        delete_bad_models(args)
 
 
 if __name__ == "__main__":

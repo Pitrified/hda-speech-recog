@@ -351,14 +351,16 @@ def hyper_train_transfer(args: argparse.Namespace) -> None:
     logg.debug("Start hyper_train_transfer")
 
     hypa_grid: Dict[str, List[str]] = {}
-    hypa_grid["dense_width_type"] = ["01", "02"]
-    hypa_grid["dropout_type"] = ["01"]
+    hypa_grid["dense_width_type"] = ["01", "02", "03", "04"]
+    # hypa_grid["dense_width_type"] = ["04"]
+    hypa_grid["dropout_type"] = ["01", "03"]
+    # hypa_grid["dropout_type"] = ["01"]
     hypa_grid["batch_size_type"] = ["01"]
     hypa_grid["epoch_num_type"] = ["01"]
     hypa_grid["learning_rate_type"] = ["01"]
     hypa_grid["optimizer_type"] = ["a1"]
-    hypa_grid["datasets_type"] = ["01"]
-    # hypa_grid["words_type"] = ["f1"]
+    hypa_grid["datasets_type"] = ["01", "02", "03", "04"]
+    # hypa_grid["datasets_type"] = ["04"]
     hypa_grid["words_type"] = [args.words_type]
     the_grid = list(ParameterGrid(hypa_grid))
 
@@ -418,7 +420,7 @@ def train_transfer(hypa: Dict[str, str], force_retrain: bool) -> None:
         "01": ["mel05", "mel09", "mel10"],
         "02": ["mel05", "mel10", "mfcc07"],
         "03": ["mfcc06", "mfcc07", "mfcc08"],
-        "04": ["mel05", "mfcc05", "melc1"],
+        "04": ["mel05", "mfcc06", "melc1"],
     }
     dataset_names = datasets_types[hypa["datasets_type"]]
 
