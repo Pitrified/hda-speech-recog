@@ -4,3 +4,4 @@ __pycache__/
 trained_models/
 info/
 recorded_audio/
+plot_models/

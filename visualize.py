@@ -122,6 +122,7 @@ def visualize_datasets():
         "melc2",
         "melc3",
         "melc4",
+        "mela1",
     ]
 
     words = words_types["f1"]

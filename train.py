@@ -3,11 +3,12 @@ from pathlib import Path
 import argparse
 import json
 import logging
-import matplotlib.pyplot as plt  # type: ignore
 
+import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
 
+# from tensorflow.keras.callbacks import ModelCheckpoint  # type: ignore
 from tensorflow.data import Dataset  # type: ignore
 from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
 from tensorflow.keras.optimizers import Adam  # type: ignore
@@ -692,28 +693,28 @@ def hyper_train_attention(
     hypa_grid["words_type"] = [words_type]
 
     # the dataset to train on
-    # hypa_grid["dataset_name"] = ["mel01", "mela1"]
-    hypa_grid["dataset_name"] = ["mela1"]
+    hypa_grid["dataset_name"] = ["mel01", "mel04", "mela1"]
+    # hypa_grid["dataset_name"] = ["mela1"]
 
     # how big are the first conv layers
-    # hypa_grid["conv_size_type"] = ["01", "02"]
-    hypa_grid["conv_size_type"] = ["01"]
+    hypa_grid["conv_size_type"] = ["01", "02"]
+    # hypa_grid["conv_size_type"] = ["02"]
 
     # dropout after conv, 0 to skip it
-    # hypa_grid["dropout_type"] = ["01", "02"]
-    hypa_grid["dropout_type"] = ["01"]
+    hypa_grid["dropout_type"] = ["01", "02"]
+    # hypa_grid["dropout_type"] = ["01"]
 
     # the shape of the kernels in the conv layers
-    # hypa_grid["kernel_size_type"] = ["01", "02"]
-    hypa_grid["kernel_size_type"] = ["01"]
+    hypa_grid["kernel_size_type"] = ["01", "02"]
+    # hypa_grid["kernel_size_type"] = ["01"]
 
     # the dimension of the LSTM
     # hypa_grid["lstm_units_type"] = ["01", "02"]
     hypa_grid["lstm_units_type"] = ["01"]
 
     # the vector picked for attention
-    # hypa_grid["att_sample_type"] = ["01", "02"]
-    hypa_grid["att_sample_type"] = ["02"]
+    hypa_grid["att_sample_type"] = ["01", "02"]
+    # hypa_grid["att_sample_type"] = ["02"]
 
     # the query style type
     # hypa_grid["query_style_type"] = ["01", "02"]
@@ -810,7 +811,7 @@ def train_attention(
     dropout_types = {"01": 0.2, "02": 0}
     model_param["dropout"] = dropout_types[hypa["dropout_type"]]
 
-    kernel_size_types = {"01": [(5, 1), (5, 1), (5, 1)], "02": [(5, 1), (3, 3), (3, 3)]}
+    kernel_size_types = {"01": [(5, 1), (5, 1), (5, 1)], "02": [(3, 3), (3, 3), (3, 3)]}
     model_param["kernel_sizes"] = kernel_size_types[hypa["kernel_size_type"]]
 
     lstm_units_types = {"01": [64, 64], "02": [64, 0]}
@@ -872,24 +873,40 @@ def train_attention(
         metrics=metrics,
     )
 
+    # setup early stopping
+    early_stop = EarlyStopping(
+        monitor="val_loss",
+        patience=4,
+        restore_best_weights=True,
+    )
+
+    # model_checkpoint = ModelCheckpoint(
+    #     model_name,
+    #     monitor="val_loss",
+    #     save_best_only=True,
+    # )
+
+    # callbacks = [early_stop, model_checkpoint]
+    callbacks = [early_stop]
+
     results = model.fit(
         x,
         y,
         validation_data=val_data,
         epochs=epoch_nums,
         batch_size=batch_sizes,
+        callbacks=callbacks,
     )
 
     results_recap: Dict[str, Any] = {}
     results_recap["model_name"] = model_name
-    results_recap["results_recap_version"] = "001"
-    results_recap["history_train"] = {
-        mn: results.history[mn] for mn in model.metrics_names
-    }
-    if use_validation:
-        results_recap["history_val"] = {
-            f"val_{mn}": results.history[f"val_{mn}"] for mn in model.metrics_names
-        }
+    results_recap["results_recap_version"] = "002"
+
+    # eval performance on the various metrics
+    eval_testing = model.evaluate(data["testing"], labels["testing"])
+    for metrics_name, value in zip(model.metrics_names, eval_testing):
+        logg.debug(f"{metrics_name}: {value}")
+        results_recap[metrics_name] = value
 
     # compute the confusion matrix
     y_pred = model.predict(data["testing"])
@@ -901,6 +918,15 @@ def train_attention(
     fscore = analyze_confusion(cm, words)
     logg.debug(f"fscore: {fscore}")
     results_recap["fscore"] = fscore
+
+    # save the histories
+    results_recap["history_train"] = {
+        mn: results.history[mn] for mn in model.metrics_names
+    }
+    if use_validation:
+        results_recap["history_val"] = {
+            f"val_{mn}": results.history[f"val_{mn}"] for mn in model.metrics_names
+        }
 
     # plot the cm
     fig, ax = plt.subplots(figsize=(12, 12))

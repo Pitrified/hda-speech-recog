@@ -157,7 +157,7 @@ def row_fmt(header, iterable, formatter=""):
 def evaluate_results_recap(args):
     """TODO: what is evaluate_results_recap doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_results_recap")
-    logg.setLevel("INFO")
+    # logg.setLevel("INFO")
     logg.debug("Start evaluate_results_recap")
 
     info_folder = Path("info")
@@ -182,6 +182,10 @@ def evaluate_results_recap(args):
 
     for model_folder in info_folder.iterdir():
         logg.debug(f"model_folder: {model_folder}")
+
+        model_name = model_folder.name
+        if not model_name.startswith("CNN"):
+            continue
 
         res_recap_path = model_folder / "results_recap.json"
         if not res_recap_path.exists():
