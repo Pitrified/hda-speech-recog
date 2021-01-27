@@ -112,6 +112,8 @@ def get_spec_dict():
         "mfcc04": {"n_mfcc": 80, "n_fft": 1024, "hop_length": 128},  # (80, 128)
         "mfcc05": {"n_mfcc": 10, "n_fft": 4096, "hop_length": 1024},  # (10, 16)
         "mfcc06": {"n_mfcc": 128, "n_fft": 1024, "hop_length": 128},  # (128, 128)
+        "mfcc07": {"n_mfcc": 128, "n_fft": 512, "hop_length": 128},  # (128, 128)
+        "mfcc08": {"n_mfcc": 128, "n_fft": 2048, "hop_length": 128},  # (128, 128)
         "mel01": {"n_mels": 128, "n_fft": 2048, "hop_length": 512},  # (128, 32)
         "mel02": {"n_mels": 64, "n_fft": 4096, "hop_length": 1024},  # (64, 16)
         "mel03": {"n_mels": 64, "n_fft": 2048, "hop_length": 512},  # (64, 32)
@@ -133,88 +135,95 @@ def preprocess_spec(args):
     logg = logging.getLogger(f"c.{__name__}.preprocess_spec")
     logg.debug("Start preprocess_spec")
 
-    # dataset_name = "mel01"
-    dataset_name = args.dataset_name
-    logg.debug(f"dataset_name: {dataset_name}")
-
     # args for the power_to_db function
     p2d_kwargs = {"ref": np.max}
 
     # args for the mfcc spec
     spec_dict = get_spec_dict()
-    spec_kwargs = spec_dict[dataset_name]
 
-    # original / processed dataset base locations
-    dataset_path = Path("data_raw")
-    processed_path = Path(f"data_proc/{dataset_name}")
-    if not processed_path.exists():
-        processed_path.mkdir(parents=True, exist_ok=True)
+    # dataset_name = "mel01"
+    # dataset_name = args.dataset_name
+    if args.dataset_name == "all":
+        dataset_names = spec_dict.keys()
+    else:
+        dataset_names = [args.dataset_name]
 
-    # write info regarding the dataset generation
-    recap = {}
-    recap["spec_kwargs"] = spec_kwargs
-    logg.debug(f"recap: {recap}")
-    recap_path = processed_path / "recap.json"
-    recap_path.write_text(json.dumps(recap, indent=4))
+    for dataset_name in dataset_names:
+        logg.debug(f"\ndataset_name: {dataset_name}")
 
-    # list of file names for validation
-    validation_path = dataset_path / "validation_list.txt"
-    validation_names = []
-    with validation_path.open() as fvp:
-        for line in fvp:
-            validation_names.append(line.strip())
-    # logg.debug(f"validation_names: {validation_names[:10]}")
+        spec_kwargs = spec_dict[dataset_name]
 
-    # list of file names for testing
-    testing_path = dataset_path / "testing_list.txt"
-    testing_names = []
-    with testing_path.open() as fvp:
-        for line in fvp:
-            testing_names.append(line.strip())
-    # logg.debug(f"testing_names: {testing_names[:10]}")
+        # original / processed dataset base locations
+        dataset_path = Path("data_raw")
+        processed_path = Path(f"data_proc/{dataset_name}")
+        if not processed_path.exists():
+            processed_path.mkdir(parents=True, exist_ok=True)
 
-    words_type = args.words_type
-    words = words_types[words_type]
-    for word in words:
-        word_in_path = dataset_path / word
-        logg.debug(f"Processing folder: {word_in_path}")
+        # write info regarding the dataset generation
+        recap = {}
+        recap["spec_kwargs"] = spec_kwargs
+        logg.debug(f"recap: {recap}")
+        recap_path = processed_path / "recap.json"
+        recap_path.write_text(json.dumps(recap, indent=4))
 
-        word_spec = {"validation": [], "training": [], "testing": []}
+        # list of file names for validation
+        validation_path = dataset_path / "validation_list.txt"
+        validation_names = []
+        with validation_path.open() as fvp:
+            for line in fvp:
+                validation_names.append(line.strip())
+        # logg.debug(f"validation_names: {validation_names[:10]}")
 
-        word_out_path = processed_path / f"{word}_testing.npy"
-        if word_out_path.exists():
-            logg.debug(f"word_out_path {word_out_path} already preprocessed")
-            if args.force_preprocess:
-                logg.debug("OVERWRITING the previous results")
-            else:
-                continue
+        # list of file names for testing
+        testing_path = dataset_path / "testing_list.txt"
+        testing_names = []
+        with testing_path.open() as fvp:
+            for line in fvp:
+                testing_names.append(line.strip())
+        # logg.debug(f"testing_names: {testing_names[:10]}")
 
-        all_wavs = list(word_in_path.iterdir())
-        for wav_path in tqdm(all_wavs):
-            # logg.debug(f"wav_path: {wav_path}")
-            wav_name = f"{word}/{wav_path.name}"
-            # logg.debug(f"wav_name: {wav_name}")
+        words_type = args.words_type
+        words = words_types[words_type]
+        for word in words:
+            word_in_path = dataset_path / word
+            logg.debug(f"Processing folder: {word_in_path}")
 
-            if dataset_name.startswith("mfcc"):
-                log_spec = wav2mfcc(wav_path, spec_kwargs, p2d_kwargs)
-            elif dataset_name.startswith("mel"):
-                log_spec = wav2mel(wav_path, spec_kwargs, p2d_kwargs)
+            word_spec = {"validation": [], "training": [], "testing": []}
 
-            if wav_name in validation_names:
-                which = "validation"
-            elif wav_name in testing_names:
-                which = "testing"
-            else:
-                which = "training"
+            word_out_path = processed_path / f"{word}_testing.npy"
+            if word_out_path.exists():
+                logg.debug(f"word_out_path {word_out_path} already preprocessed")
+                if args.force_preprocess:
+                    logg.debug("OVERWRITING the previous results")
+                else:
+                    continue
 
-            word_spec[which].append(log_spec)
+            all_wavs = list(word_in_path.iterdir())
+            for wav_path in tqdm(all_wavs):
+                # logg.debug(f"wav_path: {wav_path}")
+                wav_name = f"{word}/{wav_path.name}"
+                # logg.debug(f"wav_name: {wav_name}")
 
-        for which in ["training", "validation", "testing"]:
-            # logg.debug(f"word_spec[{which}][0].shape: {word_spec[which][0].shape}")
-            np_spec = np.stack(word_spec[which])
-            # logg.debug(f"{which} np_spec.shape: {np_spec.shape}")
-            word_out_path = processed_path / f"{word}_{which}.npy"
-            np.save(word_out_path, np_spec)
+                if dataset_name.startswith("mfcc"):
+                    log_spec = wav2mfcc(wav_path, spec_kwargs, p2d_kwargs)
+                elif dataset_name.startswith("mel"):
+                    log_spec = wav2mel(wav_path, spec_kwargs, p2d_kwargs)
+
+                if wav_name in validation_names:
+                    which = "validation"
+                elif wav_name in testing_names:
+                    which = "testing"
+                else:
+                    which = "training"
+
+                word_spec[which].append(log_spec)
+
+            for which in ["training", "validation", "testing"]:
+                # logg.debug(f"word_spec[{which}][0].shape: {word_spec[which][0].shape}")
+                np_spec = np.stack(word_spec[which])
+                # logg.debug(f"{which} np_spec.shape: {np_spec.shape}")
+                word_out_path = processed_path / f"{word}_{which}.npy"
+                np.save(word_out_path, np_spec)
 
 
 def load_processed(processed_path, words):
@@ -384,10 +393,10 @@ def run_preprocess_data(args) -> None:
     logg = logging.getLogger(f"c.{__name__}.run_preprocess_data")
     logg.debug("Starting run_preprocess_data")
 
-    # preprocess_spec(args)
+    preprocess_spec(args)
     # test_load_processed()
     # compose_spec(args)
-    test_load_triple(args)
+    # test_load_triple(args)
 
 
 if __name__ == "__main__":

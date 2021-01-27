@@ -1,7 +1,9 @@
+import tensorflow as tf  # type: ignore
 from tensorflow.keras import models  # type: ignore
 from tensorflow.keras import layers  # type: ignore
 from tensorflow.keras import backend  # type: ignore
 from tensorflow.keras import utils  # type: ignore
+from tensorflow.keras.applications import Xception  # type: ignore
 
 
 def CNNmodel(
@@ -144,6 +146,50 @@ def AttentionModel(num_labels, input_shape):
     model = models.Model(inputs=[inputs], outputs=[output])
 
     return model
+
+
+def TRAmodel(num_labels, input_shape, dense_widths, dropout, data):
+    """"""
+
+    # load weights pre-trained on ImageNet
+    # do not include the ImageNet classifier at the top
+    base_model = Xception(
+        weights="imagenet",
+        input_shape=input_shape,
+        include_top=False,
+    )
+
+    # freeze the base_model
+    base_model.trainable = False
+
+    # create new model on top
+    inputs = tf.keras.Input(shape=input_shape)
+
+    # normalize the data for xception
+    # https://www.tensorflow.org/api_docs/python/tf/keras/layers/experimental/preprocessing/Normalization
+    norm_layer = tf.keras.layers.experimental.preprocessing.Normalization()
+    norm_layer.adapt(data["training"])
+
+    x = norm_layer(inputs)
+
+    # The base model contains batchnorm layers. We want to keep them in inference mode
+    # when we unfreeze the base model for fine-tuning, so we make sure that the
+    # base_model is running in inference mode here.
+    x = base_model(x, training=False)
+    x = tf.keras.layers.GlobalAveragePooling2D()(x)
+    x = tf.keras.layers.Dropout(dropout)(x)  # Regularize with dropout
+
+    if dense_widths[0] > 0:
+        x = tf.keras.layers.Dense(dense_widths[0], activation="relu")(x)
+
+    if dense_widths[1] > 0:
+        x = tf.keras.layers.Dense(dense_widths[1], activation="relu")(x)
+
+    outputs = tf.keras.layers.Dense(num_labels, activation="softmax")(x)
+
+    model = tf.keras.models.Model(inputs=[inputs], outputs=[outputs], name="TRAmodel")
+
+    return model, base_model
 
 
 def main():

@@ -15,13 +15,13 @@ from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
 from tensorflow.keras.optimizers import Adam  # type: ignore
 from tensorflow.keras.optimizers import RMSprop  # type: ignore
 from tensorflow.keras.optimizers.schedules import ExponentialDecay  # type: ignore
-from tensorflow.keras.applications import Xception  # type: ignore
 
 from sklearn.model_selection import ParameterGrid  # type: ignore
 
 # from models import AttRNNmodel
 # from models import AttentionModel
 from models import CNNmodel
+from models import TRAmodel
 
 from evaluate import analyze_confusion
 from plot_utils import plot_cat_acc
@@ -33,6 +33,11 @@ from utils import words_types
 from utils import pred_hot_2_cm
 from utils import setup_gpus
 from utils import setup_logger
+
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Union
 
 
 def parse_arguments():
@@ -339,7 +344,34 @@ def train_model(hypa):
     return results_recap
 
 
-def train_transfer(args: argparse.Namespace) -> None:
+def hyper_train_transfer(args: argparse.Namespace) -> None:
+    """TODO: what is hyper_train_transfer doing?"""
+    logg = logging.getLogger(f"c.{__name__}.hyper_train_transfer")
+    # logg.setLevel("INFO")
+    logg.debug("Start hyper_train_transfer")
+
+    hypa_grid: Dict[str, List[str]] = {}
+    hypa_grid["dense_width_type"] = ["01", "02"]
+    hypa_grid["dropout_type"] = ["01"]
+    hypa_grid["batch_size_type"] = ["01"]
+    hypa_grid["epoch_num_type"] = ["01"]
+    hypa_grid["learning_rate_type"] = ["01"]
+    hypa_grid["optimizer_type"] = ["a1"]
+    hypa_grid["datasets_type"] = ["01"]
+    # hypa_grid["words_type"] = ["f1"]
+    hypa_grid["words_type"] = [args.words_type]
+    the_grid = list(ParameterGrid(hypa_grid))
+
+    num_hypa = len(the_grid)
+    logg.debug(f"num_hypa: {num_hypa}")
+
+    for i, hypa in enumerate(the_grid):
+        logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
+        with Pool(1) as p:
+            p.apply(train_transfer, (hypa, args.force_retrain))
+
+
+def train_transfer(hypa: Dict[str, str], force_retrain: bool) -> None:
     """TODO: what is train_transfer doing?
 
     https://www.tensorflow.org/guide/keras/transfer_learning/#build_a_model
@@ -348,12 +380,17 @@ def train_transfer(args: argparse.Namespace) -> None:
     # logg.setLevel("INFO")
     logg.debug("Start train_transfer")
 
-    hypa = {}
-    hypa["words"] = args.words_type
-
     # name the model
     model_name = "TRA"
-    model_name += f"_w{hypa['words']}"
+    model_name += f"_dw{hypa['dense_width_type']}"
+    model_name += f"_dr{hypa['dropout_type']}"
+    model_name += f"_bs{hypa['batch_size_type']}"
+    model_name += f"_en{hypa['epoch_num_type']}"
+    model_name += f"_lr{hypa['learning_rate_type']}"
+    model_name += f"_op{hypa['optimizer_type']}"
+    model_name += f"_ds{hypa['datasets_type']}"
+    model_name += f"_w{hypa['words_type']}"
+    logg.debug(f"model_name: {model_name}")
 
     # save the trained model here
     model_folder = Path("trained_models")
@@ -364,8 +401,8 @@ def train_transfer(args: argparse.Namespace) -> None:
 
     # check if this model has already been trained
     if model_path.exists():
-        if args.force_retrain:
-            pass
+        if force_retrain:
+            logg.warn("\n\nRETRAINING MODEL!!\n\n")
         else:
             return
 
@@ -373,48 +410,57 @@ def train_transfer(args: argparse.Namespace) -> None:
     setup_gpus()
 
     # get the word list
-    words = words_types[hypa["words"]]
+    words = words_types[hypa["words_type"]]
     num_labels = len(words)
 
+    # get the dataset name list
+    datasets_types = {
+        "01": ["mel05", "mel09", "mel10"],
+        "02": ["mel05", "mel10", "mfcc07"],
+        "03": ["mfcc06", "mfcc07", "mfcc08"],
+        "04": ["mel05", "mfcc05", "melc1"],
+    }
+    dataset_names = datasets_types[hypa["datasets_type"]]
+
     # load datasets
-    dataset_names = ["mel05", "mel09", "mel10"]
     processed_folder = Path("data_proc")
     data_paths = [processed_folder / f"{dn}" for dn in dataset_names]
     data, labels = load_triple(data_paths, words)
 
-    input_shape = data["testing"][0].shape
+    model_param: Dict[str, Union[List[int], int, float]] = {}
+    model_param["num_labels"] = num_labels
+    model_param["input_shape"] = data["training"][0].shape
 
-    # load weights pre-trained on ImageNet
-    # do not include the ImageNet classifier at the top
-    base_model = Xception(
-        weights="imagenet", input_shape=input_shape, include_top=False,
-    )
+    dense_width_types = {"01": [4, 0], "02": [16, 16], "03": [0, 0], "04": [64, 64]}
+    model_param["dense_widths"] = dense_width_types[hypa["dense_width_type"]]
 
-    # freeze the base_model
-    base_model.trainable = False
+    dropout_types = {"01": 0.2, "02": 0.1, "03": 0}
+    model_param["dropout"] = dropout_types[hypa["dropout_type"]]
 
-    # create new model on top
-    inputs = tf.keras.Input(shape=input_shape)
+    batch_size_types = {"01": [32, 32], "02": [16, 16]}
+    batch_sizes = batch_size_types[hypa["batch_size_type"]]
 
-    # normalize the data for xception
-    # https://www.tensorflow.org/api_docs/python/tf/keras/layers/experimental/preprocessing/Normalization
-    norm_layer = tf.keras.layers.experimental.preprocessing.Normalization()
-    norm_layer.adapt(data["training"])
+    epoch_num_types = {"01": [20, 10]}
+    epoch_nums = epoch_num_types[hypa["epoch_num_type"]]
 
-    x = norm_layer(inputs)
+    # save info regarding the model training in this folder
+    info_folder = Path("info") / model_name
+    if not info_folder.exists():
+        info_folder.mkdir(parents=True, exist_ok=True)
 
-    # The base model contains batchnorm layers. We want to keep them in inference mode
-    # when we unfreeze the base model for fine-tuning, so we make sure that the
-    # base_model is running in inference mode here.
-    x = base_model(x, training=False)
-    x = tf.keras.layers.GlobalAveragePooling2D()(x)
-    x = tf.keras.layers.Dropout(0.2)(x)  # Regularize with dropout
+    # a dict to recreate this training
+    recap: Dict[str, Any] = {}
+    recap["words"] = words
+    recap["hypa"] = hypa
+    recap["model_param"] = model_param
+    recap["model_name"] = model_name
+    recap["version"] = "001"
+    # logg.debug(f"recap: {recap}")
+    recap_path = info_folder / "recap.json"
+    recap_path.write_text(json.dumps(recap, indent=4))
 
-    x = tf.keras.layers.Dense(4)(x)
-    outputs = tf.keras.layers.Dense(num_labels, activation="softmax")(x)
-
-    model = tf.keras.models.Model(inputs=[inputs], outputs=[outputs], name="TRAmodel")
-
+    # get the model
+    model, base_model = TRAmodel(data=data, **model_param)
     model.summary()
 
     metrics = [
@@ -423,21 +469,42 @@ def train_transfer(args: argparse.Namespace) -> None:
         tf.keras.metrics.Recall(),
     ]
 
+    learning_rate_types = {"01": [1e-3, 1e-5]}
+    lr = learning_rate_types[hypa["learning_rate_type"]]
+
+    optimizer_types = {
+        "a1": [Adam(learning_rate=lr[0]), Adam(learning_rate=lr[1])],
+        "r1": [RMSprop(learning_rate=lr[0]), RMSprop(learning_rate=lr[1])],
+    }
+    opt = optimizer_types[hypa["optimizer_type"]]
+
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(),
-        loss=["categorical_crossentropy"],
+        optimizer=opt[0],
+        loss=tf.keras.losses.CategoricalCrossentropy(),
         metrics=metrics,
     )
 
-    epochs = 2
-    batch_size = 32
-    model.fit(
+    results_freeze = model.fit(
         data["training"],
         labels["training"],
         validation_data=(data["validation"], labels["validation"]),
-        epochs=epochs,
-        batch_size=batch_size,
+        epochs=epoch_nums[0],
+        batch_size=batch_sizes[0],
     )
+
+    results_freeze_recap: Dict[str, Any] = {}
+    results_freeze_recap["model_name"] = model_name
+    results_freeze_recap["results_recap_version"] = "001"
+    results_freeze_recap["history_train"] = {
+        mn: results_freeze.history[mn] for mn in model.metrics_names
+    }
+    results_freeze_recap["history_val"] = {
+        f"val_{mn}": results_freeze.history[f"val_{mn}"] for mn in model.metrics_names
+    }
+
+    # save the results
+    res_recap_path = info_folder / "results_freeze_recap.json"
+    res_recap_path.write_text(json.dumps(results_freeze_recap, indent=4))
 
     # Unfreeze the base_model. Note that it keeps running in inference mode
     # since we passed `training=False` when calling it. This means that
@@ -448,24 +515,59 @@ def train_transfer(args: argparse.Namespace) -> None:
     model.summary()
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(1e-5),  # Low learning rate
+        optimizer=opt[1],  # Low learning rate
         loss=tf.keras.losses.CategoricalCrossentropy(),
         metrics=metrics,
     )
 
-    epochs = 1
-
-    model.fit(
+    results_full = model.fit(
         data["training"],
         labels["training"],
         validation_data=(data["validation"], labels["validation"]),
-        epochs=epochs,
-        batch_size=batch_size,
+        epochs=epoch_nums[1],
+        batch_size=batch_sizes[1],
     )
 
-    eval_testing = model.evaluate(data["testing"])
+    results_full_recap: Dict[str, Any] = {}
+    results_full_recap["model_name"] = model_name
+    results_full_recap["results_recap_version"] = "001"
+
+    eval_testing = model.evaluate(data["testing"], labels["testing"])
     for metrics_name, value in zip(model.metrics_names, eval_testing):
         logg.debug(f"{metrics_name}: {value}")
+        results_full_recap[metrics_name] = value
+
+    # compute the confusion matrix
+    y_pred = model.predict(data["testing"])
+    cm = pred_hot_2_cm(labels["testing"], y_pred, words)
+    # logg.debug(f"cm: {cm}")
+    results_full_recap["cm"] = cm.tolist()
+
+    # plot the cm
+    fig, ax = plt.subplots(figsize=(12, 12))
+    plot_confusion_matrix(cm, ax, model_name, words)
+    plot_cm_path = info_folder / "test_confusion_matrix.png"
+    fig.savefig(plot_cm_path)
+    plt.close(fig)
+
+    # compute the fscore
+    fscore = analyze_confusion(cm, words)
+    logg.debug(f"fscore: {fscore}")
+    results_full_recap["fscore"] = fscore
+
+    results_full_recap["history_train"] = {
+        mn: results_full.history[mn] for mn in model.metrics_names
+    }
+    results_full_recap["history_val"] = {
+        f"val_{mn}": results_full.history[f"val_{mn}"] for mn in model.metrics_names
+    }
+
+    # save the results
+    res_recap_path = info_folder / "results_full_recap.json"
+    res_recap_path.write_text(json.dumps(results_full_recap, indent=4))
+
+    # save the trained model
+    model.save(model_path)
 
 
 def run_train(args):
@@ -475,7 +577,8 @@ def run_train(args):
 
     # hyper_train(args)
 
-    train_transfer(args)
+    # train_transfer(args)
+    hyper_train_transfer(args)
 
 
 if __name__ == "__main__":
