@@ -10,7 +10,7 @@ import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 import tensorflow as tf  # type: ignore
 
-from tensorflow.keras.models import Model  # type: ignore
+# from tensorflow.keras.models import Model  # type: ignore
 
 from plot_utils import plot_confusion_matrix
 from plot_utils import plot_pred
@@ -26,8 +26,7 @@ from utils import words_types
 
 from typing import Dict
 from typing import List
-from typing import Tuple
-
+# from typing import Tuple
 # from typing import Optional
 
 
@@ -518,13 +517,11 @@ def delete_bad_models(args) -> None:
     logg.debug(f"recreated: {recreated}")
 
 
-def load_transfer_model(
-    hypa: Dict[str, str], use_validation: bool
-) -> Tuple[Model, str]:
-    """TODO: what is load_transfer_model doing?"""
-    logg = logging.getLogger(f"c.{__name__}.load_transfer_model")
+def build_transfer_name(hypa: Dict[str, str], use_validation: bool) -> str:
+    """TODO: what is build_transfer_name doing?"""
+    logg = logging.getLogger(f"c.{__name__}.build_transfer_name")
     # logg.setLevel("INFO")
-    logg.debug("Start load_transfer_model")
+    logg.debug("Start build_transfer_name")
 
     model_name = "TRA"
     model_name += f"_dw{hypa['dense_width_type']}"
@@ -539,12 +536,7 @@ def load_transfer_model(
         model_name += "_noval"
     logg.debug(f"model_name: {model_name}")
 
-    model_folder = Path("trained_models")
-    model_path = model_folder / f"{model_name}.h5"
-    if model_path.exists():
-        model = tf.keras.models.load_model(model_path)
-
-    return model, model_name
+    return model_name
 
 
 def evaluate_results_transfer(args: argparse.Namespace) -> None:
@@ -769,11 +761,18 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
     # hypa["words_type"] = train_words_type
     # use_validation = True
 
-    # load the model
-    model, model_name = load_transfer_model(hypa, use_validation)
+    # get the model name
+    model_name = build_transfer_name(hypa, use_validation)
 
+    # load the model
+    model_folder = Path("trained_models")
+    model_path = model_folder / f"{model_name}.h5"
+    model = tf.keras.models.load_model(model_path)
+
+    # predict!
     pred = model.predict(data)
 
+    # plot everything
     plot_size = 5
     fw = plot_size * 5
     fh = plot_size * num_rec_words
