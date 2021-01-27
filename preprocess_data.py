@@ -24,6 +24,15 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="")
 
     parser.add_argument(
+        "-pt",
+        "--preprocess_type",
+        type=str,
+        default="preprocess_spec",
+        choices=["preprocess_spec", "compose_spec"],
+        help="Which evaluation to perform",
+    )
+
+    parser.add_argument(
         "-dn",
         "--dataset_name",
         type=str,
@@ -145,6 +154,15 @@ def preprocess_spec(args):
     # dataset_name = args.dataset_name
     if args.dataset_name == "all":
         dataset_names = spec_dict.keys()
+    elif args.dataset_name == "ch3":
+        dataset_names = [
+            "mel05",
+            "mel09",
+            "mel10",
+            "mfcc06",
+            "mfcc07",
+            "mfcc08",
+        ]
     else:
         dataset_names = [args.dataset_name]
 
@@ -196,7 +214,6 @@ def preprocess_spec(args):
                 if args.force_preprocess:
                     logg.debug("OVERWRITING the previous results")
                 else:
-                    logg.debug("Leaving the previous results")
                     continue
 
             all_wavs = list(word_in_path.iterdir())
@@ -403,9 +420,11 @@ def run_preprocess_data(args) -> None:
     logg = logging.getLogger(f"c.{__name__}.run_preprocess_data")
     logg.debug("Starting run_preprocess_data")
 
-    preprocess_spec(args)
+    if args.preprocess_type == "preprocess_spec":
+        preprocess_spec(args)
+    elif args.preprocess_type == "compose_spec":
+        compose_spec(args)
     # test_load_processed()
-    # compose_spec(args)
     # test_load_triple(args)
 
 

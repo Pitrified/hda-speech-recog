@@ -471,6 +471,7 @@ def delete_bad_models(args) -> None:
     f_tresh = 0.87
     ca_tresh = 0.95
     deleted = 0
+    recreated = 0
 
     for model_folder in info_folder.iterdir():
         # logg.debug(f"model_folder: {model_folder}")
@@ -504,8 +505,16 @@ def delete_bad_models(args) -> None:
                 logg.debug(f"Deleting model_path: {model_path}")
                 logg.debug(f"fscore: {fscore}")
                 logg.debug(f"categorical_accuracy: {categorical_accuracy}")
+                model_path.write_text("Deleted")
+
+            # you gone goofed and deleted a model
+            else:
+                model_path.write_text("Deleted")
+                logg.debug(f"Recreating model_path: {model_path}")
+                recreated += 1
 
     logg.debug(f"deleted: {deleted}")
+    logg.debug(f"recreated: {recreated}")
 
 
 def load_transfer_model(
@@ -618,6 +627,7 @@ def delete_bad_transfer(args: argparse.Namespace) -> None:
     trained_folder = Path("trained_models")
     f_tresh = 0.92
     deleted = 0
+    recreated = 0
 
     for model_folder in info_folder.iterdir():
 
@@ -638,8 +648,16 @@ def delete_bad_transfer(args: argparse.Namespace) -> None:
                 deleted += 1
                 logg.debug(f"Deleting model_path: {model_path}")
                 logg.debug(f"fscore: {fscore}")
+                model_path.write_text("Deleted")
+
+            # you gone goofed and deleted a model
+            else:
+                model_path.write_text("Deleted")
+                logg.debug(f"Recreating model_path: {model_path}")
+                recreated += 1
 
     logg.debug(f"deleted: {deleted}")
+    logg.debug(f"recreated: {recreated}")
 
 
 def run_evaluate(args) -> None:

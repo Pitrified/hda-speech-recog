@@ -361,17 +361,24 @@ def hyper_train_transfer(args: argparse.Namespace) -> None:
     use_validation = args.use_validation
 
     hypa_grid: Dict[str, List[str]] = {}
-    # hypa_grid["dense_width_type"] = ["01", "02", "03", "04"]
-    hypa_grid["dense_width_type"] = ["03"]
+
+    hypa_grid["dense_width_type"] = ["01", "02", "03", "04"]
+    # hypa_grid["dense_width_type"] = ["03"]
+
     # hypa_grid["dropout_type"] = ["01", "03"]
     hypa_grid["dropout_type"] = ["01"]
+
     # hypa_grid["batch_size_type"] = ["01", "02"]
     hypa_grid["batch_size_type"] = ["01"]
+    # hypa_grid["batch_size_type"] = ["02"]
+
     hypa_grid["epoch_num_type"] = ["01"]
     hypa_grid["learning_rate_type"] = ["01"]
     hypa_grid["optimizer_type"] = ["a1"]
+
     # hypa_grid["datasets_type"] = ["01", "02", "03", "04"]
     hypa_grid["datasets_type"] = ["01"]
+
     hypa_grid["words_type"] = [words_type]
     the_grid = list(ParameterGrid(hypa_grid))
 
@@ -581,17 +588,17 @@ def train_transfer(
     # logg.debug(f"cm: {cm}")
     results_full_recap["cm"] = cm.tolist()
 
-    # plot the cm
-    fig, ax = plt.subplots(figsize=(12, 12))
-    plot_confusion_matrix(cm, ax, model_name, words)
-    plot_cm_path = info_folder / "test_confusion_matrix.png"
-    fig.savefig(plot_cm_path)
-    plt.close(fig)
-
     # compute the fscore
     fscore = analyze_confusion(cm, words)
     logg.debug(f"fscore: {fscore}")
     results_full_recap["fscore"] = fscore
+
+    # plot the cm
+    fig, ax = plt.subplots(figsize=(12, 12))
+    plot_confusion_matrix(cm, ax, model_name, words, fscore)
+    plot_cm_path = info_folder / "test_confusion_matrix.png"
+    fig.savefig(plot_cm_path)
+    plt.close(fig)
 
     results_full_recap["history_train"] = {
         mn: results_full.history[mn] for mn in model.metrics_names
