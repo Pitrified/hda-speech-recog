@@ -105,31 +105,60 @@ def AttRNNmodel(num_labels, input_shape, rnn_func=layers.LSTM):
     return model
 
 
-def AttentionModel(num_labels, input_shape):
+def AttentionModel(
+    num_labels,
+    input_shape,
+    conv_sizes,
+    dropout,
+    kernel_sizes,
+    lstm_units,
+    att_sample,
+    query_style,
+    dense_width,
+):
     inputs = layers.Input(shape=input_shape, name="input")
     # (?, mel_dim, time_steps, 1)
 
-    x = layers.BatchNormalization()(inputs)
+    x = layers.Permute((2, 1, 3))(inputs)
 
-    x = layers.Conv2D(10, (5, 1), activation="relu", padding="same")(x)
+    # x = layers.BatchNormalization()(inputs)
     x = layers.BatchNormalization()(x)
-    # (?, mel_dim, time_steps, 10)
 
-    x = layers.Conv2D(1, (5, 1), activation="relu", padding="same")(x)
-    x = layers.BatchNormalization()(x)
+    for cs, ks in zip(conv_sizes, kernel_sizes):
+        # a cs==0 removes the layer
+        if cs > 0:
+            x = layers.Conv2D(cs, ks, activation="relu", padding="same")(x)
+            x = layers.BatchNormalization()(x)
+            # (?, mel_dim, time_steps, cs)
+            if dropout > 0:
+                x = layers.Dropout(dropout)(x)
+
+    # the last conv_sizes is always 1 so now the shape is
     # (?, mel_dim, time_steps, 1)
 
+    # remove the last dimension
     x = layers.Lambda(lambda q: backend.squeeze(q, axis=-1), name="squeeze_last_dim")(x)
     # (?, mel_dim, time_steps)
 
-    units = 64
-    x = layers.Bidirectional(layers.LSTM(units, return_sequences=True))(x)
-    # (?, mel_dim, units * 2)
+    for units in lstm_units:
+        if units > 0:
+            x = layers.Bidirectional(layers.LSTM(units, return_sequences=True))(x)
+            # (?, mel_dim, units * 2)
 
-    xFirst = layers.Lambda(lambda q: q[:, -1], name="x_first")(x)
+            # save the dimension of the last LSTM layer
+            last_lstm_dim = units * 2
+
+    if att_sample == "last":
+        sample_index = -1
+    elif att_sample == "mid":
+        sample_index = last_lstm_dim // 2
+
+    xFirst = layers.Lambda(lambda q: q[:, sample_index], name="x_first")(x)
     # (?, units * 2)
-    query = layers.Dense(128, name="query")(xFirst)
-    # (?, units * 2)
+
+    if query_style == "dense01":
+        query = layers.Dense(last_lstm_dim, name="query")(xFirst)
+        # (?, units * 2)
 
     attScores = layers.Dot(axes=[1, 2], name="att_scores_dot")([query, x])
     # (?, mel_dim)
@@ -139,8 +168,8 @@ def AttentionModel(num_labels, input_shape):
     attVector = layers.Dot(axes=[1, 1], name="att_vector_dot")([attScores, x])
     # (?, units * 2)
 
-    x = layers.Dense(64, activation="relu")(attVector)
-    x = layers.Dense(32)(x)
+    x = layers.Dense(dense_width * 2, activation="relu")(attVector)
+    x = layers.Dense(dense_width)(x)
 
     output = layers.Dense(num_labels, activation="softmax", name="output")(x)
     model = models.Model(inputs=[inputs], outputs=[output])
@@ -194,19 +223,25 @@ def TRAmodel(num_labels, input_shape, dense_widths, dropout, data):
     return model, base_model
 
 
-def main():
-    num_labels = 4
-    input_shape = (20, 30, 1)
+def test_attention_model():
+    """"""
+    mp = {}
+    mp["num_labels"] = 4
+    mp["input_shape"] = (20, 30, 1)
+    mp["conv_sizes"] = [10, 0, 1]
+    mp["dropout"] = 0
+    mp["kernel_sizes"] = [(5, 1), (5, 1), (5, 1)]
+    mp["lstm_units"] = [64, 64]
+    mp["att_sample"] = "last"
+    mp["query_style"] = "dense01"
+    mp["dense_width"] = 32
 
-    # attrnn_model = AttRNNmodel(num_labels, input_shape)
-    # attrnn_model.summary()
-
-    attention_model = AttentionModel(num_labels, input_shape)
+    attention_model = AttentionModel(**mp)
     attention_model.summary()
 
-    model_pic_name = "plot_models/attention_model.png"
+    model_pic_name = "plot_models/attention_model_01.png"
     utils.plot_model(attention_model, model_pic_name, show_shapes=True, dpi=400)
 
 
 if __name__ == "__main__":
-    main()
+    test_attention_model()

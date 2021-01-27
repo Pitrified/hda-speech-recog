@@ -138,6 +138,7 @@ def get_spec_dict():
         "mel13": {"n_mels": 128, "n_fft": 512, "hop_length": 256},  # (128, 64)
         "mel14": {"n_mels": 128, "n_fft": 256, "hop_length": 256},  # (128, 64)
         "mel15": {"n_mels": 128, "n_fft": 3072, "hop_length": 256},  # (128, 64)
+        "mela1": {"n_mels": 80, "n_fft": 1024, "hop_length": 128, "fmin": 40},
     }
 
     return spec_dict

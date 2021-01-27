@@ -1,0 +1,61 @@
+{
+    "words": [
+        "backward",
+        "eight",
+        "go",
+        "yes"
+    ],
+    "hypa": {
+        "att_sample_type": "02",
+        "batch_size_type": "01",
+        "conv_size_type": "01",
+        "dataset_name": "mela1",
+        "dense_width_type": "01",
+        "dropout_type": "01",
+        "epoch_num_type": "01",
+        "kernel_size_type": "01",
+        "learning_rate_type": "01",
+        "lstm_units_type": "01",
+        "optimizer_type": "a1",
+        "query_style_type": "01",
+        "words_type": "f2"
+    },
+    "model_param": {
+        "num_labels": 4,
+        "input_shape": [
+            80,
+            128,
+            1
+        ],
+        "conv_sizes": [
+            10,
+            0,
+            1
+        ],
+        "dropout": 0.2,
+        "kernel_sizes": [
+            [
+                5,
+                1
+            ],
+            [
+                5,
+                1
+            ],
+            [
+                5,
+                1
+            ]
+        ],
+        "lstm_units": [
+            64,
+            64
+        ],
+        "att_sample": "mid",
+        "query_style": "dense01",
+        "dense_width": 32
+    },
+    "use_validation": false,
+    "model_name": "ATT_ct01_dr01_ks01_lu01_as02_qt01_dw01_opa1_lr01_bs01_en01_dsmela1_wf2_noval",
+    "version": "001"
+}

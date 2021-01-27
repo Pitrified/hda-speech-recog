@@ -16,8 +16,7 @@ from tensorflow.keras.optimizers.schedules import ExponentialDecay  # type: igno
 
 from sklearn.model_selection import ParameterGrid  # type: ignore
 
-# from models import AttRNNmodel
-# from models import AttentionModel
+from models import AttentionModel
 from models import CNNmodel
 from models import TRAmodel
 
@@ -44,6 +43,14 @@ def parse_arguments():
     """Setup CLI interface"""
     parser = argparse.ArgumentParser(description="")
 
+    parser.add_argument(
+        "-tt",
+        "--training_type",
+        type=str,
+        default="transfer",
+        choices=["smallCNN", "transfer", "attention"],
+        help="Which training to execute",
+    )
     parser.add_argument(
         "-wt",
         "--words_type",
@@ -376,22 +383,28 @@ def hyper_train_transfer(args: argparse.Namespace) -> None:
 
     hypa_grid: Dict[str, List[str]] = {}
 
+    # TODO THIS SET WITH NOVAL ON F2
+    # do not change them, fool of a Took
+
+    # TODO STILL TO FINISH
+    # dw1234, dr13, bs2, opar
+
     # hypa_grid["dense_width_type"] = ["01", "02", "03", "04"]
-    hypa_grid["dense_width_type"] = ["01", "02"]
-    # hypa_grid["dense_width_type"] = ["03"]
+    # hypa_grid["dense_width_type"] = ["01", "02"]
+    hypa_grid["dense_width_type"] = ["03"]
 
     # hypa_grid["dropout_type"] = ["01", "03"]
     hypa_grid["dropout_type"] = ["01"]
 
     # hypa_grid["batch_size_type"] = ["01", "02"]
-    hypa_grid["batch_size_type"] = ["01"]
-    # hypa_grid["batch_size_type"] = ["02"]
+    # hypa_grid["batch_size_type"] = ["01"]
+    hypa_grid["batch_size_type"] = ["02"]
 
     hypa_grid["epoch_num_type"] = ["01"]
     hypa_grid["learning_rate_type"] = ["01"]
 
-    hypa_grid["optimizer_type"] = ["a1", "r1"]
-    # hypa_grid["optimizer_type"] = ["a1"]
+    # hypa_grid["optimizer_type"] = ["a1", "r1"]
+    hypa_grid["optimizer_type"] = ["a1"]
 
     # hypa_grid["datasets_type"] = ["01", "02", "03", "04", "05"]
     hypa_grid["datasets_type"] = ["01"]
@@ -413,8 +426,6 @@ def hyper_train_transfer(args: argparse.Namespace) -> None:
                 compose_spec(dn, words_type)
             else:
                 preprocess_spec(dn, words_type)
-
-    return
 
     for i, hypa in enumerate(the_grid):
         logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
@@ -643,15 +654,285 @@ def train_transfer(
     model.save(model_path)
 
 
+def get_attention_name(hypa: Dict[str, str], use_validation: bool) -> str:
+    """TODO: what is get_attention_name doing?"""
+    model_name = "ATT"
+
+    model_name += f"_ct{hypa['conv_size_type']}"
+    model_name += f"_dr{hypa['dropout_type']}"
+    model_name += f"_ks{hypa['kernel_size_type']}"
+    model_name += f"_lu{hypa['lstm_units_type']}"
+    model_name += f"_as{hypa['att_sample_type']}"
+    model_name += f"_qt{hypa['query_style_type']}"
+    model_name += f"_dw{hypa['dense_width_type']}"
+    model_name += f"_op{hypa['optimizer_type']}"
+    model_name += f"_lr{hypa['learning_rate_type']}"
+    model_name += f"_bs{hypa['batch_size_type']}"
+    model_name += f"_en{hypa['epoch_num_type']}"
+
+    model_name += f"_ds{hypa['dataset_name']}"
+    model_name += f"_w{hypa['words_type']}"
+
+    if not use_validation:
+        model_name += "_noval"
+    return model_name
+
+
+def hyper_train_attention(
+    words_type: str, force_retrain: bool, use_validation: bool
+) -> None:
+    """TODO: what is hyper_train_attention doing?"""
+    logg = logging.getLogger(f"c.{__name__}.hyper_train_attention")
+    # logg.setLevel("INFO")
+    logg.debug("Start hyper_train_attention")
+
+    hypa_grid: Dict[str, List[str]] = {}
+
+    # the words to train on
+    hypa_grid["words_type"] = [words_type]
+
+    # the dataset to train on
+    # hypa_grid["dataset_name"] = ["mel01", "mela1"]
+    hypa_grid["dataset_name"] = ["mela1"]
+
+    # how big are the first conv layers
+    # hypa_grid["conv_size_type"] = ["01", "02"]
+    hypa_grid["conv_size_type"] = ["01"]
+
+    # dropout after conv, 0 to skip it
+    # hypa_grid["dropout_type"] = ["01", "02"]
+    hypa_grid["dropout_type"] = ["01"]
+
+    # the shape of the kernels in the conv layers
+    # hypa_grid["kernel_size_type"] = ["01", "02"]
+    hypa_grid["kernel_size_type"] = ["01"]
+
+    # the dimension of the LSTM
+    # hypa_grid["lstm_units_type"] = ["01", "02"]
+    hypa_grid["lstm_units_type"] = ["01"]
+
+    # the vector picked for attention
+    # hypa_grid["att_sample_type"] = ["01", "02"]
+    hypa_grid["att_sample_type"] = ["02"]
+
+    # the query style type
+    # hypa_grid["query_style_type"] = ["01", "02"]
+    hypa_grid["query_style_type"] = ["01"]
+
+    # the width of the dense layers
+    # hypa_grid["dense_width_type"] = ["01", "02"]
+    hypa_grid["dense_width_type"] = ["01"]
+
+    # the learning rates for the optimizer
+    hypa_grid["learning_rate_type"] = ["01"]
+
+    # which optimizer to use
+    # hypa_grid["optimizer_type"] = ["a1", "r1"]
+    hypa_grid["optimizer_type"] = ["a1"]
+
+    # the batch size to use
+    hypa_grid["batch_size_type"] = ["01"]
+
+    # the number of epochs
+    hypa_grid["epoch_num_type"] = ["01"]
+
+    # create the grid
+    the_grid = list(ParameterGrid(hypa_grid))
+    num_hypa = len(the_grid)
+    logg.debug(f"num_hypa: {num_hypa}")
+
+    # check that the data is available
+    for dn in hypa_grid["dataset_name"]:
+        preprocess_spec(dn, words_type)
+
+    # train each combination
+    for i, hypa in enumerate(the_grid):
+        logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
+        with Pool(1) as p:
+            p.apply(train_attention, (hypa, force_retrain, use_validation))
+
+
+def train_attention(
+    hypa: Dict[str, str], force_retrain: bool, use_validation: bool
+) -> None:
+    """TODO: what is train_attention doing?"""
+    logg = logging.getLogger(f"c.{__name__}.train_attention")
+    # logg.setLevel("INFO")
+    logg.debug("Start train_attention")
+
+    # build the model name
+    model_name = get_attention_name(hypa, use_validation)
+
+    # save the trained model here
+    model_folder = Path("trained_models")
+    if not model_folder.exists():
+        model_folder.mkdir(parents=True, exist_ok=True)
+    model_path = model_folder / f"{model_name}.h5"
+
+    # check if this model has already been trained
+    if model_path.exists():
+        if force_retrain:
+            logg.warn("\nRETRAINING MODEL!!\n")
+        else:
+            logg.debug("Already trained")
+            return
+
+    # get the word list
+    words = words_types[hypa["words_type"]]
+    num_labels = len(words)
+
+    # load data
+    processed_folder = Path("data_proc")
+    processed_path = processed_folder / f"{hypa['dataset_name']}"
+    data, labels = load_processed(processed_path, words)
+
+    # concatenate train and val for final train
+    val_data = None
+    if use_validation:
+        x = data["training"]
+        y = labels["training"]
+        val_data = (data["validation"], labels["validation"])
+        logg.debug("Using validation data")
+    else:
+        x = np.concatenate((data["training"], data["validation"]))
+        y = np.concatenate((labels["training"], labels["validation"]))
+        logg.debug("NOT using validation data")
+
+    # from hypa extract model param
+    model_param: Dict[str, Any] = {}
+    model_param["num_labels"] = num_labels
+    model_param["input_shape"] = data["training"][0].shape
+
+    # translate types to actual values
+    conv_size_types = {"01": [10, 0, 1], "02": [10, 10, 1]}
+    model_param["conv_sizes"] = conv_size_types[hypa["conv_size_type"]]
+
+    dropout_types = {"01": 0.2, "02": 0}
+    model_param["dropout"] = dropout_types[hypa["dropout_type"]]
+
+    kernel_size_types = {"01": [(5, 1), (5, 1), (5, 1)], "02": [(5, 1), (3, 3), (3, 3)]}
+    model_param["kernel_sizes"] = kernel_size_types[hypa["kernel_size_type"]]
+
+    lstm_units_types = {"01": [64, 64], "02": [64, 0]}
+    model_param["lstm_units"] = lstm_units_types[hypa["lstm_units_type"]]
+
+    att_sample_types = {"01": "last", "02": "mid"}
+    model_param["att_sample"] = att_sample_types[hypa["att_sample_type"]]
+
+    query_style_types = {"01": "dense01", "02": "conv01"}
+    model_param["query_style"] = query_style_types[hypa["query_style_type"]]
+
+    dense_width_types = {"01": 32, "02": 64}
+    model_param["dense_width"] = dense_width_types[hypa["dense_width_type"]]
+
+    batch_size_types = {"01": 32, "02": 16}
+    batch_sizes = batch_size_types[hypa["batch_size_type"]]
+
+    epoch_num_types = {"01": 15, "02": 30}
+    epoch_nums = epoch_num_types[hypa["epoch_num_type"]]
+
+    # save info regarding the model training in this folder
+    info_folder = Path("info") / model_name
+    if not info_folder.exists():
+        info_folder.mkdir(parents=True, exist_ok=True)
+
+    # a dict to recreate this training
+    recap: Dict[str, Any] = {}
+    recap["words"] = words
+    recap["hypa"] = hypa
+    recap["model_param"] = model_param
+    recap["use_validation"] = use_validation
+    recap["model_name"] = model_name
+    recap["version"] = "001"
+    # logg.debug(f"recap: {recap}")
+    recap_path = info_folder / "recap.json"
+    recap_path.write_text(json.dumps(recap, indent=4))
+
+    # magic to fix the GPUs
+    setup_gpus()
+
+    model = AttentionModel(**model_param)
+    model.summary()
+
+    metrics = [
+        tf.keras.metrics.CategoricalAccuracy(),
+        tf.keras.metrics.Precision(),
+        tf.keras.metrics.Recall(),
+    ]
+
+    learning_rate_types = {"01": 1e-3, "02": 1e-4}
+    lr = learning_rate_types[hypa["learning_rate_type"]]
+
+    optimizer_types = {"a1": Adam(learning_rate=lr), "r1": RMSprop(learning_rate=lr)}
+    opt = optimizer_types[hypa["optimizer_type"]]
+
+    model.compile(
+        optimizer=opt,
+        loss=tf.keras.losses.CategoricalCrossentropy(),
+        metrics=metrics,
+    )
+
+    results = model.fit(
+        x,
+        y,
+        validation_data=val_data,
+        epochs=epoch_nums,
+        batch_size=batch_sizes,
+    )
+
+    results_recap: Dict[str, Any] = {}
+    results_recap["model_name"] = model_name
+    results_recap["results_recap_version"] = "001"
+    results_recap["history_train"] = {
+        mn: results.history[mn] for mn in model.metrics_names
+    }
+    if use_validation:
+        results_recap["history_val"] = {
+            f"val_{mn}": results.history[f"val_{mn}"] for mn in model.metrics_names
+        }
+
+    # compute the confusion matrix
+    y_pred = model.predict(data["testing"])
+    cm = pred_hot_2_cm(labels["testing"], y_pred, words)
+    # logg.debug(f"cm: {cm}")
+    results_recap["cm"] = cm.tolist()
+
+    # compute the fscore
+    fscore = analyze_confusion(cm, words)
+    logg.debug(f"fscore: {fscore}")
+    results_recap["fscore"] = fscore
+
+    # plot the cm
+    fig, ax = plt.subplots(figsize=(12, 12))
+    plot_confusion_matrix(cm, ax, model_name, words, fscore)
+    plot_cm_path = info_folder / "test_confusion_matrix.png"
+    fig.savefig(plot_cm_path)
+    plt.close(fig)
+
+    # save the results
+    res_recap_path = info_folder / "results_recap.json"
+    res_recap_path.write_text(json.dumps(results_recap, indent=4))
+
+    # save the trained model
+    model.save(model_path)
+
+
 def run_train(args):
     """TODO: what is run_train doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_train")
     logg.debug("Start run_train")
 
-    # hyper_train(args)
+    training_type = args.training_type
+    words_type = args.words_type
+    force_retrain = args.force_retrain
+    use_validation = args.use_validation
 
-    # train_transfer(args)
-    hyper_train_transfer(args)
+    if training_type == "smallCNN":
+        hyper_train(args)
+    elif training_type == "transfer":
+        hyper_train_transfer(args)
+    elif training_type == "attention":
+        hyper_train_attention(words_type, force_retrain, use_validation)
 
 
 if __name__ == "__main__":
