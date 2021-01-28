@@ -12,10 +12,12 @@ import tensorflow as tf  # type: ignore
 
 # from tensorflow.keras.models import Model  # type: ignore
 
+from train import get_attention_name
 from plot_utils import plot_confusion_matrix
 from plot_utils import plot_pred
 from plot_utils import plot_spec
 from plot_utils import plot_waveform
+from plot_utils import plot_att_weights
 from preprocess_data import get_spec_dict
 from preprocess_data import load_processed
 from preprocess_data import wav2mel
@@ -23,6 +25,7 @@ from utils import pred_hot_2_cm
 from utils import setup_gpus
 from utils import setup_logger
 from utils import words_types
+from utils import analyze_confusion
 
 from typing import Dict
 from typing import List
@@ -50,6 +53,7 @@ def parse_arguments():
             "audio_transfer",
             "delete",
             "delete_transfer",
+            "attention_weights",
         ],
         help="Which evaluation to perform",
     )
@@ -59,7 +63,7 @@ def parse_arguments():
         "--train_words_type",
         type=str,
         default="f2",
-        choices=["all", "dir", "num", "f1", "f2"],
+        choices=words_types.keys(),
         help="Words the dataset was trained on",
     )
 
@@ -68,7 +72,7 @@ def parse_arguments():
         "--rec_words_type",
         type=str,
         default="dataset",
-        choices=["all", "dir", "num", "f1", "f2", "dataset"],
+        choices=["all", "dir", "num", "f1", "f2", "k1", "dataset"],
         help="Words to record and test",
     )
 
@@ -92,69 +96,6 @@ def setup_env():
     logmain.info(recap)
 
     return args
-
-
-def analyze_confusion(confusion, true_labels):
-    """Compute the F-score from the confusion matrix, and print the intermediate results
-
-    Precision: TP / ( TP + FP)
-    Recall: TP / ( TP + FN)
-    F-score: 2 (PxR) / (P+R)
-    """
-    logg = logging.getLogger(f"c.{__name__}.analyze_confusion")
-    logg.setLevel("INFO")
-    logg.debug("Start analyze_confusion")
-
-    logg.debug("Confusion matrix:")
-    logg.debug(row_fmt("Pre\\Tru", true_labels))
-
-    for line, label in zip(confusion, true_labels):
-        logg.debug(row_fmt(f"{label}", line))
-
-    TP = confusion.diagonal()
-    FN = np.sum(confusion, axis=0) - TP
-    FP = np.sum(confusion, axis=1) - TP
-
-    logg.debug("")
-    logg.debug(row_fmt("TP", TP))
-    logg.debug(row_fmt("FP", FP))
-    logg.debug(row_fmt("FN", FN))
-
-    # https://stackoverflow.com/a/37977222
-    #  P = TP / ( TP + FP)
-    #  R = TP / ( TP + FN)
-    dP = TP + FP
-    P = np.divide(TP, dP, out=np.zeros_like(TP, dtype=float), where=dP != 0)
-    dR = TP + FN
-    R = np.divide(TP, dR, out=np.zeros_like(TP, dtype=float), where=dR != 0)
-
-    logg.debug("\nPrecision = TP / ( TP + FP)\tRecall = TP / ( TP + FN)")
-    logg.debug(row_fmt("Prec", P, ":.4f"))
-    logg.debug(row_fmt("Recall", R, ":.4f"))
-
-    avgP = np.sum(P) / len(true_labels)
-    avgR = np.sum(R) / len(true_labels)
-    logg.debug(f"Average P: {avgP:.4f}\tR: {avgR:.4f}")
-
-    logg.debug("F-score = 2 (PxR) / (P+R)")
-    #  F = 2 (PxR) / (P+R)
-    PdR = 2 * P * R
-    PpR = P + R
-    F = np.divide(PdR, PpR, out=np.zeros_like(TP, dtype=float), where=PpR != 0)
-    logg.debug(row_fmt("F-score", F, ":.4f"))
-
-    avgF = np.sum(F) / len(true_labels)
-    logg.debug(f"Average F-score {avgF}")
-
-    return avgF
-
-
-def row_fmt(header, iterable, formatter=""):
-    row = header
-    for item in iterable:
-        #  row += f'\t{item{formatter}}'
-        row += "\t{{i{f}}}".format(f=formatter).format(i=item)
-    return row
 
 
 def evaluate_results_recap(args):
@@ -747,15 +688,15 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
     logg.debug(f"data.shape: {data.shape}")
 
     hypa: Dict[str, str] = {}
-    hypa["dense_width_type"] = "03"
+    hypa["dense_width_type"] = "01"
     hypa["dropout_type"] = "01"
-    hypa["batch_size_type"] = "01"
+    hypa["batch_size_type"] = "02"
     hypa["epoch_num_type"] = "01"
     hypa["learning_rate_type"] = "01"
-    hypa["optimizer_type"] = "a1"
+    hypa["optimizer_type"] = "r1"
     hypa["datasets_type"] = datasets_type
     hypa["words_type"] = train_words_type
-    use_validation = False
+    use_validation = True
 
     # hypa: Dict[str, str] = {}
     # hypa["dense_width_type"] = "02"
@@ -786,13 +727,23 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
     fig, axes = plt.subplots(nrows=num_rec_words, ncols=5, figsize=(fw, fh))
     fig.suptitle("Recorded audios", fontsize=18)
 
+    # the words predicted are SORTED
+    train_words_sorted = sorted(train_words)
+
     for i, word in enumerate(rec_words):
         plot_waveform(audios[i], axes[i][0])
         img_spec = specs_3ch[i]
         plot_spec(img_spec[:, :, 0], axes[i][1])
         plot_spec(img_spec[:, :, 1], axes[i][2])
         plot_spec(img_spec[:, :, 2], axes[i][3])
-        plot_pred(pred[i], train_words, axes[i][4], f"Prediction for {rec_words[i]}", i)
+        pred_index = np.argmax(pred[i])
+        plot_pred(
+            pred[i],
+            train_words_sorted,
+            axes[i][4],
+            f"Prediction for {rec_words[i]}",
+            pred_index,
+        )
 
     # https://stackoverflow.com/q/8248467
     # https://stackoverflow.com/q/2418125
@@ -890,6 +841,110 @@ def evaluate_results_attention() -> None:
     logg.info(f"{df.sort_values('fscore', ascending=False)[:30]}")
 
 
+def evaluate_attention_weights(train_words_type: str) -> None:
+    """TODO: what is evaluate_attention_weights doing?"""
+    logg = logging.getLogger(f"c.{__name__}.evaluate_attention_weights")
+    # logg.setLevel("INFO")
+    logg.debug("Start evaluate_attention_weights")
+
+    # magic to fix the GPUs
+    setup_gpus()
+
+    dataset_name = "mela1"
+
+    hypa: Dict[str, str] = {}
+
+    hypa["conv_size_type"] = "02"
+    hypa["dropout_type"] = "01"
+    hypa["kernel_size_type"] = "02"
+    hypa["lstm_units_type"] = "01"
+    hypa["att_sample_type"] = "01"
+    hypa["query_style_type"] = "01"
+    hypa["dense_width_type"] = "01"
+    hypa["optimizer_type"] = "a1"
+    hypa["learning_rate_type"] = "01"
+    hypa["batch_size_type"] = "01"
+    hypa["epoch_num_type"] = "01"
+
+    hypa["dataset_name"] = dataset_name
+    hypa["words_type"] = train_words_type
+
+    use_validation = True
+
+    model_name = get_attention_name(hypa, use_validation)
+    logg.debug(f"model_name: {model_name}")
+
+    # load the model
+    model_folder = Path("trained_models")
+    model_path = model_folder / f"{model_name}.h5"
+
+    # model = tf.keras.models.load_model(model_path)
+    # https://github.com/keras-team/keras/issues/5088#issuecomment-401498334
+    model = tf.keras.models.load_model(
+        model_path,
+        custom_objects={
+            "backend": tf.keras.backend,
+        },
+    )
+
+    att_weight_model = tf.keras.models.Model(
+        inputs=model.input,
+        outputs=[
+            model.get_layer("output").output,
+            model.get_layer("att_softmax").output,
+        ],
+    )
+    att_weight_model.summary()
+    logg.debug(f"att_weight_model.outputs: {att_weight_model.outputs}")
+
+    # get the words
+    train_words = words_types[train_words_type]
+    train_words_sorted = sorted(train_words)
+    logg.debug(f"train_words: {train_words}")
+
+    # select a word
+    correct_index = 0
+    word = train_words[correct_index]
+
+    # input data
+    processed_folder = Path("data_proc")
+    processed_path = processed_folder / f"{dataset_name}"
+    data, labels = load_processed(processed_path, [word])
+
+    # get prediction and attention weights
+    pred, att_weights = att_weight_model.predict(data["testing"])
+    logg.debug(f"att_weights.shape: {att_weights.shape}")
+    logg.debug(f"att_weights[0].shape: {att_weights[0].shape}")
+
+    # plot the spectrogram and the weights
+    fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(12, 12))
+    fig.suptitle(f"Attention weights and prediction for {word}")
+
+    # which word in the dataset to plot
+    word_id = 0
+
+    # extract the spectrogram, data shape (?, x, y, 1)
+    word_data = data["testing"][word_id][:, :, -1]
+    logg.debug(f"word_data.shape: {word_data.shape}")
+    title = f"Spectrogram for {word}"
+    plot_spec(word_data, axes[0], title=title)
+
+    # plot the weights
+    word_att_weights = att_weights[word_id]
+    title = f"Attention weights for {word}"
+    plot_att_weights(word_att_weights, axes[1], title)
+
+    # plot the predictions
+    word_pred = pred[word_id]
+    pred_index = np.argmax(word_pred)
+    title = f"Predictions for {word}"
+    plot_pred(word_pred, train_words_sorted, axes[2], title, pred_index)
+
+    fig.tight_layout()
+
+    plt.show()
+
+
 def run_evaluate(args) -> None:
     """TODO: What is evaluate doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate")
@@ -915,6 +970,8 @@ def run_evaluate(args) -> None:
         delete_bad_models(args)
     elif evaluation_type == "delete_transfer":
         delete_bad_transfer(args)
+    elif evaluation_type == "attention_weights":
+        evaluate_attention_weights(train_words_type)
 
 
 if __name__ == "__main__":

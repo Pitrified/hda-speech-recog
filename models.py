@@ -1,9 +1,11 @@
 import tensorflow as tf  # type: ignore
 from tensorflow.keras import models  # type: ignore
-from tensorflow.keras import layers  # type: ignore
-from tensorflow.keras import backend  # type: ignore
+from tensorflow.keras import layers as L  # type: ignore
+from tensorflow.keras import backend as K  # type: ignore
 from tensorflow.keras import utils  # type: ignore
 from tensorflow.keras.applications import Xception  # type: ignore
+
+from pathlib import Path
 
 
 def CNNmodel(
@@ -15,92 +17,42 @@ def CNNmodel(
     base_dense_width,
     dropouts,
 ):
-    inputs = layers.Input(shape=input_shape)
+    inputs = L.Input(shape=input_shape)
 
-    x = layers.BatchNormalization()(inputs)
+    x = L.BatchNormalization()(inputs)
 
     ks = kernel_sizes[0]
     ps = pool_sizes[0]
     nf = base_filters * 1
     dr = dropouts[0]
-    x = layers.Conv2D(nf, kernel_size=ks, activation="relu", padding="same")(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.MaxPooling2D(pool_size=ps)(x)
-    x = layers.Dropout(dr)(x)
+    x = L.Conv2D(nf, kernel_size=ks, activation="relu", padding="same")(x)
+    x = L.BatchNormalization()(x)
+    x = L.MaxPooling2D(pool_size=ps)(x)
+    x = L.Dropout(dr)(x)
 
     ks = kernel_sizes[1]
     ps = pool_sizes[1]
     nf = base_filters * 2
     dr = dropouts[1]
-    x = layers.Conv2D(nf, kernel_size=ks, activation="relu", padding="same")(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.MaxPooling2D(pool_size=ps)(x)
-    x = layers.Dropout(dr)(x)
+    x = L.Conv2D(nf, kernel_size=ks, activation="relu", padding="same")(x)
+    x = L.BatchNormalization()(x)
+    x = L.MaxPooling2D(pool_size=ps)(x)
+    x = L.Dropout(dr)(x)
 
     ks = kernel_sizes[2]
     ps = pool_sizes[2]
     nf = base_filters * 3
-    x = layers.Conv2D(nf, kernel_size=ks, activation="relu", padding="same")(x)
-    x = layers.BatchNormalization()(x)
-    x = layers.MaxPooling2D(pool_size=ps)(x)
+    x = L.Conv2D(nf, kernel_size=ks, activation="relu", padding="same")(x)
+    x = L.BatchNormalization()(x)
+    x = L.MaxPooling2D(pool_size=ps)(x)
 
-    x = layers.Flatten()(x)
-    x = layers.Dense(base_dense_width * 2, activation="relu")(x)
-    x = layers.Dense(base_dense_width * 1, activation="relu")(x)
+    x = L.Flatten()(x)
+    x = L.Dense(base_dense_width * 2, activation="relu")(x)
+    x = L.Dense(base_dense_width * 1, activation="relu")(x)
 
-    output = layers.Dense(num_labels, activation="softmax")(x)
+    output = L.Dense(num_labels, activation="softmax")(x)
 
     model = models.Model(inputs=[inputs], outputs=[output], name="CNNmodel")
-
-    return model
-
-
-def AttRNNmodel(num_labels, input_shape, rnn_func=layers.LSTM):
-
-    inputs = layers.Input(shape=input_shape, name="input")
-
-    # note that Melspectrogram puts the sequence in shape (batch_size, melDim, timeSteps, 1)
-    # we would rather have it the other way around for LSTMs
-    # x = layers.Permute((2, 1, 3))(x)
-
-    x = layers.BatchNormalization()(inputs)
-
-    # x = layers.Conv2D(10, (5, 1), activation="relu", padding="same")(x)
-    x = layers.Conv2D(64, (5, 1), activation="relu", padding="same")(x)
-    x = layers.BatchNormalization()(x)
-
-    # x = layers.Conv2D(1, (5, 1), activation="relu", padding="same")(x)
-    x = layers.Conv2D(16, (3, 3), activation="relu", padding="same")(x)
-    x = layers.BatchNormalization()(x)
-
-    x = layers.Conv2D(1, (5, 1), activation="relu", padding="same")(x)
-    x = layers.BatchNormalization()(x)
-
-    # x = Reshape((125, 80)) (x)
-    # keras.backend.squeeze(x, axis)
-    x = layers.Lambda(lambda q: backend.squeeze(q, -1), name="squeeze_last_dim")(x)
-
-    x = layers.Bidirectional(rnn_func(64, return_sequences=True))(x)
-    # [b_s, seq_len, vec_dim]
-    x = layers.Bidirectional(rnn_func(64, return_sequences=True))(x)
-    # [b_s, seq_len, vec_dim]
-
-    xFirst = layers.Lambda(lambda q: q[:, -1])(x)  # [b_s, vec_dim]
-    query = layers.Dense(128)(xFirst)
-
-    # dot product attention
-    attScores = layers.Dot(axes=[1, 2])([query, x])
-    attScores = layers.Softmax(name="attSoftmax")(attScores)  # [b_s, seq_len]
-
-    # rescale sequence
-    attVector = layers.Dot(axes=[1, 1])([attScores, x])  # [b_s, vec_dim]
-
-    x = layers.Dense(64, activation="relu")(attVector)
-    x = layers.Dense(32)(x)
-
-    output = layers.Dense(num_labels, activation="softmax", name="output")(x)
-
-    model = models.Model(inputs=[inputs], outputs=[output])
 
     return model
 
@@ -116,34 +68,40 @@ def AttentionModel(
     query_style,
     dense_width,
 ):
-    inputs = layers.Input(shape=input_shape, name="input")
+    inputs = L.Input(shape=input_shape, name="input")
     # (?, mel_dim, time_steps, 1)
 
-    x = layers.Permute((2, 1, 3))(inputs)
+    x = L.Permute((2, 1, 3))(inputs)
+    # (?, time_steps, mel_dim, 1)
 
-    # x = layers.BatchNormalization()(inputs)
-    x = layers.BatchNormalization()(x)
+    x = L.BatchNormalization()(x)
 
-    for cs, ks in zip(conv_sizes, kernel_sizes):
-        # a cs==0 removes the layer
+    for i, (cs, ks) in enumerate(zip(conv_sizes, kernel_sizes)):
+        # a cs==0 skips the layers
         if cs > 0:
-            x = layers.Conv2D(cs, ks, activation="relu", padding="same")(x)
-            x = layers.BatchNormalization()(x)
-            # (?, mel_dim, time_steps, cs)
+            x = L.Conv2D(
+                filters=cs,
+                kernel_size=ks,
+                activation="relu",
+                padding="same",
+                name=f"conv2d_feature_{i}",
+            )(x)
+            x = L.BatchNormalization(name=f"batchnorm_feature_{i}")(x)
+            # (?, time_steps, mel_dim, cs)
             if dropout > 0:
-                x = layers.Dropout(dropout)(x)
+                x = L.Dropout(dropout, name=f"dropout_feature_{i}")(x)
 
-    # the last conv_sizes is always 1 so now the shape is
-    # (?, mel_dim, time_steps, 1)
+    # the last conv_sizes is always 1 so now the shape is again
+    # (?, time_steps, mel_dim, 1)
 
     # remove the last dimension
-    x = layers.Lambda(lambda q: backend.squeeze(q, axis=-1), name="squeeze_last_dim")(x)
-    # (?, mel_dim, time_steps)
+    x = L.Lambda(lambda q: K.squeeze(q, axis=-1), name="squeeze_last_dim")(x)
+    # (?, time_steps, mel_dim)
 
     for units in lstm_units:
         if units > 0:
-            x = layers.Bidirectional(layers.LSTM(units, return_sequences=True))(x)
-            # (?, mel_dim, units * 2)
+            x = L.Bidirectional(L.LSTM(units, return_sequences=True))(x)
+            # (?, time_steps, units * 2)
 
             # save the dimension of the last LSTM layer
             last_lstm_dim = units * 2
@@ -153,25 +111,63 @@ def AttentionModel(
     elif att_sample == "mid":
         sample_index = input_shape[1] // 2
 
-    xFirst = layers.Lambda(lambda q: q[:, sample_index], name="x_first")(x)
-    # (?, units * 2)
-
     if query_style == "dense01":
-        query = layers.Dense(last_lstm_dim, name="query")(xFirst)
+        x_first = L.Lambda(lambda q: q[:, sample_index], name="x_first")(x)
+        # (?, units * 2)
+        query = L.Dense(last_lstm_dim, name="query")(x_first)
         # (?, units * 2)
 
-    attScores = layers.Dot(axes=[1, 2], name="att_scores_dot")([query, x])
-    # (?, mel_dim)
-    attScores = layers.Softmax(name="att_softmax")(attScores)
-    # (?, mel_dim)
+    # start from (?, time_steps, units * 2) need to end with (?, units * 2)
+    elif query_style.startswith("conv"):
 
-    attVector = layers.Dot(axes=[1, 1], name="att_vector_dot")([attScores, x])
+        # the parameters for the conv net
+        if query_style == "conv01":
+            num_fil = [10, 10, 10]
+            kern_sz = [(4, 4), (4, 4), (4, 4)]
+            pool_sz = [(3, 3), (3, 3), (3, 3)]
+            x_q = K.expand_dims(x, axis=-1)
+            # (?, time_steps, units * 2, 1) conv needs an 'image'
+
+        elif query_style == "conv02":
+            num_fil = [5, 5, 5, 5]
+            kern_sz = [(4, 4), (4, 4), (4, 4), (4, 4)]
+            pool_sz = [(2, 2), (2, 2), (2, 2), (2, 2)]
+            x_q = K.expand_dims(x, axis=-1)
+            # (?, time_steps, units * 2, 1) conv needs an 'image'
+
+        elif query_style == "conv03":
+            num_fil = [5, 5, 5, 5]
+            kern_sz = [(4, 4), (4, 4), (4, 4), (4, 4)]
+            pool_sz = [(2, 2), (2, 2), (2, 2), (2, 2)]
+            x_q = inputs
+
+        # build the CNN
+        for i, (nf, ks, ps) in enumerate(zip(num_fil, kern_sz, pool_sz)):
+            x_q = L.Conv2D(
+                nf,
+                kernel_size=ks,
+                activation="relu",
+                padding="same",
+                name=f"conv2d_query_{i}",
+            )(x_q)
+            x_q = L.BatchNormalization(name=f"batchnorm_query_{i}")(x_q)
+            x_q = L.MaxPooling2D(pool_size=ps, name=f"maxpool_query_{i}")(x_q)
+            x_q = L.Dropout(dropout, name=f"dropout_query_{i}")(x_q)
+
+        x_q = L.Flatten()(x_q)
+        query = L.Dense(last_lstm_dim, name="query")(x_q)
+
+    att_scores = L.Dot(axes=[1, 2], name="att_scores_dot")([query, x])
+    att_scores = L.Softmax(name="att_softmax")(att_scores)
+    # (?, time_steps)
+
+    att_vector = L.Dot(axes=[1, 1], name="att_vector_dot")([att_scores, x])
     # (?, units * 2)
 
-    x = layers.Dense(dense_width * 2, activation="relu")(attVector)
-    x = layers.Dense(dense_width)(x)
+    x = L.Dense(dense_width * 2, activation="relu")(att_vector)
+    x = L.Dense(dense_width)(x)
 
-    output = layers.Dense(num_labels, activation="softmax", name="output")(x)
+    output = L.Dense(num_labels, activation="softmax", name="output")(x)
     model = models.Model(inputs=[inputs], outputs=[output])
 
     return model
@@ -196,7 +192,7 @@ def TRAmodel(num_labels, input_shape, dense_widths, dropout, data):
 
     # normalize the data for xception
     # https://www.tensorflow.org/api_docs/python/tf/keras/layers/experimental/preprocessing/Normalization
-    norm_layer = tf.keras.layers.experimental.preprocessing.Normalization()
+    norm_layer = L.experimental.preprocessing.Normalization()
     norm_layer.adapt(data["training"])
 
     x = norm_layer(inputs)
@@ -205,18 +201,18 @@ def TRAmodel(num_labels, input_shape, dense_widths, dropout, data):
     # when we unfreeze the base model for fine-tuning, so we make sure that the
     # base_model is running in inference mode here.
     x = base_model(x, training=False)
-    x = tf.keras.layers.GlobalAveragePooling2D()(x)
+    x = L.GlobalAveragePooling2D()(x)
 
     if dropout > 0:
-        x = tf.keras.layers.Dropout(dropout)(x)  # Regularize with dropout
+        x = L.Dropout(dropout)(x)  # Regularize with dropout
 
     if dense_widths[0] > 0:
-        x = tf.keras.layers.Dense(dense_widths[0], activation="relu")(x)
+        x = L.Dense(dense_widths[0], activation="relu")(x)
 
     if dense_widths[1] > 0:
-        x = tf.keras.layers.Dense(dense_widths[1], activation="relu")(x)
+        x = L.Dense(dense_widths[1], activation="relu")(x)
 
-    outputs = tf.keras.layers.Dense(num_labels, activation="softmax")(x)
+    outputs = L.Dense(num_labels, activation="softmax")(x)
 
     model = tf.keras.models.Model(inputs=[inputs], outputs=[outputs], name="TRAmodel")
 
@@ -236,21 +232,28 @@ def test_attention_model():
     # mp["query_style"] = "dense01"
     # mp["dense_width"] = 32
 
+    query_style = "conv03"
+
     mp["num_labels"] = 8
-    mp["input_shape"] = (128, 32, 1)
-    # mp["input_shape"] = (80, 120, 1)
-    mp["conv_sizes"] = [10, 0, 1]
+    # mp["input_shape"] = (128, 32, 1)
+    mp["input_shape"] = (80, 120, 1)
+    # mp["input_shape"] = (128, 128, 1)
+    # mp["input_shape"] = (20, 30, 1)
+    # mp["conv_sizes"] = [10, 0, 1]
+    mp["conv_sizes"] = [10, 10, 1]
     mp["dropout"] = 0.2
     mp["kernel_sizes"] = [(5, 1), (5, 1), (5, 1)]
     mp["lstm_units"] = [64, 64]
     mp["att_sample"] = "mid"
-    mp["query_style"] = "dense01"
+    # mp["query_style"] = "dense01"
+    mp["query_style"] = query_style
     mp["dense_width"] = 32
 
     attention_model = AttentionModel(**mp)
     attention_model.summary()
 
-    model_pic_name = "plot_models/attention_model_01.png"
+    model_folder = Path("plot_models")
+    model_pic_name = model_folder / f"attention_model_{query_style}.png"
     utils.plot_model(attention_model, model_pic_name, show_shapes=True, dpi=400)
 
 

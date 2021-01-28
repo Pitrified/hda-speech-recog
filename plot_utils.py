@@ -89,6 +89,14 @@ def plot_pred(pred, words, ax, title="Predictions", correct_index=None):
     ax.set_title(title)
 
 
+def plot_att_weights(weights, ax, title="Attention weights"):
+    """"""
+    num_weights = len(weights)
+    x = np.arange(num_weights)
+    ax.bar(x, weights)
+    ax.set_title(title)
+
+
 def plot_cat_acc(train_cat_acc, val_cat_acc, ax, model_name):
     """TODO: what is plot_cat_acc doing?"""
     # logg = logging.getLogger(f"c.{__name__}.plot_cat_acc")

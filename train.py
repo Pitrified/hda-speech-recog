@@ -21,18 +21,18 @@ from models import AttentionModel
 from models import CNNmodel
 from models import TRAmodel
 
-from evaluate import analyze_confusion
 from plot_utils import plot_cat_acc
 from plot_utils import plot_confusion_matrix
 from plot_utils import plot_loss
+from preprocess_data import compose_spec
 from preprocess_data import load_processed
 from preprocess_data import load_triple
 from preprocess_data import preprocess_spec
-from preprocess_data import compose_spec
-from utils import words_types
+from utils import analyze_confusion
 from utils import pred_hot_2_cm
 from utils import setup_gpus
 from utils import setup_logger
+from utils import words_types
 
 from typing import Any
 from typing import Dict
@@ -693,32 +693,33 @@ def hyper_train_attention(
     hypa_grid["words_type"] = [words_type]
 
     # the dataset to train on
-    hypa_grid["dataset_name"] = ["mel01", "mel04", "mela1"]
+    hypa_grid["dataset_name"] = ["mel01", "mel04", "mel05", "mela1"]
     # hypa_grid["dataset_name"] = ["mela1"]
+    # hypa_grid["dataset_name"] = ["mel04"]
 
     # how big are the first conv layers
-    hypa_grid["conv_size_type"] = ["01", "02"]
-    # hypa_grid["conv_size_type"] = ["02"]
+    # hypa_grid["conv_size_type"] = ["01", "02"]
+    hypa_grid["conv_size_type"] = ["02"]
 
     # dropout after conv, 0 to skip it
-    hypa_grid["dropout_type"] = ["01", "02"]
-    # hypa_grid["dropout_type"] = ["01"]
+    # hypa_grid["dropout_type"] = ["01", "02"]
+    hypa_grid["dropout_type"] = ["01"]
 
     # the shape of the kernels in the conv layers
-    hypa_grid["kernel_size_type"] = ["01", "02"]
-    # hypa_grid["kernel_size_type"] = ["01"]
+    # hypa_grid["kernel_size_type"] = ["01", "02"]
+    hypa_grid["kernel_size_type"] = ["01"]
 
     # the dimension of the LSTM
     # hypa_grid["lstm_units_type"] = ["01", "02"]
     hypa_grid["lstm_units_type"] = ["01"]
 
     # the vector picked for attention
-    hypa_grid["att_sample_type"] = ["01", "02"]
-    # hypa_grid["att_sample_type"] = ["02"]
+    # hypa_grid["att_sample_type"] = ["01", "02"]
+    hypa_grid["att_sample_type"] = ["02"]
 
     # the query style type
-    # hypa_grid["query_style_type"] = ["01", "02"]
-    hypa_grid["query_style_type"] = ["01"]
+    # hypa_grid["query_style_type"] = ["01", "02", "03", "04"]
+    hypa_grid["query_style_type"] = ["04"]
 
     # the width of the dense layers
     # hypa_grid["dense_width_type"] = ["01", "02"]
@@ -737,6 +738,8 @@ def hyper_train_attention(
     # the number of epochs
     # hypa_grid["epoch_num_type"] = ["01", "02"]
     hypa_grid["epoch_num_type"] = ["01"]
+
+    logg.debug(f"hypa_grid: {hypa_grid}")
 
     # create the grid
     the_grid = list(ParameterGrid(hypa_grid))
@@ -821,7 +824,12 @@ def train_attention(
     att_sample_types = {"01": "last", "02": "mid"}
     model_param["att_sample"] = att_sample_types[hypa["att_sample_type"]]
 
-    query_style_types = {"01": "dense01", "02": "conv01"}
+    query_style_types = {
+        "01": "dense01",
+        "02": "conv01",
+        "03": "conv02",
+        "04": "conv03",
+    }
     model_param["query_style"] = query_style_types[hypa["query_style_type"]]
 
     dense_width_types = {"01": 32, "02": 64}

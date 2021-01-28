@@ -3,128 +3,210 @@ import numpy as np  # type: ignore
 from sklearn.metrics import confusion_matrix  # type: ignore
 import tensorflow as tf  # type: ignore
 
-WORDS_ALL = [
-    "backward",
-    "bed",
-    "bird",
-    "cat",
-    "dog",
-    "down",
-    "eight",
-    "five",
-    "follow",
-    "forward",
-    "four",
-    "go",
-    "happy",
-    "house",
-    "learn",
-    "left",
-    "marvin",
-    "nine",
-    "no",
-    "off",
-    "on",
-    "one",
-    "right",
-    "seven",
-    "sheila",
-    "six",
-    "stop",
-    "three",
-    "tree",
-    "two",
-    "up",
-    "visual",
-    "wow",
-    "yes",
-    "zero",
-]
 
-WORDS_NUMBERS = [
-    "zero",
-    "one",
-    "two",
-    "three",
-    "four",
-    "five",
-    "six",
-    "seven",
-    "eight",
-    "nine",
-]
+def define_words_types():
 
-WORDS_DIRECTION = ["up", "down", "forward", "backward", "left", "right"]
+    WORDS_ALL = [
+        "backward",
+        "bed",
+        "bird",
+        "cat",
+        "dog",
+        "down",
+        "eight",
+        "five",
+        "follow",
+        "forward",
+        "four",
+        "go",
+        "happy",
+        "house",
+        "learn",
+        "left",
+        "marvin",
+        "nine",
+        "no",
+        "off",
+        "on",
+        "one",
+        "right",
+        "seven",
+        "sheila",
+        "six",
+        "stop",
+        "three",
+        "tree",
+        "two",
+        "up",
+        "visual",
+        "wow",
+        "yes",
+        "zero",
+    ]
 
-WORDS_KAGGLE_1 = ["yes", "no", "up", "down", "left", "right", "on", "off", "stop", "go"]
+    WORDS_NUMBERS = [
+        "zero",
+        "one",
+        "two",
+        "three",
+        "four",
+        "five",
+        "six",
+        "seven",
+        "eight",
+        "nine",
+    ]
 
-WORDS_TASK_20 = [
-    "down",
-    "eight",
-    "five",
-    "four",
-    "go",
-    "left",
-    "nine",
-    "no",
-    "off",
-    "on",
-    "one",
-    "right",
-    "seven",
-    "six",
-    "stop",
-    "three",
-    "two",
-    "up",
-    "yes",
-    "zero",
-]
+    WORDS_DIRECTION = ["up", "down", "forward", "backward", "left", "right"]
 
-words_types = {
-    "all": WORDS_ALL,
-    "dir": WORDS_DIRECTION,
-    "num": WORDS_NUMBERS,
-    "k1": WORDS_KAGGLE_1,
-    "w2": WORDS_TASK_20,
-    "f1": ["happy", "learn", "wow", "visual"],
-    "f2": ["backward", "eight", "go", "yes"],
-    "_backward": ["backward"],
-    "_bed": ["bed"],
-    "_bird": ["bird"],
-    "_cat": ["cat"],
-    "_dog": ["dog"],
-    "_down": ["down"],
-    "_eight": ["eight"],
-    "_five": ["five"],
-    "_follow": ["follow"],
-    "_forward": ["forward"],
-    "_four": ["four"],
-    "_go": ["go"],
-    "_happy": ["happy"],
-    "_house": ["house"],
-    "_learn": ["learn"],
-    "_left": ["left"],
-    "_marvin": ["marvin"],
-    "_nine": ["nine"],
-    "_no": ["no"],
-    "_off": ["off"],
-    "_on": ["on"],
-    "_one": ["one"],
-    "_right": ["right"],
-    "_seven": ["seven"],
-    "_sheila": ["sheila"],
-    "_six": ["six"],
-    "_stop": ["stop"],
-    "_three": ["three"],
-    "_tree": ["tree"],
-    "_two": ["two"],
-    "_up": ["up"],
-    "_visual": ["visual"],
-    "_wow": ["wow"],
-    "_yes": ["yes"],
-    "_zero": ["zero"],
-}
+    WORDS_KAGGLE_1 = [
+        "yes",
+        "no",
+        "up",
+        "down",
+        "left",
+        "right",
+        "on",
+        "off",
+        "stop",
+        "go",
+    ]
+
+    WORDS_TASK_20 = [
+        "down",
+        "eight",
+        "five",
+        "four",
+        "go",
+        "left",
+        "nine",
+        "no",
+        "off",
+        "on",
+        "one",
+        "right",
+        "seven",
+        "six",
+        "stop",
+        "three",
+        "two",
+        "up",
+        "yes",
+        "zero",
+    ]
+
+    words_types = {
+        "all": WORDS_ALL,
+        "dir": WORDS_DIRECTION,
+        "num": WORDS_NUMBERS,
+        "k1": WORDS_KAGGLE_1,
+        "w2": WORDS_TASK_20,
+        "f1": ["happy", "learn", "wow", "visual"],
+        "f2": ["backward", "eight", "go", "yes"],
+        "_backward": ["backward"],
+        "_bed": ["bed"],
+        "_bird": ["bird"],
+        "_cat": ["cat"],
+        "_dog": ["dog"],
+        "_down": ["down"],
+        "_eight": ["eight"],
+        "_five": ["five"],
+        "_follow": ["follow"],
+        "_forward": ["forward"],
+        "_four": ["four"],
+        "_go": ["go"],
+        "_happy": ["happy"],
+        "_house": ["house"],
+        "_learn": ["learn"],
+        "_left": ["left"],
+        "_marvin": ["marvin"],
+        "_nine": ["nine"],
+        "_no": ["no"],
+        "_off": ["off"],
+        "_on": ["on"],
+        "_one": ["one"],
+        "_right": ["right"],
+        "_seven": ["seven"],
+        "_sheila": ["sheila"],
+        "_six": ["six"],
+        "_stop": ["stop"],
+        "_three": ["three"],
+        "_tree": ["tree"],
+        "_two": ["two"],
+        "_up": ["up"],
+        "_visual": ["visual"],
+        "_wow": ["wow"],
+        "_yes": ["yes"],
+        "_zero": ["zero"],
+    }
+
+    return words_types
+
+
+words_types = define_words_types()
+
+
+def analyze_confusion(confusion, true_labels):
+    """Compute the F-score from the confusion matrix, and print the intermediate results
+
+    Precision: TP / ( TP + FP)
+    Recall: TP / ( TP + FN)
+    F-score: 2 (PxR) / (P+R)
+    """
+    logg = logging.getLogger(f"c.{__name__}.analyze_confusion")
+    logg.setLevel("INFO")
+    logg.debug("Start analyze_confusion")
+
+    logg.debug("Confusion matrix:")
+    logg.debug(row_fmt("Pre\\Tru", true_labels))
+
+    for line, label in zip(confusion, true_labels):
+        logg.debug(row_fmt(f"{label}", line))
+
+    TP = confusion.diagonal()
+    FN = np.sum(confusion, axis=0) - TP
+    FP = np.sum(confusion, axis=1) - TP
+
+    logg.debug("")
+    logg.debug(row_fmt("TP", TP))
+    logg.debug(row_fmt("FP", FP))
+    logg.debug(row_fmt("FN", FN))
+
+    # https://stackoverflow.com/a/37977222
+    #  P = TP / ( TP + FP)
+    #  R = TP / ( TP + FN)
+    dP = TP + FP
+    P = np.divide(TP, dP, out=np.zeros_like(TP, dtype=float), where=dP != 0)
+    dR = TP + FN
+    R = np.divide(TP, dR, out=np.zeros_like(TP, dtype=float), where=dR != 0)
+
+    logg.debug("\nPrecision = TP / ( TP + FP)\tRecall = TP / ( TP + FN)")
+    logg.debug(row_fmt("Prec", P, ":.4f"))
+    logg.debug(row_fmt("Recall", R, ":.4f"))
+
+    avgP = np.sum(P) / len(true_labels)
+    avgR = np.sum(R) / len(true_labels)
+    logg.debug(f"Average P: {avgP:.4f}\tR: {avgR:.4f}")
+
+    logg.debug("F-score = 2 (PxR) / (P+R)")
+    #  F = 2 (PxR) / (P+R)
+    PdR = 2 * P * R
+    PpR = P + R
+    F = np.divide(PdR, PpR, out=np.zeros_like(TP, dtype=float), where=PpR != 0)
+    logg.debug(row_fmt("F-score", F, ":.4f"))
+
+    avgF = np.sum(F) / len(true_labels)
+    logg.debug(f"Average F-score {avgF}")
+
+    return avgF
+
+
+def row_fmt(header, iterable, formatter=""):
+    row = header
+    for item in iterable:
+        #  row += f'\t{item{formatter}}'
+        row += "\t{{i{f}}}".format(f=formatter).format(i=item)
+    return row
 
 
 def setup_logger(logLevel="DEBUG"):
