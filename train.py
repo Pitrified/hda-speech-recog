@@ -735,6 +735,7 @@ def hyper_train_attention(
     hypa_grid["batch_size_type"] = ["01"]
 
     # the number of epochs
+    # hypa_grid["epoch_num_type"] = ["01", "02"]
     hypa_grid["epoch_num_type"] = ["01"]
 
     # create the grid

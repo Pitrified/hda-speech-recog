@@ -151,7 +151,7 @@ def AttentionModel(
     if att_sample == "last":
         sample_index = -1
     elif att_sample == "mid":
-        sample_index = last_lstm_dim // 2
+        sample_index = input_shape[1] // 2
 
     xFirst = layers.Lambda(lambda q: q[:, sample_index], name="x_first")(x)
     # (?, units * 2)
@@ -226,13 +226,24 @@ def TRAmodel(num_labels, input_shape, dense_widths, dropout, data):
 def test_attention_model():
     """"""
     mp = {}
-    mp["num_labels"] = 4
-    mp["input_shape"] = (20, 30, 1)
+    # mp["num_labels"] = 4
+    # mp["input_shape"] = (20, 30, 1)
+    # mp["conv_sizes"] = [10, 0, 1]
+    # mp["dropout"] = 0
+    # mp["kernel_sizes"] = [(5, 1), (5, 1), (5, 1)]
+    # mp["lstm_units"] = [64, 64]
+    # mp["att_sample"] = "last"
+    # mp["query_style"] = "dense01"
+    # mp["dense_width"] = 32
+
+    mp["num_labels"] = 8
+    mp["input_shape"] = (128, 32, 1)
+    # mp["input_shape"] = (80, 120, 1)
     mp["conv_sizes"] = [10, 0, 1]
-    mp["dropout"] = 0
+    mp["dropout"] = 0.2
     mp["kernel_sizes"] = [(5, 1), (5, 1), (5, 1)]
     mp["lstm_units"] = [64, 64]
-    mp["att_sample"] = "last"
+    mp["att_sample"] = "mid"
     mp["query_style"] = "dense01"
     mp["dense_width"] = 32
 

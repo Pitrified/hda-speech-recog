@@ -26,6 +26,8 @@ from utils import words_types
 
 from typing import Dict
 from typing import List
+from typing import Any
+
 # from typing import Tuple
 # from typing import Optional
 
@@ -42,6 +44,7 @@ def parse_arguments():
         choices=[
             "results",
             "results_transfer",
+            "results_attention",
             "model",
             "audio",
             "audio_transfer",
@@ -803,6 +806,90 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
         plt.show()
 
 
+def evaluate_results_attention() -> None:
+    """TODO: what is evaluate_results_attention doing?"""
+    logg = logging.getLogger(f"c.{__name__}.evaluate_results_attention")
+    logg.setLevel("INFO")
+    logg.debug("Start evaluate_results_attention")
+
+    pandito: Dict[str, List[str]] = {
+        "words": [],
+        "dataset": [],
+        "conv": [],
+        "dropout": [],
+        "kernel": [],
+        "lstm": [],
+        "att": [],
+        "query": [],
+        "dense": [],
+        "lr": [],
+        "optimizer": [],
+        "batch": [],
+        "epoch": [],
+        "use_val": [],
+        "loss": [],
+        "cat_acc": [],
+        "precision": [],
+        "recall": [],
+        "fscore": [],
+        "model_name": [],
+    }
+
+    info_folder = Path("info")
+
+    for model_folder in info_folder.iterdir():
+        # logg.debug(f"model_folder: {model_folder}")
+        model_name = model_folder.name
+        if not model_name.startswith("ATT"):
+            continue
+        logg.debug(f"model_name: {model_name}")
+
+        res_path = model_folder / "results_recap.json"
+        if not res_path.exists():
+            logg.info(f"Skipping res_path: {res_path}, not found")
+            continue
+        res = json.loads(res_path.read_text())
+
+        recap_path = model_folder / "recap.json"
+        if not recap_path.exists():
+            logg.info(f"Skipping recap_path: {recap_path}, not found")
+            continue
+        recap = json.loads(recap_path.read_text())
+
+        if res["results_recap_version"] == "001":
+            logg.debug("\nWHAT ARE YOU DOING using this version\n")
+
+        hypa: Dict[str, Any] = recap["hypa"]
+
+        pandito["words"].append(hypa["words_type"])
+        pandito["dataset"].append(hypa["dataset_name"])
+        pandito["conv"].append(hypa["conv_size_type"])
+        pandito["dropout"].append(hypa["dropout_type"])
+        pandito["kernel"].append(hypa["kernel_size_type"])
+        pandito["lstm"].append(hypa["lstm_units_type"])
+        pandito["att"].append(hypa["att_sample_type"])
+        pandito["query"].append(hypa["query_style_type"])
+        pandito["dense"].append(hypa["dense_width_type"])
+
+        pandito["lr"].append(hypa["learning_rate_type"])
+        pandito["optimizer"].append(hypa["optimizer_type"])
+        pandito["batch"].append(hypa["batch_size_type"])
+        pandito["epoch"].append(hypa["epoch_num_type"])
+
+        pandito["use_val"].append(recap["use_validation"])
+        pandito["loss"].append(res["loss"])
+        pandito["cat_acc"].append(res["categorical_accuracy"])
+        pandito["precision"].append(res["precision"])
+        pandito["recall"].append(res["recall"])
+        pandito["fscore"].append(res["fscore"])
+
+        pandito["model_name"].append(res["model_name"])
+
+    pd.set_option("max_colwidth", 100)
+    df = pd.DataFrame(pandito)
+    logg.info(f"{df.sort_values('fscore', ascending=False)[:30]}")
+
+
 def run_evaluate(args) -> None:
     """TODO: What is evaluate doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate")
@@ -816,6 +903,8 @@ def run_evaluate(args) -> None:
         evaluate_results_recap(args)
     elif evaluation_type == "results_transfer":
         evaluate_results_transfer(args)
+    elif evaluation_type == "results_attention":
+        evaluate_results_attention()
     elif evaluation_type == "model":
         evaluate_model(args)
     elif evaluation_type == "audio":
