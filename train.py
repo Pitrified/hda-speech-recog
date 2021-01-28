@@ -384,34 +384,33 @@ def hyper_train_transfer(args: argparse.Namespace) -> None:
 
     hypa_grid: Dict[str, List[str]] = {}
 
-    # TODO THIS SET WITH NOVAL ON F2
-    # do not change them, fool of a Took
-
     # TODO STILL TO FINISH
     # dw1234, dr13, bs2, opar
 
-    # hypa_grid["dense_width_type"] = ["01", "02", "03", "04"]
+    hypa_grid["dense_width_type"] = ["01", "02", "03", "04"]
     # hypa_grid["dense_width_type"] = ["01", "02"]
-    hypa_grid["dense_width_type"] = ["03"]
+    # hypa_grid["dense_width_type"] = ["03"]
 
-    # hypa_grid["dropout_type"] = ["01", "03"]
-    hypa_grid["dropout_type"] = ["01"]
+    hypa_grid["dropout_type"] = ["01", "03"]
+    # hypa_grid["dropout_type"] = ["01"]
 
-    # hypa_grid["batch_size_type"] = ["01", "02"]
+    hypa_grid["batch_size_type"] = ["01", "02"]
     # hypa_grid["batch_size_type"] = ["01"]
-    hypa_grid["batch_size_type"] = ["02"]
+    # hypa_grid["batch_size_type"] = ["02"]
 
     hypa_grid["epoch_num_type"] = ["01"]
     hypa_grid["learning_rate_type"] = ["01"]
 
-    # hypa_grid["optimizer_type"] = ["a1", "r1"]
-    hypa_grid["optimizer_type"] = ["a1"]
+    hypa_grid["optimizer_type"] = ["a1", "r1"]
+    # hypa_grid["optimizer_type"] = ["a1"]
 
     # hypa_grid["datasets_type"] = ["01", "02", "03", "04", "05"]
     hypa_grid["datasets_type"] = ["01"]
 
     hypa_grid["words_type"] = [words_type]
     the_grid = list(ParameterGrid(hypa_grid))
+
+    logg.debug(f"hypa_grid: {hypa_grid}")
 
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
@@ -693,13 +692,14 @@ def hyper_train_attention(
     hypa_grid["words_type"] = [words_type]
 
     # the dataset to train on
-    hypa_grid["dataset_name"] = ["mel01", "mel04", "mel05", "mela1"]
+    # hypa_grid["dataset_name"] = ["mel01", "mel04", "mel05", "mela1"]
     # hypa_grid["dataset_name"] = ["mela1"]
     # hypa_grid["dataset_name"] = ["mel04"]
+    hypa_grid["dataset_name"] = ["mela1", "mel04"]
 
     # how big are the first conv layers
-    # hypa_grid["conv_size_type"] = ["01", "02"]
-    hypa_grid["conv_size_type"] = ["02"]
+    hypa_grid["conv_size_type"] = ["01", "02"]
+    # hypa_grid["conv_size_type"] = ["02"]
 
     # dropout after conv, 0 to skip it
     # hypa_grid["dropout_type"] = ["01", "02"]
@@ -718,8 +718,8 @@ def hyper_train_attention(
     hypa_grid["att_sample_type"] = ["02"]
 
     # the query style type
-    # hypa_grid["query_style_type"] = ["01", "02", "03", "04"]
-    hypa_grid["query_style_type"] = ["04"]
+    hypa_grid["query_style_type"] = ["01", "02", "03", "04"]
+    # hypa_grid["query_style_type"] = ["04"]
 
     # the width of the dense layers
     # hypa_grid["dense_width_type"] = ["01", "02"]
@@ -743,6 +743,7 @@ def hyper_train_attention(
 
     # create the grid
     the_grid = list(ParameterGrid(hypa_grid))
+
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
 

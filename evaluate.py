@@ -523,6 +523,9 @@ def evaluate_results_transfer(args: argparse.Namespace) -> None:
         # res_freeze = json.loads(res_freeze_path.read_text())
 
         res_full_path = model_folder / "results_full_recap.json"
+        if not res_full_path.exists():
+            logg.info(f"Skipping res_full_path: {res_full_path}, not found")
+            continue
         res_full = json.loads(res_full_path.read_text())
         logg.debug(f"res_full['fscore']: {res_full['fscore']}")
 
@@ -760,7 +763,7 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
 def evaluate_results_attention() -> None:
     """TODO: what is evaluate_results_attention doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_results_attention")
-    logg.setLevel("INFO")
+    # logg.setLevel("INFO")
     logg.debug("Start evaluate_results_attention")
 
     pandito: Dict[str, List[str]] = {
@@ -838,7 +841,55 @@ def evaluate_results_attention() -> None:
 
     pd.set_option("max_colwidth", 100)
     df = pd.DataFrame(pandito)
-    logg.info(f"{df.sort_values('fscore', ascending=False)[:30]}")
+    filtered = df.sort_values("fscore", ascending=False).head(30)
+    logg.info(f"{filtered}")
+
+    # produce a dict for recreating the training
+    for index, row in filtered.iterrows():
+        hp = "    {"
+        hp += f"        'words_type': '{row['words']}',"
+        hp += f"        'dataset_name': '{row['dataset']}',"
+        hp += f"        'conv_size_type': '{row['conv']}',"
+        hp += f"        'dropout_type': '{row['dropout']}',"
+        hp += f"        'kernel_size_type': '{row['kernel']}',"
+        hp += f"        'lstm_units_type': '{row['lstm']}',"
+        hp += f"        'att_sample_type': '{row['att']}',"
+        hp += f"        'query_style_type': '{row['query']}',"
+        hp += f"        'dense_width_type': '{row['dense']}',"
+        hp += f"        'learning_rate_type': '{row['lr']}',"
+        hp += f"        'optimizer_type': '{row['optimizer']}',"
+        hp += f"        'batch_size_type': '{row['batch']}',"
+        hp += f"        'epoch_num_type': '{row['epoch']}',"
+        hp += "    },"
+        # logg.debug(f"hp: {hp}")
+
+    # compare the rankings with and without validation
+    best_val = df.query("use_val==True").sort_values("fscore", ascending=False)
+    best_noval = df.query("use_val==False").sort_values("fscore", ascending=False)
+
+    rank: Dict[str, List[int]] = {}
+    num_head = 30
+    for i, (_, row) in enumerate(best_val.head(num_head).iterrows()):
+        model_name = row["model_name"]
+        hypa_str = model_name[4:]  # chop off ATT_ at the beginning
+        # logg.debug(f"hypa_str: {hypa_str}")
+        rank[hypa_str] = [i, 0]
+
+    for i, (_, row) in enumerate(best_noval.head(num_head).iterrows()):
+        model_name = row["model_name"]
+        hypa_str = model_name[4:]  # chop off ATT_ at the beginning
+        hypa_str = hypa_str[:-6]  # chop off _noval at the end
+        # logg.debug(f"hypa_str: {hypa_str}")
+        rank[hypa_str][1] = i
+
+    rank_pd: Dict[str, Any] = {
+        "hypa_str": list(rank.keys()),
+        "rank_val": [rank[hs][0] for hs in rank],
+        "rank_noval": [rank[hs][1] for hs in rank],
+    }
+    rank_df = pd.DataFrame(rank_pd)
+    ranked = rank_df.sort_values("rank_val", ascending=True).head(30)
+    logg.debug(f"ranked:\n{ranked}")
 
 
 def evaluate_attention_weights(train_words_type: str) -> None:

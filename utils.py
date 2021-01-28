@@ -258,6 +258,13 @@ def setup_gpus():
         logg.debug("Broski non ho trovato le GPU")
 
 
+def compute_permutation(words):
+    """"""
+    sorted_words = sorted(words)
+    perm_index = [sorted_words.index(w) for w in words]
+    return perm_index
+
+
 def pred_hot_2_cm(y_hot, y_pred, labels):
     """Computes the confusion matrix from prediction and 1hot encoded labels
 
