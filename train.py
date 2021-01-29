@@ -775,8 +775,8 @@ def hyper_train_attention(
     # hypa_grid["conv_size_type"] = ["02"]
 
     # dropout after conv, 0 to skip it
-    # hypa_grid["dropout_type"] = ["01", "02"]
-    hypa_grid["dropout_type"] = ["01"]
+    hypa_grid["dropout_type"] = ["01", "02"]
+    # hypa_grid["dropout_type"] = ["01"]
 
     # the shape of the kernels in the conv layers
     # hypa_grid["kernel_size_type"] = ["01", "02"]

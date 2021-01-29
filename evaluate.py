@@ -16,6 +16,7 @@ from plot_utils import plot_pred
 from plot_utils import plot_spec
 from plot_utils import plot_waveform
 from plot_utils import plot_double_data
+from plot_utils import plot_triple_data
 from preprocess_data import get_spec_dict
 from preprocess_data import load_processed
 from preprocess_data import wav2mel
@@ -280,18 +281,26 @@ def make_plots_cnn() -> None:
     hypa_grid["dropout"] = ["01", "02"]
     hypa_grid["batch_size"] = [16, 32, 64]
     hypa_grid["epoch_num"] = [15, 30, 60]
-    hypa_grid["lr"] = ["01", "02", "03"]
+    # hypa_grid["lr"] = ["01", "02", "03"]
+    hypa_grid["lr"] = ["01", "02"]
     hypa_grid["opt"] = ["a1", "r1"]
 
     ds = ["mel01", "mel02", "mel03", "mel04"]
-    ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
+    # ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
     hypa_grid["dataset"] = ds
+    # hypa_grid["dataset"] = ["mfcc01", "mfcc02", "mfcc03", "mfcc04"]
     hypa_grid["words"] = ["f2", "f1", "num", "dir", "k1", "w2", "all"]
+    # hypa_grid["words"] = ["num", "f1"]
 
-    all_hp_to_plot = list(combinations(hypa_grid.keys(), 3))
+    a1l_hp_to_plot = list(combinations(hypa_grid.keys(), 3))
+    logg.debug(f"len(a1l_hp_to_plot): {len(a1l_hp_to_plot)}")
 
-    # for hp_to_plot in combinations(hypa_grid.keys(), 3):
-    for hp_to_plot in tqdm(all_hp_to_plot[:4]):
+    # all_hp_to_plot = [["batch_size", "dense_width", "dropout"]]
+    # all_hp_to_plot = [["kernel_size", "dense_width", "dropout"]]
+    # all_hp_to_plot = [["epoch_num", "dataset", "words"]]
+    all_hp_to_plot = [["epoch_num", "dataset", "lr"]]
+
+    for hp_to_plot in tqdm(all_hp_to_plot[:1]):
         lab_values = [hypa_grid[hptp] for hptp in hp_to_plot]
 
         labels_dim = [len(lab) for lab in lab_values]
@@ -349,7 +358,10 @@ def make_plots_cnn() -> None:
             fig.savefig(fig_path)
             plt.close(fig)
 
-    # plt.show()
+        fig, ax = plt.subplots(figsize=(8, 8))
+        plot_triple_data(ax, lab_values, hp_to_plot, f_mean, f_min, f_max, f_std)
+
+    plt.show()
 
 
 def evaluate_model_cnn(args):
