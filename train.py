@@ -389,6 +389,7 @@ def hyper_train_transfer(args: argparse.Namespace) -> None:
     # hypa_grid["dense_width_type"] = ["01", "02", "03", "04"]
     # hypa_grid["dense_width_type"] = ["01", "02"]
     hypa_grid["dense_width_type"] = ["03"]
+    # hypa_grid["dense_width_type"] = ["02"]
 
     # hypa_grid["dropout_type"] = ["01", "03"]
     hypa_grid["dropout_type"] = ["01"]
@@ -401,14 +402,15 @@ def hyper_train_transfer(args: argparse.Namespace) -> None:
     hypa_grid["learning_rate_type"] = ["01"]
 
     # hypa_grid["optimizer_type"] = ["a1", "r1"]
-    hypa_grid["optimizer_type"] = ["a1"]
+    hypa_grid["optimizer_type"] = ["r1"]
 
     # hypa_grid["datasets_type"] = ["01", "02", "03", "04", "05"]
     hypa_grid["datasets_type"] = ["01"]
 
     # hypa_grid["words_type"] = [words_type]
     hypa_grid["words_type"] = [words_type]
-    hypa_grid["words"] = ["f2", "f1", "dir", "num", "k1", "w2", "all"]
+    # hypa_grid["words_type"] = ["f2", "f1", "dir", "num", "k1", "w2", "all"]
+    # hypa_grid["words_type"] = ["f2", "f1", "dir", "num"]
     the_grid = list(ParameterGrid(hypa_grid))
 
     logg.debug(f"hypa_grid: {hypa_grid}")
@@ -422,11 +424,13 @@ def hyper_train_transfer(args: argparse.Namespace) -> None:
         # get the dataset name list
         dataset_names = datasets_types[dt]
         for dn in dataset_names:
-            # and check that the data is available
-            if dn.startswith("melc"):
-                compose_spec(dn, words_type)
-            else:
-                preprocess_spec(dn, words_type)
+            # and check that the data is available for each word type
+            for wt in hypa_grid["words_type"]:
+                logg.debug(f"\nwt: {wt} dn: {dn}\n")
+                if dn.startswith("melc"):
+                    compose_spec(dn, wt)
+                else:
+                    preprocess_spec(dn, wt)
 
     for i, hypa in enumerate(the_grid):
         logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
@@ -556,12 +560,14 @@ def train_transfer(
         metrics=metrics,
     )
 
+    logg.debug("Start fit")
     results_freeze = model.fit(
         x,
         y,
         validation_data=val_data,
         epochs=epoch_nums[0],
         batch_size=batch_sizes[0],
+        verbose=0,
     )
 
     results_freeze_recap: Dict[str, Any] = {}
