@@ -149,21 +149,28 @@ def plot_confusion_matrix(conf_mat, ax, model_name, words, fscore=None):
             ax.text(j, i, conf_mat[i, j], ha="center", va="center", color=c, size=lfs)
 
 
-def plot_double_data(labels, f_mean, f_min, f_max, f_std, ax):
-    """
+def plot_double_data(
+    lab_values, hp_to_plot, f_mean, f_min, f_max, f_std, outer_label, ax
+):
+    """Plot groups of columns
 
     f_mean.shape (x, y)
 
-    y gruppi di colonne
-    x colonne per gruppo
+    y groups of columns
+    x columns per group
     """
+
+    title = f"{hp_to_plot[2]} {outer_label}\n"
+    title += f"{hp_to_plot[0]} grouped by {hp_to_plot[1]}"
+    ax.set_title(title, fontsize=18)
+    ax.set_xlabel(f"{hp_to_plot[1]}", fontsize=14)
+    ax.set_ylabel("F-score (min/mean/max and std-dev)", fontsize=14)
 
     f_dim = f_mean.shape
     width_group = 0.8
     width_col = width_group / f_dim[0]
 
     x_pos = np.arange(f_dim[1])
-    # x_ticks = x_pos + (width_group / 2) - (width_col / 2)
     x_ticks = x_pos + (width_group / 2)
 
     for ix in range(f_dim[0]):
@@ -175,14 +182,13 @@ def plot_double_data(labels, f_mean, f_min, f_max, f_std, ax):
         y_min = y_f - f_min[ix, :]
         y_max = f_max[ix, :] - y_f
         y_err = np.vstack((y_min, y_max))
-        # print(f"y_err:\n{y_err}")
 
         ax.bar(
             x=x_col,
             height=y_f,
             width=width_col,
             yerr=y_err,
-            label=labels[0][ix],
+            label=lab_values[0][ix],
             align="edge",
         )
 
@@ -198,5 +204,5 @@ def plot_double_data(labels, f_mean, f_min, f_max, f_std, ax):
         )
 
     ax.set_xticks(x_ticks)
-    ax.set_xticklabels(labels[1])
+    ax.set_xticklabels(lab_values[1])
     ax.legend()

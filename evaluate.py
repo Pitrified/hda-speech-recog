@@ -1,4 +1,6 @@
+from itertools import combinations
 from pathlib import Path
+from tqdm import tqdm  # type: ignore
 import argparse
 import json
 import logging
@@ -264,60 +266,90 @@ def make_plots_cnn() -> None:
 
     ####################################
 
+    plot_folder = Path("plot_results")
+
     hypa_grid: Dict[str, Any] = {}
-    hypa_grid["batch_size"] = [16, 32, 64, 128]
+    # hypa_grid["batch_size"] = [16, 32, 64, 128]
     # hypa_grid["batch_size"] = [32, 64, 128]
+    # hypa_grid["epoch_num"] = [15, 30, 60]
+
+    hypa_grid["filters"] = [10, 20, 30, 32, 64, 128]
+    hypa_grid["kernel_size"] = ["01", "02", "03"]
+    hypa_grid["pool_size"] = ["01", "02"]
+    hypa_grid["dense_width"] = [16, 32, 64, 128]
+    hypa_grid["dropout"] = ["01", "02"]
+    hypa_grid["batch_size"] = [16, 32, 64]
     hypa_grid["epoch_num"] = [15, 30, 60]
+    hypa_grid["lr"] = ["01", "02", "03"]
+    hypa_grid["opt"] = ["a1", "r1"]
 
-    # ds = ["mel01", "mel02", "mel03", "mel04"]
-    # ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
-    # hypa_grid["dataset"] = ds
-    # hypa_grid["dataset"] = ["mfcc01", "mfcc02"]
-    hypa_grid["dataset"] = ["mfcc01"]
+    ds = ["mel01", "mel02", "mel03", "mel04"]
+    ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
+    hypa_grid["dataset"] = ds
+    hypa_grid["words"] = ["f2", "f1", "num", "dir", "k1", "w2", "all"]
 
-    # hp_to_plot = ["batch_size", "epoch_num", "dataset"]
-    hp_to_plot = ["epoch_num", "batch_size", "dataset"]
-    labels = [hypa_grid[hptp] for hptp in hp_to_plot]
+    all_hp_to_plot = list(combinations(hypa_grid.keys(), 3))
 
-    labels_dim = [len(lab) for lab in labels]
+    # for hp_to_plot in combinations(hypa_grid.keys(), 3):
+    for hp_to_plot in tqdm(all_hp_to_plot[:4]):
+        lab_values = [hypa_grid[hptp] for hptp in hp_to_plot]
 
-    for iz, vz in enumerate(labels[2]):
-        logg.debug(f"\nvz: {vz}")
+        labels_dim = [len(lab) for lab in lab_values]
 
-        f_mean = np.zeros(labels_dim[:2])
-        logg.debug(f"f_mean.shape: {f_mean.shape}")
-        f_min = np.zeros(labels_dim[:2])
-        f_max = np.zeros(labels_dim[:2])
-        f_std = np.zeros(labels_dim[:2])
+        f_mean = np.zeros(labels_dim)
+        # logg.debug(f"f_mean.shape: {f_mean.shape}")
+        f_min = np.zeros(labels_dim)
+        f_max = np.zeros(labels_dim)
+        f_std = np.zeros(labels_dim)
 
-        fig, ax = plt.subplots(figsize=(12, 12))
+        for iz, vz in enumerate(lab_values[2]):
+            # logg.debug(f"\nvz: {vz}")
 
-        for iy, vy in enumerate(labels[1]):
-            for ix, vx in enumerate(labels[0]):
-                # logg.debug(f"\nvx: {vx} vy: {vy} vz: {vz}")
+            fig, ax = plt.subplots(figsize=(8, 8))
 
-                q_str = f"({hp_to_plot[0]} == '{vx}')"
-                q_str += f" and ({hp_to_plot[1]} == '{vy}')"
-                q_str += f" and ({hp_to_plot[2]} == '{vz}')"
-                # logg.debug(f"q_str: {q_str}")
+            for iy, vy in enumerate(lab_values[1]):
+                for ix, vx in enumerate(lab_values[0]):
+                    # logg.debug(f"\nvx: {vx} vy: {vy} vz: {vz}")
 
-                q_df = results_df.query(q_str)
-                # logg.debug(f"len(q_df): {len(q_df)}")
-                if len(q_df) == 0:
-                    continue
+                    q_str = f"({hp_to_plot[0]} == '{vx}')"
+                    q_str += f" and ({hp_to_plot[1]} == '{vy}')"
+                    q_str += f" and ({hp_to_plot[2]} == '{vz}')"
+                    # logg.debug(f"q_str: {q_str}")
 
-                # logg.debug(f"q_df:\n{q_df.sort_values('fscore').head(10)}")
-                # logg.debug(f"q_df:\n{q_df.sort_values('fscore').tail(10)}")
+                    q_df = results_df.query(q_str)
+                    # logg.debug(f"len(q_df): {len(q_df)}")
+                    if len(q_df) == 0:
+                        continue
 
-                f_mean[ix, iy] = q_df.fscore.mean()
-                f_min[ix, iy] = q_df.fscore.min()
-                f_max[ix, iy] = q_df.fscore.max()
-                f_std[ix, iy] = q_df.fscore.std()
+                    # logg.debug(f"q_df:\n{q_df.sort_values('fscore').head(10)}")
+                    # logg.debug(f"q_df:\n{q_df.sort_values('fscore').tail(10)}")
 
-        logg.debug(f"f_mean: {f_mean}")
-        plot_double_data(labels[:2], f_mean, f_min, f_max, f_std, ax)
+                    f_mean[ix, iy, iz] = q_df.fscore.mean()
+                    f_min[ix, iy, iz] = q_df.fscore.min()
+                    f_max[ix, iy, iz] = q_df.fscore.max()
+                    f_std[ix, iy, iz] = q_df.fscore.std()
 
-    plt.show()
+            # logg.debug(f"f_mean:\n{f_mean}")
+            plot_double_data(
+                lab_values[:2],
+                hp_to_plot,
+                f_mean[:, :, iz],
+                f_min[:, :, iz],
+                f_max[:, :, iz],
+                f_std[:, :, iz],
+                vz,
+                ax,
+            )
+
+            fig_name = "Fscore"
+            fig_name += f"_{hp_to_plot[2]}_{vz}"
+            fig_name += f"_{hp_to_plot[1]}_{vy}"
+            fig_name += f"_{hp_to_plot[0]}_{vx}"
+            fig_path = plot_folder / fig_name
+            fig.savefig(fig_path)
+            plt.close(fig)
+
+    # plt.show()
 
 
 def evaluate_model_cnn(args):
