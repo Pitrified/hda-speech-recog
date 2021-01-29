@@ -10,29 +10,25 @@ import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 import tensorflow as tf  # type: ignore
 
-# from tensorflow.keras.models import Model  # type: ignore
-
-from train import get_attention_name
+from plot_utils import plot_att_weights
 from plot_utils import plot_confusion_matrix
 from plot_utils import plot_pred
 from plot_utils import plot_spec
 from plot_utils import plot_waveform
-from plot_utils import plot_att_weights
 from preprocess_data import get_spec_dict
 from preprocess_data import load_processed
 from preprocess_data import wav2mel
+from train import get_attention_name
+from utils import analyze_confusion
+from utils import compute_permutation
 from utils import pred_hot_2_cm
 from utils import setup_gpus
 from utils import setup_logger
 from utils import words_types
-from utils import analyze_confusion
 
 from typing import Dict
 from typing import List
 from typing import Any
-
-# from typing import Tuple
-# from typing import Optional
 
 
 def parse_arguments():
@@ -58,21 +54,24 @@ def parse_arguments():
         help="Which evaluation to perform",
     )
 
+    tra_types = [w for w in words_types.keys() if not w.startswith("_")]
     parser.add_argument(
         "-tw",
         "--train_words_type",
         type=str,
         default="f2",
-        choices=words_types.keys(),
+        choices=tra_types,
         help="Words the dataset was trained on",
     )
 
+    rec_types = [w for w in words_types.keys() if not w.startswith("_")]
+    rec_types.append("dataset")
     parser.add_argument(
         "-rw",
         "--rec_words_type",
         type=str,
         default="dataset",
-        choices=["all", "dir", "num", "f1", "f2", "k1", "dataset"],
+        choices=rec_types,
         help="Words to record and test",
     )
 
@@ -101,7 +100,7 @@ def setup_env():
 def evaluate_results_recap(args):
     """TODO: what is evaluate_results_recap doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_results_recap")
-    # logg.setLevel("INFO")
+    logg.setLevel("INFO")
     logg.debug("Start evaluate_results_recap")
 
     info_folder = Path("info")
@@ -308,6 +307,7 @@ def evaluate_audio(args):
     # words that the dataset was trained on
     train_words_type = args.train_words_type
     train_words = words_types[train_words_type]
+    perm_pred = compute_permutation(train_words)
 
     rec_words_type = args.rec_words_type
     if rec_words_type == "dataset":
@@ -396,13 +396,20 @@ def evaluate_audio(args):
     for i, word in enumerate(rec_words):
         plot_waveform(audios[i], axes[i][0])
         plot_spec(specs[i], axes[i][1])
-        plot_pred(pred[i], train_words, axes[i][2], f"Prediction for {rec_words[i]}", i)
+        plot_pred(
+            pred[i][perm_pred],
+            train_words,
+            axes[i][2],
+            f"Prediction for {rec_words[i]}",
+            i,
+        )
 
     # https://stackoverflow.com/q/8248467
     # https://stackoverflow.com/q/2418125
     fig.tight_layout(h_pad=3, rect=[0, 0.03, 1, 0.97])
 
-    results_path = audio_folder / f"results_{train_words_type}_{rec_words_type}.png"
+    fig_name = f"{model_name}_{train_words_type}_{rec_words_type}.png"
+    results_path = audio_folder / fig_name
     fig.savefig(results_path)
 
     if num_rec_words <= 6:
@@ -638,6 +645,9 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
     train_words_type = args.train_words_type
     train_words = words_types[train_words_type]
 
+    # the model predicts sorted words
+    perm_pred = compute_permutation(train_words)
+
     if rec_words_type == "dataset":
         rec_words = train_words
     else:
@@ -730,22 +740,18 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
     fig, axes = plt.subplots(nrows=num_rec_words, ncols=5, figsize=(fw, fh))
     fig.suptitle("Recorded audios", fontsize=18)
 
-    # the words predicted are SORTED
-    train_words_sorted = sorted(train_words)
-
     for i, word in enumerate(rec_words):
         plot_waveform(audios[i], axes[i][0])
         img_spec = specs_3ch[i]
         plot_spec(img_spec[:, :, 0], axes[i][1])
         plot_spec(img_spec[:, :, 1], axes[i][2])
         plot_spec(img_spec[:, :, 2], axes[i][3])
-        pred_index = np.argmax(pred[i])
         plot_pred(
-            pred[i],
-            train_words_sorted,
+            pred[i][perm_pred],
+            train_words,
             axes[i][4],
             f"Prediction for {rec_words[i]}",
-            pred_index,
+            i,
         )
 
     # https://stackoverflow.com/q/8248467
@@ -950,8 +956,8 @@ def evaluate_attention_weights(train_words_type: str) -> None:
 
     # get the words
     train_words = words_types[train_words_type]
-    train_words_sorted = sorted(train_words)
     logg.debug(f"train_words: {train_words}")
+    perm_pred = compute_permutation(train_words)
 
     # select a word
     correct_index = 0
@@ -987,9 +993,11 @@ def evaluate_attention_weights(train_words_type: str) -> None:
 
     # plot the predictions
     word_pred = pred[word_id]
+    # permute the prediction from sorted to the order you have
+    word_pred = word_pred[perm_pred]
     pred_index = np.argmax(word_pred)
     title = f"Predictions for {word}"
-    plot_pred(word_pred, train_words_sorted, axes[2], title, pred_index)
+    plot_pred(word_pred, train_words, axes[2], title, pred_index)
 
     fig.tight_layout()
 

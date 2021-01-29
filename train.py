@@ -104,6 +104,8 @@ def hyper_train(args):
     logg = logging.getLogger(f"c.{__name__}.hyper_train")
     logg.debug("Start hyper_train")
 
+    words_type = args.words_type
+
     hypa_grid = {}
     hypa_grid["base_filters"] = [20, 32]
     hypa_grid["kernel_size_type"] = ["01", "02"]
@@ -114,8 +116,7 @@ def hyper_train(args):
     hypa_grid["batch_size"] = [32]
     hypa_grid["epoch_num"] = [15, 30, 60]
     hypa_grid["dataset"] = ["mfcc04"]
-    hypa_grid["words"] = ["f1"]
-    # hypa_grid["words"] = ["dir"]
+    hypa_grid["words"] = [words_type]
     # the_grid = list(ParameterGrid(hypa_grid))
 
     hypa_grid = {}
@@ -129,25 +130,31 @@ def hyper_train(args):
     hypa_grid["learning_rate_type"] = ["01", "02", "03"]
     hypa_grid["optimizer_type"] = ["a1"]
     hypa_grid["dataset"] = ["mel04"]
-    hypa_grid["words"] = ["f1"]
+    hypa_grid["words"] = [words_type]
     the_grid = list(ParameterGrid(hypa_grid))
 
-    hypa_grid_best = {}
-    hypa_grid_best["base_dense_width"] = [32]
-    hypa_grid_best["base_filters"] = [20]
-    hypa_grid_best["batch_size"] = [32]
-    hypa_grid_best["dataset"] = ["mel01"]
-    hypa_grid_best["dropout_type"] = ["01"]
-    hypa_grid_best["epoch_num"] = [16]
-    hypa_grid_best["kernel_size_type"] = ["02"]
-    hypa_grid_best["pool_size_type"] = ["02"]
-    hypa_grid_best["learning_rate_type"] = ["02"]
-    hypa_grid_best["optimizer_type"] = ["a1"]
-    hypa_grid_best["words"] = ["k1"]
-    the_grid = list(ParameterGrid(hypa_grid_best))
+    # best params generally
+    hypa_grid = {}
+    hypa_grid["base_dense_width"] = [32]
+    hypa_grid["base_filters"] = [20]
+    hypa_grid["batch_size"] = [32]
+    hypa_grid["dataset"] = ["mel01"]
+    hypa_grid["dropout_type"] = ["01"]
+    hypa_grid["epoch_num"] = [16]
+    hypa_grid["kernel_size_type"] = ["02"]
+    hypa_grid["pool_size_type"] = ["02"]
+    hypa_grid["learning_rate_type"] = ["02"]
+    hypa_grid["optimizer_type"] = ["a1"]
+    hypa_grid["words"] = ["f2", "f1", "num", "dir", "k1", "w2", "all"]
+    the_grid = list(ParameterGrid(hypa_grid))
 
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
+
+    # check that the data is available
+    for dn in hypa_grid["dataset"]:
+        for wt in hypa_grid["words"]:
+            preprocess_spec(dn, wt)
 
     for i, hypa in enumerate(the_grid):
         logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
