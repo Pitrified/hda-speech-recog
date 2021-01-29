@@ -75,6 +75,13 @@ def parse_arguments():
         help="Do not use validation data while training",
     )
 
+    parser.add_argument(
+        "-dr",
+        "--dry_run",
+        action="store_true",
+        help="Do a dry run for the hypa grid",
+    )
+
     # last line to parse the args
     args = parser.parse_args()
     return args
@@ -95,6 +102,11 @@ def setup_env():
     logmain.info(recap)
 
     return args
+
+
+#####################################################################
+#             CNN model
+#####################################################################
 
 
 def build_cnn_name(hypa: Dict[str, Union[str, int]]) -> str:
@@ -126,37 +138,69 @@ def hyper_train(args):
 
     words_type = args.words_type
 
-    hypa_grid = {}
-    hypa_grid["base_filters"] = [20, 32]
-    hypa_grid["kernel_size_type"] = ["01", "02"]
-    hypa_grid["pool_size_type"] = ["01", "02"]
-    hypa_grid["base_dense_width"] = [32]
-    hypa_grid["dropout_type"] = ["01", "02"]
-    hypa_grid["batch_size"] = [32]
-    hypa_grid["epoch_num"] = [15, 30, 60]
-    hypa_grid["learning_rate_type"] = ["01", "02", "03"]
-    hypa_grid["optimizer_type"] = ["a1"]
-    hypa_grid["dataset"] = ["mel04"]
-    hypa_grid["words"] = [words_type]
-    the_grid = list(ParameterGrid(hypa_grid))
+    # big grid
+    hypa_grid_big = {}
+    hypa_grid_big["base_filters"] = [10, 20, 30, 32, 64, 128]
+    hypa_grid_big["kernel_size_type"] = ["01", "02"]
+    hypa_grid_big["pool_size_type"] = ["01", "02"]
+    hypa_grid_big["base_dense_width"] = [16, 32, 64, 128]
+    hypa_grid_big["dropout_type"] = ["01", "02"]
+    hypa_grid_big["batch_size"] = [16, 32, 64]
+    hypa_grid_big["epoch_num"] = [15, 30, 60]
+    hypa_grid_big["learning_rate_type"] = ["01", "02", "03"]
+    hypa_grid_big["optimizer_type"] = ["a1"]
+
+    ds = ["mel01", "mel02", "mel03", "mel04"]
+    ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
+    hypa_grid_big["dataset"] = ds
+
+    hypa_grid_big["words"] = [words_type]
+
+    # tiny grid
+    hypa_grid_tiny = {}
+    hypa_grid_tiny["base_filters"] = [20]
+    hypa_grid_tiny["kernel_size_type"] = ["01"]
+    hypa_grid_tiny["pool_size_type"] = ["01"]
+    hypa_grid_tiny["base_dense_width"] = [32]
+    hypa_grid_tiny["dropout_type"] = ["01"]
+    hypa_grid_tiny["batch_size"] = [32]
+    hypa_grid_tiny["epoch_num"] = [15]
+    hypa_grid_tiny["learning_rate_type"] = ["01"]
+    hypa_grid_tiny["optimizer_type"] = ["a1"]
+    hypa_grid_tiny["dataset"] = ["mel04"]
+    hypa_grid_tiny["words"] = [words_type]
 
     # best params generally
-    hypa_grid = {}
-    hypa_grid["base_dense_width"] = [32]
-    hypa_grid["base_filters"] = [20]
-    hypa_grid["batch_size"] = [32]
-    hypa_grid["dataset"] = ["mel01"]
-    hypa_grid["dropout_type"] = ["01"]
-    hypa_grid["epoch_num"] = [16]
-    hypa_grid["kernel_size_type"] = ["02"]
-    hypa_grid["pool_size_type"] = ["02"]
-    hypa_grid["learning_rate_type"] = ["02"]
-    hypa_grid["optimizer_type"] = ["a1"]
-    hypa_grid["words"] = ["f2", "f1", "num", "dir", "k1", "w2", "all"]
+    hypa_grid_best = {}
+    hypa_grid_best["base_dense_width"] = [32]
+    hypa_grid_best["base_filters"] = [20]
+    hypa_grid_best["batch_size"] = [32]
+    hypa_grid_best["dataset"] = ["mel01"]
+    hypa_grid_best["dropout_type"] = ["01"]
+    hypa_grid_best["epoch_num"] = [16]
+    hypa_grid_best["kernel_size_type"] = ["02"]
+    hypa_grid_best["pool_size_type"] = ["02"]
+    hypa_grid_best["learning_rate_type"] = ["02"]
+    hypa_grid_best["optimizer_type"] = ["a1"]
+    # hypa_grid_best["words"] = ["f2", "f1", "num", "dir", "k1", "w2", "all"]
+    hypa_grid_best["words"] = [words_type]
+
+    # hypa_grid = hypa_grid_tiny
+    # hypa_grid = hypa_grid_best
+    hypa_grid = hypa_grid_big
     the_grid = list(ParameterGrid(hypa_grid))
 
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
+
+    dry_run = True
+    if dry_run:
+        tra_info = {"already_trained": 0, "to_train": 0}
+        for hypa in the_grid:
+            train_status = train_model_cnn_dry(hypa)
+            tra_info[train_status] += 1
+        logg.debug(f"tra_info: {tra_info}")
+        return
 
     # check that the data is available
     for dn in hypa_grid["dataset"]:
@@ -167,6 +211,28 @@ def hyper_train(args):
         logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
         with Pool(1) as p:
             p.apply(train_model, (hypa,))
+
+
+def train_model_cnn_dry(hypa) -> str:
+    """TODO: what is train_model_cnn_dry doing?"""
+    model_folder = Path("trained_models")
+
+    model_name = build_cnn_name(hypa)
+    model_path = model_folder / f"{model_name}.h5"
+    if model_path.exists():
+        return "already_trained"
+
+    # the model might have been trained before introducing lr and opt hypas
+    if hypa["learning_rate_type"] == "01" and hypa["optimizer_type"] == "a1":
+        hypa["learning_rate_type"] = "default"
+        hypa["optimizer_type"] = "adam"
+
+    model_name = build_cnn_name(hypa)
+    model_path = model_folder / f"{model_name}.h5"
+    if model_path.exists():
+        return "already_trained"
+
+    return "to_train"
 
 
 def train_model(hypa):
@@ -190,7 +256,7 @@ def train_model(hypa):
 
     # check if this model has already been trained
     if model_path.exists():
-        return "Already trained"
+        return "already_trained"
 
     # magic to fix the GPUs
     setup_gpus()
@@ -339,7 +405,12 @@ def train_model(hypa):
     res_recap_path.write_text(json.dumps(results_recap, indent=4))
 
     # plt.show()
-    return results_recap
+    return "done_training"
+
+
+#####################################################################
+#             TRA model
+#####################################################################
 
 
 def build_transfer_name(hypa: Dict[str, str], use_validation: bool) -> str:
@@ -651,6 +722,11 @@ def train_transfer(
     model.save(model_path)
 
 
+#####################################################################
+#             ATT model
+#####################################################################
+
+
 def build_attention_name(hypa: Dict[str, str], use_validation: bool) -> str:
     """TODO: what is build_attention_name doing?"""
     model_name = "ATT"
@@ -676,7 +752,7 @@ def build_attention_name(hypa: Dict[str, str], use_validation: bool) -> str:
 
 
 def hyper_train_attention(
-    words_type: str, force_retrain: bool, use_validation: bool
+    words_type: str, force_retrain: bool, use_validation: bool, dry_run: bool
 ) -> None:
     """TODO: what is hyper_train_attention doing?"""
     logg = logging.getLogger(f"c.{__name__}.hyper_train_attention")
@@ -719,8 +795,8 @@ def hyper_train_attention(
     # hypa_grid["query_style_type"] = ["04"]
 
     # the width of the dense layers
-    # hypa_grid["dense_width_type"] = ["01", "02"]
-    hypa_grid["dense_width_type"] = ["01"]
+    hypa_grid["dense_width_type"] = ["01", "02"]
+    # hypa_grid["dense_width_type"] = ["01"]
 
     # the learning rates for the optimizer
     hypa_grid["learning_rate_type"] = ["01"]
@@ -744,6 +820,14 @@ def hyper_train_attention(
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
 
+    if dry_run:
+        tra_info = {"already_trained": 0, "to_train": 0}
+        for hypa in the_grid:
+            train_status = train_model_att_dry(hypa, use_validation)
+            tra_info[train_status] += 1
+        logg.debug(f"tra_info: {tra_info}")
+        return
+
     # check that the data is available
     for dn in hypa_grid["dataset_name"]:
         preprocess_spec(dn, words_type)
@@ -753,6 +837,18 @@ def hyper_train_attention(
         logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
         with Pool(1) as p:
             p.apply(train_attention, (hypa, force_retrain, use_validation))
+
+
+def train_model_att_dry(hypa, use_validation: bool) -> str:
+    """TODO: what is train_model_att_dry doing?"""
+    model_folder = Path("trained_models")
+
+    model_name = build_attention_name(hypa, use_validation)
+    model_path = model_folder / f"{model_name}.h5"
+    if model_path.exists():
+        return "already_trained"
+
+    return "to_train"
 
 
 def train_attention(
@@ -950,7 +1046,7 @@ def train_attention(
     model.save(model_path)
 
 
-def run_train(args):
+def run_train(args) -> None:
     """TODO: what is run_train doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_train")
     logg.debug("Start run_train")
@@ -959,13 +1055,14 @@ def run_train(args):
     words_type = args.words_type
     force_retrain = args.force_retrain
     use_validation = args.use_validation
+    dry_run = args.dry_run
 
     if training_type == "smallCNN":
         hyper_train(args)
     elif training_type == "transfer":
         hyper_train_transfer(args)
     elif training_type == "attention":
-        hyper_train_attention(words_type, force_retrain, use_validation)
+        hyper_train_attention(words_type, force_retrain, use_validation, dry_run)
 
 
 if __name__ == "__main__":

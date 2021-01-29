@@ -13,6 +13,7 @@ from plot_utils import plot_confusion_matrix
 from plot_utils import plot_pred
 from plot_utils import plot_spec
 from plot_utils import plot_waveform
+from plot_utils import plot_double_data
 from preprocess_data import get_spec_dict
 from preprocess_data import load_processed
 from preprocess_data import wav2mel
@@ -27,6 +28,7 @@ from utils import setup_logger
 from utils import words_types
 from utils import record_audios
 
+import typing as ty
 from typing import Dict
 from typing import List
 from typing import Any
@@ -44,13 +46,14 @@ def parse_arguments():
         default="results",
         choices=[
             "results_cnn",
-            "results_transfer",
-            "results_attention",
             "model_cnn",
             "audio_cnn",
-            "audio_transfer",
             "delete_cnn",
+            "make_plots_cnn",
+            "results_transfer",
+            "audio_transfer",
             "delete_transfer",
+            "results_attention",
             "attention_weights",
         ],
         help="Which evaluation to perform",
@@ -104,15 +107,15 @@ def setup_env():
 #####################################################################
 
 
-def evaluate_results_cnn(args):
-    """TODO: what is evaluate_results_cnn doing?"""
-    logg = logging.getLogger(f"c.{__name__}.evaluate_results_cnn")
+def build_cnn_results_df() -> pd.DataFrame:
+    """TODO: what is build_cnn_results_df doing?"""
+    logg = logging.getLogger(f"c.{__name__}.build_cnn_results_df")
     logg.setLevel("INFO")
-    logg.debug("Start evaluate_results_cnn")
+    logg.debug("Start build_cnn_results_df")
 
     info_folder = Path("info")
 
-    pandito = {
+    pandito: ty.Dict[str, ty.List[str]] = {
         "dense_width": [],
         "filters": [],
         "batch_size": [],
@@ -176,10 +179,145 @@ def evaluate_results_cnn(args):
             pandito["lr"].append("default")
             pandito["opt"].append("adam")
 
-    pd.set_option("max_colwidth", 100)
     df = pd.DataFrame(pandito)
-    logg.info(f"{df.sort_values('fscore', ascending=False)[:30]}")
-    # logg.info(f"{df.sort_values('categorical_accuracy', ascending=False)[:10]}")
+    return df
+
+
+def evaluate_results_cnn(args):
+    """TODO: what is evaluate_results_cnn doing?"""
+    logg = logging.getLogger(f"c.{__name__}.evaluate_results_cnn")
+    logg.setLevel("INFO")
+    logg.debug("Start evaluate_results_cnn")
+
+    results_df = build_cnn_results_df()
+    fscore_df = results_df.sort_values("fscore", ascending=False).head(30)
+    logg.info(f"{fscore_df}")
+
+
+def make_plots_cnn() -> None:
+    """TODO: what is make_plots_cnn doing?
+
+    z grafici (uno per dataset)
+    y gruppi di colonne (epoch_num)
+    x colonne per gruppo (batch_size)
+    ciascuna colonna ha le errorbar della std_dev di tutti i risultati per quella
+    combinazione di (dataset, epoch_num, batch_size)
+    """
+    logg = logging.getLogger(f"c.{__name__}.make_plots_cnn")
+    # logg.setLevel("INFO")
+    logg.debug("Start make_plots_cnn")
+
+    dataset_name = "mel01"
+    train_words_type = "f1"
+
+    results_df = build_cnn_results_df()
+
+    # setup the parameters
+    hypa: Dict[str, Union[str, int]] = {}
+    hypa["dense_width"] = 32
+    hypa["filters"] = 20
+    hypa["batch_size"] = 32
+    hypa["dropout"] = "01"
+    # hypa["epoch_num"] = 16
+    hypa["epoch_num"] = 15
+    hypa["kernel_size"] = "02"
+    hypa["pool_size"] = "02"
+    hypa["lr"] = "02"
+    hypa["opt"] = "a1"
+    hypa["dataset"] = dataset_name
+    hypa["words"] = train_words_type
+
+    for hp_name in hypa:
+        logg.debug(f"results_df[{hp_name}].unique(): {results_df[hp_name].unique()}")
+
+    fixed_hp = [
+        # "dense_width",
+        # "filters",
+        "batch_size",
+        # "dropout",
+        "epoch_num",
+        # "kernel_size",
+        # "pool_size",
+        # "lr",
+        # "opt",
+        "dataset",
+        # "words",
+    ]
+
+    q_str = "1==1 "
+    for hp_name in fixed_hp:
+        q_str += f" and ({hp_name} == '{hypa[hp_name]}')"
+    logg.debug(f"q_str: {q_str}")
+
+    q_df = results_df.query(q_str)
+    logg.debug(f"q_df:\n{q_df.sort_values('fscore', ascending=False).head(30)}")
+    logg.debug(f"q_df:\n{q_df.sort_values('fscore', ascending=True).head(30)}")
+
+    logg.debug(f"len(q_df): {len(q_df)}")
+
+    logg.debug(f"q_df.fscore.std(): {q_df.fscore.std()}")
+    logg.debug(f"q_df.fscore.var(): {q_df.fscore.var()}")
+    logg.debug(f"q_df.fscore.min(): {q_df.fscore.min()}")
+    logg.debug(f"q_df.fscore.max(): {q_df.fscore.max()}")
+    logg.debug(f"q_df.fscore.mean(): {q_df.fscore.mean()}")
+    q_df.fscore.plot.hist()
+
+    ####################################
+
+    hypa_grid: Dict[str, Any] = {}
+    hypa_grid["batch_size"] = [16, 32, 64, 128]
+    # hypa_grid["batch_size"] = [32, 64, 128]
+    hypa_grid["epoch_num"] = [15, 30, 60]
+
+    # ds = ["mel01", "mel02", "mel03", "mel04"]
+    # ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
+    # hypa_grid["dataset"] = ds
+    # hypa_grid["dataset"] = ["mfcc01", "mfcc02"]
+    hypa_grid["dataset"] = ["mfcc01"]
+
+    # hp_to_plot = ["batch_size", "epoch_num", "dataset"]
+    hp_to_plot = ["epoch_num", "batch_size", "dataset"]
+    labels = [hypa_grid[hptp] for hptp in hp_to_plot]
+
+    labels_dim = [len(lab) for lab in labels]
+
+    for iz, vz in enumerate(labels[2]):
+        logg.debug(f"\nvz: {vz}")
+
+        f_mean = np.zeros(labels_dim[:2])
+        logg.debug(f"f_mean.shape: {f_mean.shape}")
+        f_min = np.zeros(labels_dim[:2])
+        f_max = np.zeros(labels_dim[:2])
+        f_std = np.zeros(labels_dim[:2])
+
+        fig, ax = plt.subplots(figsize=(12, 12))
+
+        for iy, vy in enumerate(labels[1]):
+            for ix, vx in enumerate(labels[0]):
+                # logg.debug(f"\nvx: {vx} vy: {vy} vz: {vz}")
+
+                q_str = f"({hp_to_plot[0]} == '{vx}')"
+                q_str += f" and ({hp_to_plot[1]} == '{vy}')"
+                q_str += f" and ({hp_to_plot[2]} == '{vz}')"
+                # logg.debug(f"q_str: {q_str}")
+
+                q_df = results_df.query(q_str)
+                # logg.debug(f"len(q_df): {len(q_df)}")
+                if len(q_df) == 0:
+                    continue
+
+                # logg.debug(f"q_df:\n{q_df.sort_values('fscore').head(10)}")
+                # logg.debug(f"q_df:\n{q_df.sort_values('fscore').tail(10)}")
+
+                f_mean[ix, iy] = q_df.fscore.mean()
+                f_min[ix, iy] = q_df.fscore.min()
+                f_max[ix, iy] = q_df.fscore.max()
+                f_std[ix, iy] = q_df.fscore.std()
+
+        logg.debug(f"f_mean: {f_mean}")
+        plot_double_data(labels[:2], f_mean, f_min, f_max, f_std, ax)
+
+    plt.show()
 
 
 def evaluate_model_cnn(args):
@@ -928,8 +1066,12 @@ def run_evaluate(args) -> None:
     train_words_type = args.train_words_type
     rec_words_type = args.rec_words_type
 
+    pd.set_option("max_colwidth", 100)
+
     if evaluation_type == "results_cnn":
         evaluate_results_cnn(args)
+    elif evaluation_type == "make_plots_cnn":
+        make_plots_cnn()
     elif evaluation_type == "model_cnn":
         evaluate_model_cnn(args)
     elif evaluation_type == "audio_cnn":

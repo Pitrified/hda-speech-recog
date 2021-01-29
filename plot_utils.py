@@ -147,3 +147,56 @@ def plot_confusion_matrix(conf_mat, ax, model_name, words, fscore=None):
         for j in range(conf_mat.shape[1]):
             c = "white" if conf_mat[i, j] > thresh else "black"
             ax.text(j, i, conf_mat[i, j], ha="center", va="center", color=c, size=lfs)
+
+
+def plot_double_data(labels, f_mean, f_min, f_max, f_std, ax):
+    """
+
+    f_mean.shape (x, y)
+
+    y gruppi di colonne
+    x colonne per gruppo
+    """
+
+    f_dim = f_mean.shape
+    width_group = 0.8
+    width_col = width_group / f_dim[0]
+
+    x_pos = np.arange(f_dim[1])
+    # x_ticks = x_pos + (width_group / 2) - (width_col / 2)
+    x_ticks = x_pos + (width_group / 2)
+
+    for ix in range(f_dim[0]):
+        shift_col = width_col * ix
+        x_col = x_pos + shift_col
+
+        y_f = f_mean[ix, :]
+
+        y_min = y_f - f_min[ix, :]
+        y_max = f_max[ix, :] - y_f
+        y_err = np.vstack((y_min, y_max))
+        # print(f"y_err:\n{y_err}")
+
+        ax.bar(
+            x=x_col,
+            height=y_f,
+            width=width_col,
+            yerr=y_err,
+            label=labels[0][ix],
+            align="edge",
+        )
+
+        y_std = f_std[ix, :]
+        ax.errorbar(
+            x_col + width_col / 2,
+            y_f,
+            yerr=y_std,
+            linestyle="None",
+            capsize=5,
+            capthick=4,
+            ecolor="b",
+        )
+
+    ax.set_xticks(x_ticks)
+    ax.set_xticklabels(labels[1])
+    ax.legend()
