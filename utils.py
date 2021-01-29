@@ -3,6 +3,7 @@ from pathlib import Path
 from sklearn.metrics import confusion_matrix  # type: ignore
 from time import sleep
 import logging
+
 import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
 
@@ -338,3 +339,15 @@ def record_audios(
         audios.append(myrecording)
 
     return audios
+
+
+def find_rowcol(n: int) -> ty.Tuple[int, int]:
+    """TODO: what is find_rowcol doing?"""
+    sn = np.sqrt(n)
+    sn_low = int(np.floor(sn))
+    sn_high = int(np.ceil(sn))
+
+    if sn_low * sn_high >= n:
+        return sn_low, sn_high
+    else:
+        return sn_high, sn_high

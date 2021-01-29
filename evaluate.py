@@ -12,11 +12,11 @@ import tensorflow as tf  # type: ignore
 
 from plot_utils import plot_att_weights
 from plot_utils import plot_confusion_matrix
+from plot_utils import plot_double_data
 from plot_utils import plot_pred
 from plot_utils import plot_spec
-from plot_utils import plot_waveform
-from plot_utils import plot_double_data
 from plot_utils import plot_triple_data
+from plot_utils import plot_waveform
 from preprocess_data import get_spec_dict
 from preprocess_data import load_processed
 from preprocess_data import wav2mel
@@ -25,11 +25,12 @@ from train import build_cnn_name
 from train import build_transfer_name
 from utils import analyze_confusion
 from utils import compute_permutation
+from utils import find_rowcol
 from utils import pred_hot_2_cm
+from utils import record_audios
 from utils import setup_gpus
 from utils import setup_logger
 from utils import words_types
-from utils import record_audios
 
 import typing as ty
 from typing import Dict
@@ -197,8 +198,8 @@ def evaluate_results_cnn(args):
     logg.info(f"{fscore_df}")
 
 
-def make_plots_cnn() -> None:
-    """TODO: what is make_plots_cnn doing?
+def old_make_plots_cnn() -> None:
+    """TODO: what is old_make_plots_cnn doing?
 
     z grafici (uno per dataset)
     y gruppi di colonne (epoch_num)
@@ -206,9 +207,9 @@ def make_plots_cnn() -> None:
     ciascuna colonna ha le errorbar della std_dev di tutti i risultati per quella
     combinazione di (dataset, epoch_num, batch_size)
     """
-    logg = logging.getLogger(f"c.{__name__}.make_plots_cnn")
+    logg = logging.getLogger(f"c.{__name__}.old_make_plots_cnn")
     # logg.setLevel("INFO")
-    logg.debug("Start make_plots_cnn")
+    logg.debug("Start old_make_plots_cnn")
 
     dataset_name = "mel01"
     train_words_type = "f1"
@@ -362,6 +363,96 @@ def make_plots_cnn() -> None:
         plot_triple_data(ax, lab_values, hp_to_plot, f_mean, f_min, f_max, f_std)
 
     plt.show()
+
+
+def make_plots_cnn() -> None:
+    """TODO: what is make_plots_cnn doing?"""
+    logg = logging.getLogger(f"c.{__name__}.make_plots_cnn")
+    # logg.setLevel("INFO")
+    logg.debug("Start make_plots_cnn")
+
+    results_df = build_cnn_results_df()
+
+    plot_folder = Path("plot_results")
+
+    hypa_grid: Dict[str, Any] = {}
+    hypa_grid["filters"] = [10, 20, 30, 32, 64, 128]
+    hypa_grid["kernel_size"] = ["01", "02", "03"]
+    hypa_grid["pool_size"] = ["01", "02"]
+    hypa_grid["dense_width"] = [16, 32, 64, 128]
+    hypa_grid["dropout"] = ["01", "02"]
+    hypa_grid["batch_size"] = [16, 32, 64]
+    hypa_grid["epoch_num"] = [15, 30, 60]
+    hypa_grid["lr"] = ["01", "02", "03"]
+    hypa_grid["opt"] = ["a1", "r1"]
+
+    ds = ["mel01", "mel02", "mel03", "mel04"]
+    ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
+    hypa_grid["dataset"] = ds
+    # hypa_grid["dataset"] = ["mfcc01", "mfcc02", "mfcc03", "mfcc04"]
+    hypa_grid["words"] = ["f2", "f1", "num", "dir", "k1", "w2", "all"]
+
+    all_hp_to_plot = [["epoch_num", "dataset", "lr", "filters"]]
+
+    for hp_to_plot in tqdm(all_hp_to_plot[:1]):
+        outer_hp = hp_to_plot[-1]
+        inner_hp = hp_to_plot[:-1]
+        logg.debug(f"outer_hp: {outer_hp} inner_hp: {inner_hp}")
+
+        outer_values = hypa_grid[outer_hp]
+        outer_dim = len(outer_values)
+
+        nrows, ncols = find_rowcol(outer_dim)
+        base_figsize = 10
+        figsize = (ncols * base_figsize, nrows * base_figsize)
+        logg.debug(f"figsize: {figsize}")
+        fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
+        # make flat_ax always iterable
+        flat_ax = list(axes.flat) if outer_dim > 1 else [axes]
+
+        for iv, outer_value in enumerate(outer_values):
+            lab_values = [hypa_grid[hptp] for hptp in inner_hp]
+            labels_dim = [len(lab) for lab in lab_values]
+
+            f_mean = np.zeros(labels_dim)
+            f_min = np.zeros(labels_dim)
+            f_max = np.zeros(labels_dim)
+            f_std = np.zeros(labels_dim)
+
+            for iz, vz in enumerate(lab_values[2]):
+                for iy, vy in enumerate(lab_values[1]):
+                    for ix, vx in enumerate(lab_values[0]):
+                        q_str = f"({hp_to_plot[0]} == '{vx}')"
+                        q_str += f" and ({hp_to_plot[1]} == '{vy}')"
+                        q_str += f" and ({hp_to_plot[2]} == '{vz}')"
+                        q_df = results_df.query(q_str)
+
+                        f_mean[ix, iy, iz] = q_df.fscore.mean()
+                        f_min[ix, iy, iz] = q_df.fscore.min()
+                        f_max[ix, iy, iz] = q_df.fscore.max()
+                        f_std[ix, iy, iz] = q_df.fscore.std()
+
+            plot_triple_data(
+                flat_ax[iv],
+                lab_values,
+                hp_to_plot,
+                f_mean,
+                f_min,
+                f_max,
+                f_std,
+                outer_hp,
+                outer_value,
+            )
+
+        fig_name = "Fscore"
+        fig_name += f"_{hp_to_plot[2]}_{vz}"
+        fig_name += f"_{hp_to_plot[1]}_{vy}"
+        fig_name += f"_{hp_to_plot[0]}_{vx}"
+        fig_name += f"_{outer_hp}.pdf"
+        fig_path = plot_folder / fig_name
+        fig.tight_layout()
+        fig.savefig(fig_path)
+        plt.close(fig)
 
 
 def evaluate_model_cnn(args):

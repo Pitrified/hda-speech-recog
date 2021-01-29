@@ -227,6 +227,7 @@ def plot_triple_data(
     y groups of columns
     x columns per group
 
+        example of (3, 4, 2) shape
     ^
     |                   x x
     |x                  xxx xx   x
@@ -236,7 +237,7 @@ def plot_triple_data(
     |xxx xxx xxx xxx    xxx xxx xxx xxx
     .----------------------------------->
     """
-    print(f"f_mean.shape: {f_mean.shape}")
+    # print(f"f_mean.shape: {f_mean.shape}")
 
     title = ""
     if outer_label is not None and outer_value is not None:
@@ -244,8 +245,10 @@ def plot_triple_data(
         title += "\n"
     title += f"{lab_names[0]}"
     title += f" grouped by {lab_names[1]}"
-    title += f" grouped by {lab_names[2]}"
-    ax.set_title(title, fontsize=18)
+    title += "\n"
+    title += f"grouped by {lab_names[2]}:"
+    title += f" {lab_values[2]}"
+    ax.set_title(title, fontsize=14)
     ax.set_ylabel("F-score (min/mean/max and std-dev)", fontsize=14)
 
     f_dim = f_mean.shape
