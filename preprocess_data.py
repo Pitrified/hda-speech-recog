@@ -191,7 +191,7 @@ def preprocess_spec(
 
         # original / processed dataset base locations
         dataset_path = Path("data_raw")
-        processed_path = Path(f"data_proc/{dataset_name}")
+        processed_path = Path("data_proc") / f"{dataset_name}"
         if not processed_path.exists():
             processed_path.mkdir(parents=True, exist_ok=True)
 
@@ -306,7 +306,7 @@ def test_load_processed():
     """TODO: what is test_load_processed doing?"""
     logg = logging.getLogger(f"c.{__name__}.test_load_processed")
     logg.debug("Start test_load_processed")
-    processed_path = Path("data_proc/mfcc01")
+    processed_path = Path("data_proc") / "mfcc01"
     words = ["happy", "learn"]
     # words = WORDS_ALL
     load_processed(processed_path, words)

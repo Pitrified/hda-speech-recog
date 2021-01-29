@@ -1,10 +1,8 @@
 from pathlib import Path
-from time import sleep
 import argparse
 import json
 import logging
 
-from scipy.io.wavfile import write  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
@@ -18,17 +16,21 @@ from plot_utils import plot_waveform
 from preprocess_data import get_spec_dict
 from preprocess_data import load_processed
 from preprocess_data import wav2mel
-from train import get_attention_name
+from train import build_attention_name
+from train import build_cnn_name
+from train import build_transfer_name
 from utils import analyze_confusion
 from utils import compute_permutation
 from utils import pred_hot_2_cm
 from utils import setup_gpus
 from utils import setup_logger
 from utils import words_types
+from utils import record_audios
 
 from typing import Dict
 from typing import List
 from typing import Any
+from typing import Union
 
 
 def parse_arguments():
@@ -41,13 +43,13 @@ def parse_arguments():
         type=str,
         default="results",
         choices=[
-            "results",
+            "results_cnn",
             "results_transfer",
             "results_attention",
-            "model",
-            "audio",
+            "model_cnn",
+            "audio_cnn",
             "audio_transfer",
-            "delete",
+            "delete_cnn",
             "delete_transfer",
             "attention_weights",
         ],
@@ -65,12 +67,12 @@ def parse_arguments():
     )
 
     rec_types = [w for w in words_types.keys() if not w.startswith("_")]
-    rec_types.append("dataset")
+    rec_types.append("train")
     parser.add_argument(
         "-rw",
         "--rec_words_type",
         type=str,
-        default="dataset",
+        default="train",
         choices=rec_types,
         help="Words to record and test",
     )
@@ -97,11 +99,16 @@ def setup_env():
     return args
 
 
-def evaluate_results_recap(args):
-    """TODO: what is evaluate_results_recap doing?"""
-    logg = logging.getLogger(f"c.{__name__}.evaluate_results_recap")
+#####################################################################
+#             CNN model
+#####################################################################
+
+
+def evaluate_results_cnn(args):
+    """TODO: what is evaluate_results_cnn doing?"""
+    logg = logging.getLogger(f"c.{__name__}.evaluate_results_cnn")
     logg.setLevel("INFO")
-    logg.debug("Start evaluate_results_recap")
+    logg.debug("Start evaluate_results_cnn")
 
     info_folder = Path("info")
 
@@ -175,39 +182,36 @@ def evaluate_results_recap(args):
     # logg.info(f"{df.sort_values('categorical_accuracy', ascending=False)[:10]}")
 
 
-def load_trained_model(
-    base_filters,
-    kernel_size_type,
-    pool_size_type,
-    base_dense_width,
-    dropout_type,
-    batch_size,
-    epoch_num,
-    dataset,
-    words,
-    learning_rate_type,
-    optimizer_type,
-):
-    """TODO: what is load_trained_model doing?"""
-    logg = logging.getLogger(f"c.{__name__}.load_trained_model")
-    logg.debug("Start load_trained_model")
+def evaluate_model_cnn(args):
+    """TODO: what is evaluate_model_cnn doing?"""
+    logg = logging.getLogger(f"c.{__name__}.evaluate_model_cnn")
+    # logg.setLevel("INFO")
+    logg.debug("Start evaluate_model_cnn")
 
-    # name the model
-    model_name = "CNN"
-    model_name += f"_nf{base_filters}"
-    model_name += f"_ks{kernel_size_type}"
-    model_name += f"_ps{pool_size_type}"
-    model_name += f"_dw{base_dense_width}"
-    model_name += f"_dr{dropout_type}"
-    if learning_rate_type != "default":
-        model_name += f"_lr{learning_rate_type}"
-    if optimizer_type != "adam":
-        model_name += f"_op{optimizer_type}"
-    model_name += f"_ds{dataset}"
-    model_name += f"_bs{batch_size}"
-    model_name += f"_en{epoch_num}"
-    model_name += f"_w{words}"
+    train_words_type = args.train_words_type
+    dataset = "mel01"
 
+    # magic to fix the GPUs
+    setup_gpus()
+
+    # setup the parameters
+    hypa: Dict[str, Union[str, int]] = {}
+    hypa["base_dense_width"] = 32
+    hypa["base_filters"] = 20
+    hypa["batch_size"] = 32
+    hypa["dropout_type"] = "01"
+    hypa["epoch_num"] = 16
+    hypa["kernel_size_type"] = "02"
+    hypa["pool_size_type"] = "02"
+    hypa["learning_rate_type"] = "02"
+    hypa["optimizer_type"] = "a1"
+    hypa["dataset"] = dataset
+    hypa["words"] = train_words_type
+
+    # get the words
+    train_words = words_types[train_words_type]
+
+    model_name = build_cnn_name(hypa)
     logg.debug(f"model_name: {model_name}")
 
     model_folder = Path("trained_models")
@@ -217,52 +221,10 @@ def load_trained_model(
         raise FileNotFoundError
 
     model = tf.keras.models.load_model(model_path)
-    return model, model_name
-
-
-def evaluate_model(args):
-    """TODO: what is evaluate_model doing?"""
-    logg = logging.getLogger(f"c.{__name__}.evaluate_model")
-    # logg.setLevel("INFO")
-    logg.debug("Start evaluate_model")
-
-    # magic to fix the GPUs
-    setup_gpus()
-
-    # setup the parameters
-    dataset = "mel01"
-    words = args.train_words_type
-
-    base_dense_width = 32
-    base_filters = 20
-    batch_size = 32
-    dropout_type = "01"
-    epoch_num = 16
-    kernel_size_type = "02"
-    pool_size_type = "02"
-    learning_rate_type = "02"
-    optimizer_type = "a1"
-
-    # get the words
-    train_words = words_types[words]
-
-    model, model_name = load_trained_model(
-        base_filters,
-        kernel_size_type,
-        pool_size_type,
-        base_dense_width,
-        dropout_type,
-        batch_size,
-        epoch_num,
-        dataset,
-        words,
-        learning_rate_type,
-        optimizer_type,
-    )
     model.summary()
 
     # input data
-    processed_path = Path(f"data_proc/{dataset}")
+    processed_path = Path("data_proc") / f"{dataset}"
     data, labels = load_processed(processed_path, train_words)
     logg.debug(f"data['testing'].shape: {data['testing'].shape}")
 
@@ -285,21 +247,13 @@ def evaluate_model(args):
     plt.show()
 
 
-def evaluate_audio(args):
-    """TODO: what is evaluate_audio doing?"""
-    logg = logging.getLogger(f"c.{__name__}.evaluate_audio")
-    logg.debug("Start evaluate_audio")
+def evaluate_audio_cnn(args):
+    """TODO: what is evaluate_audio_cnn doing?"""
+    logg = logging.getLogger(f"c.{__name__}.evaluate_audio_cnn")
+    logg.debug("Start evaluate_audio_cnn")
 
     # magic to fix the GPUs
     setup_gpus()
-
-    # importing sounddevice takes time, only do it if needed
-    import sounddevice as sd  # type: ignore
-
-    # where to save the audios
-    audio_folder = Path("recorded_audio")
-    if not audio_folder.exists():
-        audio_folder.mkdir(parents=True, exist_ok=True)
 
     # need to know on which dataset the model was trained to compute specs
     dataset_name = "mel01"
@@ -307,50 +261,40 @@ def evaluate_audio(args):
     # words that the dataset was trained on
     train_words_type = args.train_words_type
     train_words = words_types[train_words_type]
+
+    # permutation from sorted to your wor(l)d order
     perm_pred = compute_permutation(train_words)
 
     rec_words_type = args.rec_words_type
-    if rec_words_type == "dataset":
+    if rec_words_type == "train":
         rec_words = train_words
     else:
         rec_words = words_types[rec_words_type]
     num_rec_words = len(rec_words)
 
-    # input parameters
-    fs = 16000  # Sample rate
-    seconds = 1  # Duration of recording
+    # where to save the audios
+    audio_folder = Path("recorded_audio")
+    if not audio_folder.exists():
+        audio_folder.mkdir(parents=True, exist_ok=True)
 
-    audios = []
+    # record the audios and save them in audio_folder
+    audio_path_fmt = "{}_02.wav"
+    audios = record_audios(rec_words, audio_folder, audio_path_fmt, timeout=0)
+
+    # compute the spectrograms and build the dataset of correct shape
     specs = []
-
-    timeout = 0  # time to get ready to talk for each word
-    if timeout == 0:  # if there is no time give it at least in the beginning
-        logg.debug(f"Get ready to start recording {rec_words[0]}")
-        sleep(1)
+    spec_dict = get_spec_dict()
+    spec_kwargs = spec_dict[dataset_name]
+    p2d_kwargs = {"ref": np.max}
     for word in rec_words:
-        for i in range(timeout, 0, -1):
-            logg.debug(f"Start recording {word} in {i}s")
-            sleep(1)
-        logg.debug(f"Start recording {word} NOW!")
-
-        # record
-        myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1)
-        sd.wait()  # Wait until recording is finished
-        logg.debug("Stop recording")
-
-        # save the audio
-        audio_path = audio_folder / f"{word}_01.wav"
-        write(audio_path, fs, myrecording)  # Save as WAV file
+        # get the name
+        audio_path = audio_folder / audio_path_fmt.format(word)
 
         # convert it to mel
-        p2d_kwargs = {"ref": np.max}
-        spec_dict = get_spec_dict()
-        spec_kwargs = spec_dict[dataset_name]
         log_spec = wav2mel(audio_path, spec_kwargs, p2d_kwargs)
         img_spec = log_spec.reshape((*log_spec.shape, 1))
         logg.debug(f"img_spec.shape: {img_spec.shape}")  # img_spec.shape: (128, 32, 1)
 
-        audios.append(myrecording)
         specs.append(log_spec)
 
     # the data needs to look like this data['testing'].shape: (735, 128, 32, 1)
@@ -358,30 +302,34 @@ def evaluate_audio(args):
     data = np.stack(specs)
     logg.debug(f"data.shape: {data.shape}")
 
-    # parameters of the model
-    base_dense_width = 32
-    base_filters = 20
-    batch_size = 32
-    dropout_type = "01"
-    epoch_num = 16
-    kernel_size_type = "02"
-    pool_size_type = "02"
-    learning_rate_type = "02"
-    optimizer_type = "a1"
+    hypa: Dict[str, Union[str, int]] = {}
+    hypa["base_dense_width"] = 32
+    hypa["base_filters"] = 20
+    hypa["batch_size"] = 32
+    hypa["dropout_type"] = "01"
+    hypa["epoch_num"] = 16
+    hypa["kernel_size_type"] = "02"
+    hypa["pool_size_type"] = "02"
+    hypa["learning_rate_type"] = "02"
+    hypa["optimizer_type"] = "a1"
+    hypa["dataset"] = dataset_name
+    hypa["words"] = train_words_type
 
-    model, model_name = load_trained_model(
-        base_filters,
-        kernel_size_type,
-        pool_size_type,
-        base_dense_width,
-        dropout_type,
-        batch_size,
-        epoch_num,
-        dataset_name,
-        train_words_type,
-        learning_rate_type,
-        optimizer_type,
-    )
+    # get the words
+    train_words = words_types[train_words_type]
+
+    model_name = build_cnn_name(hypa)
+    logg.debug(f"model_name: {model_name}")
+
+    # model_folder = Path("trained_models")
+    model_folder = Path("saved_models")
+    model_path = model_folder / f"{model_name}.h5"
+    if not model_path.exists():
+        logg.error(f"Model not found at: {model_path}")
+        raise FileNotFoundError
+
+    model = tf.keras.models.load_model(model_path)
+    model.summary()
 
     pred = model.predict(data)
     # logg.debug(f"pred: {pred}")
@@ -401,7 +349,7 @@ def evaluate_audio(args):
             train_words,
             axes[i][2],
             f"Prediction for {rec_words[i]}",
-            i,
+            train_words.index(word),
         )
 
     # https://stackoverflow.com/q/8248467
@@ -416,11 +364,11 @@ def evaluate_audio(args):
         plt.show()
 
 
-def delete_bad_models(args) -> None:
-    """TODO: what is delete_bad_models doing?"""
-    logg = logging.getLogger(f"c.{__name__}.delete_bad_models")
+def delete_bad_models_cnn(args) -> None:
+    """TODO: what is delete_bad_models_cnn doing?"""
+    logg = logging.getLogger(f"c.{__name__}.delete_bad_models_cnn")
     # logg.setLevel("INFO")
-    logg.debug("Start delete_bad_models")
+    logg.debug("Start delete_bad_models_cnn")
 
     info_folder = Path("info")
     trained_folder = Path("trained_models")
@@ -472,26 +420,9 @@ def delete_bad_models(args) -> None:
     logg.debug(f"recreated: {recreated}")
 
 
-def build_transfer_name(hypa: Dict[str, str], use_validation: bool) -> str:
-    """TODO: what is build_transfer_name doing?"""
-    logg = logging.getLogger(f"c.{__name__}.build_transfer_name")
-    # logg.setLevel("INFO")
-    logg.debug("Start build_transfer_name")
-
-    model_name = "TRA"
-    model_name += f"_dw{hypa['dense_width_type']}"
-    model_name += f"_dr{hypa['dropout_type']}"
-    model_name += f"_bs{hypa['batch_size_type']}"
-    model_name += f"_en{hypa['epoch_num_type']}"
-    model_name += f"_lr{hypa['learning_rate_type']}"
-    model_name += f"_op{hypa['optimizer_type']}"
-    model_name += f"_ds{hypa['datasets_type']}"
-    model_name += f"_w{hypa['words_type']}"
-    if not use_validation:
-        model_name += "_noval"
-    logg.debug(f"model_name: {model_name}")
-
-    return model_name
+#####################################################################
+#             TRA model
+#####################################################################
 
 
 def evaluate_results_transfer(args: argparse.Namespace) -> None:
@@ -566,11 +497,11 @@ def evaluate_results_transfer(args: argparse.Namespace) -> None:
     logg.info(f"{df.sort_values('fscore', ascending=False)[:30]}")
 
 
-def delete_bad_transfer(args: argparse.Namespace) -> None:
-    """TODO: what is delete_bad_transfer doing?"""
-    logg = logging.getLogger(f"c.{__name__}.delete_bad_transfer")
+def delete_bad_models_transfer(args: argparse.Namespace) -> None:
+    """TODO: what is delete_bad_models_transfer doing?"""
+    logg = logging.getLogger(f"c.{__name__}.delete_bad_models_transfer")
     # logg.setLevel("INFO")
-    logg.debug("Start delete_bad_transfer")
+    logg.debug("Start delete_bad_models_transfer")
 
     info_folder = Path("info")
     trained_folder = Path("trained_models")
@@ -617,14 +548,6 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
     # magic to fix the GPUs
     setup_gpus()
 
-    # importing sounddevice takes time, only do it if needed
-    import sounddevice as sd  # type: ignore
-
-    # where to save the audios
-    audio_folder = Path("recorded_audio")
-    if not audio_folder.exists():
-        audio_folder.mkdir(parents=True, exist_ok=True)
-
     datasets_type = "01"
     datasets_types = {
         "01": ["mel05", "mel09", "mel10"],
@@ -648,42 +571,29 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
     # the model predicts sorted words
     perm_pred = compute_permutation(train_words)
 
-    if rec_words_type == "dataset":
+    if rec_words_type == "train":
         rec_words = train_words
     else:
         rec_words = words_types[rec_words_type]
     num_rec_words = len(rec_words)
 
-    # input parameters
-    fs = 16000  # Sample rate
-    seconds = 1  # Duration of recording
+    # where to save the audios
+    audio_folder = Path("recorded_audio")
+    if not audio_folder.exists():
+        audio_folder.mkdir(parents=True, exist_ok=True)
 
-    # recorded signals and specs
-    audios: List[np.ndarray] = []
+    # record the audios and save them in audio_folder
+    audio_path_fmt = "{}_02.wav"
+    audios = record_audios(rec_words, audio_folder, audio_path_fmt, timeout=0)
+
+    # compute the spectrograms and build the dataset of correct shape
     specs_3ch: List[np.ndarray] = []
-
     # params for the mel conversion
     p2d_kwargs = {"ref": np.max}
     spec_dict = get_spec_dict()
-
-    timeout = 0  # time to get ready to talk for each word
-    if timeout == 0:  # if there is no time give it at least in the beginning
-        logg.debug(f"Get ready to start recording {rec_words[0]}")
-        sleep(1)
     for word in rec_words:
-        for i in range(timeout, 0, -1):
-            logg.debug(f"Start recording {word} in {i}s")
-            sleep(1)
-        logg.debug(f"Start recording {word} NOW!")
-
-        # record
-        myrecording = sd.rec(int(seconds * fs), samplerate=fs, channels=1)
-        sd.wait()  # Wait until recording is finished
-        logg.debug("Stop recording")
-
-        # save the audio
-        audio_path = audio_folder / f"{word}_01.wav"
-        write(audio_path, fs, myrecording)  # Save as WAV file
+        # get the name
+        audio_path = audio_folder / audio_path_fmt.format(word)
 
         # convert it to mel for each type of dataset
         specs: List[np.ndarray] = []
@@ -694,22 +604,21 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
         img_spec = np.stack(specs, axis=2)
         # logg.debug(f"img_spec.shape: {img_spec.shape}")  # (128, 128, 3)
 
-        audios.append(myrecording)
         specs_3ch.append(img_spec)
 
     data = np.stack(specs_3ch)
     logg.debug(f"data.shape: {data.shape}")
 
     hypa: Dict[str, str] = {}
-    hypa["dense_width_type"] = "01"
+    hypa["dense_width_type"] = "03"
     hypa["dropout_type"] = "01"
     hypa["batch_size_type"] = "02"
     hypa["epoch_num_type"] = "01"
     hypa["learning_rate_type"] = "01"
-    hypa["optimizer_type"] = "r1"
+    hypa["optimizer_type"] = "a1"
     hypa["datasets_type"] = datasets_type
     hypa["words_type"] = train_words_type
-    use_validation = True
+    use_validation = False
 
     # hypa: Dict[str, str] = {}
     # hypa["dense_width_type"] = "02"
@@ -726,7 +635,8 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
     model_name = build_transfer_name(hypa, use_validation)
 
     # load the model
-    model_folder = Path("trained_models")
+    # model_folder = Path("trained_models")
+    model_folder = Path("saved_models")
     model_path = model_folder / f"{model_name}.h5"
     model = tf.keras.models.load_model(model_path)
 
@@ -751,7 +661,7 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
             train_words,
             axes[i][4],
             f"Prediction for {rec_words[i]}",
-            i,
+            train_words.index(word),
         )
 
     # https://stackoverflow.com/q/8248467
@@ -764,6 +674,11 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
 
     if num_rec_words <= 6:
         plt.show()
+
+
+#####################################################################
+#             ATT model
+#####################################################################
 
 
 def evaluate_results_attention() -> None:
@@ -928,7 +843,7 @@ def evaluate_attention_weights(train_words_type: str) -> None:
 
     use_validation = True
 
-    model_name = get_attention_name(hypa, use_validation)
+    model_name = build_attention_name(hypa, use_validation)
     logg.debug(f"model_name: {model_name}")
 
     # load the model
@@ -1013,22 +928,24 @@ def run_evaluate(args) -> None:
     train_words_type = args.train_words_type
     rec_words_type = args.rec_words_type
 
-    if evaluation_type == "results":
-        evaluate_results_recap(args)
+    if evaluation_type == "results_cnn":
+        evaluate_results_cnn(args)
+    elif evaluation_type == "model_cnn":
+        evaluate_model_cnn(args)
+    elif evaluation_type == "audio_cnn":
+        evaluate_audio_cnn(args)
+    elif evaluation_type == "delete_cnn":
+        delete_bad_models_cnn(args)
+
     elif evaluation_type == "results_transfer":
         evaluate_results_transfer(args)
-    elif evaluation_type == "results_attention":
-        evaluate_results_attention()
-    elif evaluation_type == "model":
-        evaluate_model(args)
-    elif evaluation_type == "audio":
-        evaluate_audio(args)
     elif evaluation_type == "audio_transfer":
         evaluate_audio_transfer(train_words_type, rec_words_type)
-    elif evaluation_type == "delete":
-        delete_bad_models(args)
     elif evaluation_type == "delete_transfer":
-        delete_bad_transfer(args)
+        delete_bad_models_transfer(args)
+
+    elif evaluation_type == "results_attention":
+        evaluate_results_attention()
     elif evaluation_type == "attention_weights":
         evaluate_attention_weights(train_words_type)
 

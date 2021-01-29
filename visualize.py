@@ -130,11 +130,13 @@ def visualize_datasets():
     # which word in the dataset to plot
     iw = 3
 
+    processed_folder = Path("data_proc")
+
     fig, axes = plt.subplots(4, 5, figsize=(12, 15))
     fig.suptitle(f"{a_word}")
     for i, ax in enumerate(axes.flat[: len(datasets)]):
         dataset_name = datasets[i]
-        processed_path = Path(f"data_proc/{dataset_name}")
+        processed_path = processed_folder / f"{dataset_name}"
         word_path = processed_path / f"{a_word}_validation.npy"
         word_data = np.load(word_path, allow_pickle=True)
         logg.debug(f"{dataset_name} word shape: {word_data[iw].shape}")
@@ -144,7 +146,7 @@ def visualize_datasets():
 
     # show different words
     # for dataset_name in datasets:
-    #     processed_path = Path(f"data_proc/{dataset_name}")
+    #     processed_path = processed_folder / f"{dataset_name}"
     #     fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(14, 14))
     #     for i, ax in enumerate(axes.flat):
     #         word_path = processed_path / f"{words[i]}_validation.npy"

@@ -1,7 +1,12 @@
+from scipy.io import wavfile  # type: ignore
+from pathlib import Path
+from sklearn.metrics import confusion_matrix  # type: ignore
+from time import sleep
 import logging
 import numpy as np  # type: ignore
-from sklearn.metrics import confusion_matrix  # type: ignore
 import tensorflow as tf  # type: ignore
+
+import typing as ty
 
 
 def define_words_types():
@@ -289,3 +294,47 @@ def pred_hot_2_cm(y_hot, y_pred, labels):
     cm = confusion_matrix(y_hot_labels, y_pred_labels)
 
     return cm
+
+
+def record_audios(
+    words: ty.List[str],
+    audio_folder: Path,
+    audio_path_fmt: str = "{}.wav",
+    len_sec: float = 1,
+    fs: int = 16000,
+    timeout: int = 0,
+) -> ty.List[np.ndarray]:
+    """TODO: what is record_audios doing?"""
+    logg = logging.getLogger(f"c.{__name__}.record_audios")
+    logg.setLevel("INFO")
+    logg.debug("Start record_audios")
+
+    # importing sounddevice takes time, only do it if needed
+    import sounddevice as sd  # type: ignore
+
+    audios = []
+
+    # if there is no timeout give it at least in the beginning
+    if timeout == 0:
+        logg.info(f"Get ready to start recording {words[0]}")
+        sleep(1)
+
+    for word in words:
+        for i in range(timeout, 0, -1):
+            logg.info(f"Start recording {word} in {i}s")
+            sleep(1)
+        logg.info(f"Start recording {word} NOW!")
+
+        # record
+        myrecording = sd.rec(int(len_sec * fs), samplerate=fs, channels=1)
+        sd.wait()  # Wait until recording is finished
+
+        logg.info("Stop recording")
+
+        # save the audio
+        audio_path = audio_folder / audio_path_fmt.format(word)
+        wavfile.write(audio_path, fs, myrecording)  # Save as WAV file
+
+        audios.append(myrecording)
+
+    return audios

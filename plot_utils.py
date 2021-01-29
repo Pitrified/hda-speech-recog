@@ -73,7 +73,7 @@ def plot_pred(pred, words, ax, title="Predictions", correct_index=None):
         ax.set_xticklabels(words, rotation=30)
     else:
         # find where the predictions are high
-        high_pred = pred > 0.3
+        high_pred = pred > 0.1
         # add the correct word
         high_pred[correct_index] = True
         # filter the x locations
