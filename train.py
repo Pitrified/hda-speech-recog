@@ -771,16 +771,16 @@ def hyper_train_attention(
     hypa_grid["dataset_name"] = ["mela1", "mel04"]
 
     # how big are the first conv layers
-    # hypa_grid["conv_size_type"] = ["01", "02"]
-    hypa_grid["conv_size_type"] = ["02"]
+    hypa_grid["conv_size_type"] = ["01", "02"]
+    # hypa_grid["conv_size_type"] = ["02"]
 
     # dropout after conv, 0 to skip it
     # hypa_grid["dropout_type"] = ["01", "02"]
     hypa_grid["dropout_type"] = ["01"]
 
     # the shape of the kernels in the conv layers
-    # hypa_grid["kernel_size_type"] = ["01", "02"]
-    hypa_grid["kernel_size_type"] = ["01"]
+    hypa_grid["kernel_size_type"] = ["01", "02"]
+    # hypa_grid["kernel_size_type"] = ["01"]
 
     # the dimension of the LSTM
     # hypa_grid["lstm_units_type"] = ["01", "02"]

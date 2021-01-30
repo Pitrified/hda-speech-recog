@@ -381,7 +381,7 @@ def make_plots_attention() -> None:
     hypa_grid["kernel"] = ["01", "02"]
     hypa_grid["lstm"] = ["01"]
     hypa_grid["att"] = ["01", "02"]
-    hypa_grid["query"] = ["01", "03", "02", "04"]
+    hypa_grid["query"] = ["01", "02", "03", "04"]
     hypa_grid["dense"] = ["01", "02"]
     hypa_grid["lr"] = ["01"]
     hypa_grid["optimizer"] = ["a1"]
@@ -408,8 +408,14 @@ def make_plots_attention() -> None:
     all_hp_to_plot = list(combinations(hp_to_plot_names, 4))
     logg.debug(f"len(all_hp_to_plot): {len(all_hp_to_plot)}")
 
+    # all_hp_to_plot = []
+    # all_hp_to_plot.append(("epoch", "dataset", "batch", "query"))
+    # all_hp_to_plot.append(("epoch", "query", "batch", "dataset"))
+    # all_hp_to_plot.append(("epoch", "batch", "query", "dataset"))
+    # all_hp_to_plot.append(("query", "epoch", "batch", "dataset"))
+
     quad_plotter(
-        all_hp_to_plot,
+        all_hp_to_plot[:],
         hypa_grid,
         results_df,
         pdf_split_fol,
@@ -417,6 +423,7 @@ def make_plots_attention() -> None:
         pdf_grid_fol,
         png_grid_fol,
         do_single_images=True,
+        min_at_zero=False,
     )
 
 

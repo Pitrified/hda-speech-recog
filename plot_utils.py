@@ -218,16 +218,17 @@ def plot_double_data(
 
 def plot_triple_data(
     ax: plt.Axes,
-    lab_values,
-    lab_names,
-    f_mean,
-    f_min,
-    f_max,
-    f_std,
-    outer_label=None,
-    outer_value=None,
-    mean_all=None,
-    max_all=None,
+    lab_values: ty.List[ty.List[str]],
+    lab_names: ty.Tuple[str, str, str, str],
+    f_mean: np.ndarray,
+    f_min: np.ndarray,
+    f_max: np.ndarray,
+    f_std: np.ndarray,
+    outer_label: str = None,
+    outer_value: str = None,
+    mean_all: float = None,
+    max_all: float = None,
+    min_all: float = None,
 ):
     """Plot groups of groups of columns
 
@@ -387,8 +388,12 @@ def plot_triple_data(
                 ecolor="b",
             )
 
-    if max_all is not None:
-        ax.set_ylim(0, max_all * 1.05)
+    if max_all is not None and min_all is not None:
+        ax.set_ylim(top=max_all * 1.02, bottom=min_all * 0.98)
+    elif max_all is not None:
+        ax.set_ylim(top=max_all * 1.05)
+    elif min_all is not None:
+        ax.set_ylim(bottom=min_all * 0.95)
 
     if mean_all is not None:
         ax.axhline(mean_all)
@@ -420,24 +425,25 @@ def quad_plotter(
     pdf_grid_fol: Path,
     png_grid_fol: Path,
     do_single_images: bool = True,
+    min_at_zero: bool = False,
 ) -> None:
     """TODO: what is quad_plotter doing?"""
     logg = logging.getLogger(f"c.{__name__}.quad_plotter")
     # logg.setLevel("INFO")
     # logg.debug("Start quad_plotter")
 
-    for hp_to_plot in tqdm(all_hp_to_plot[:]):
-        outer_hp = hp_to_plot[-1]
-        inner_hp = hp_to_plot[:-1]
+    for hp_to_plot in tqdm(all_hp_to_plot):
+        outer_hp: str = hp_to_plot[-1]
+        inner_hp: ty.List[str] = hp_to_plot[:-1]
         # logg.debug(f"outer_hp: {outer_hp} inner_hp: {inner_hp}")
 
         # split outer value (changes across subplots)
-        outer_values = hypa_grid[outer_hp]
-        outer_dim = len(outer_values)
+        outer_values: ty.List[str] = hypa_grid[outer_hp]
+        outer_dim: int = len(outer_values)
 
         # and inner values (change within a subplot)
-        inner_values = [hypa_grid[hptp] for hptp in inner_hp]
-        labels_dim = [len(lab) for lab in inner_values]
+        inner_values: ty.List[ty.List[str]] = [hypa_grid[hptp] for hptp in inner_hp]
+        labels_dim: ty.List[int] = [len(lab) for lab in inner_values]
 
         # build the grid of subplots
         nrows, ncols = find_rowcol(outer_dim)
@@ -476,7 +482,8 @@ def quad_plotter(
 
         f_mean_nonzero = f_mean[f_mean > 0]
         f_mean_all = f_mean_nonzero.mean()
-        # logg.debug(f"f_mean_all: {f_mean_all}")
+        f_min_nonzero = f_min[f_min > 0]
+        f_min_all = f_min_nonzero.min()
 
         # then we plot them
         for iv, outer_value in enumerate(outer_values):
@@ -493,6 +500,7 @@ def quad_plotter(
                 outer_value,
                 f_mean_all,
                 f_max.max(),
+                f_min_all,
             )
 
             if do_single_images:
@@ -513,6 +521,7 @@ def quad_plotter(
                     outer_value,
                     f_mean_all,
                     f_max.max(),
+                    f_min_all,
                 )
 
                 # save and close the single image
