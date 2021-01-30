@@ -1,3 +1,4 @@
+from itertools import combinations
 from pathlib import Path
 import argparse
 import json
@@ -11,6 +12,7 @@ import tensorflow as tf  # type: ignore
 from plot_utils import plot_att_weights
 from plot_utils import plot_pred
 from plot_utils import plot_spec
+from plot_utils import quad_plotter
 from preprocess_data import load_processed
 from train import build_attention_name
 from utils import compute_permutation
@@ -353,6 +355,69 @@ def make_plots_attention() -> None:
     logg = logging.getLogger(f"c.{__name__}.make_plots_attention")
     # logg.setLevel("INFO")
     logg.debug("Start make_plots_attention")
+
+    results_df = build_att_results_df()
+
+    # the output folders
+    plot_fol = Path("plot_results") / "att"
+    pdf_split_fol = plot_fol / "pdf_split"
+    pdf_grid_fol = plot_fol / "pdf_grid"
+    png_split_fol = plot_fol / "png_split"
+    png_grid_fol = plot_fol / "png_grid"
+    for f in pdf_split_fol, pdf_grid_fol, png_split_fol, png_grid_fol:
+        if not f.exists():
+            f.mkdir(parents=True, exist_ok=True)
+
+    for col in results_df:
+        if col in ["model_name", "loss", "fscore", "recall", "precision", "cat_acc"]:
+            continue
+        logg.debug(f"hypa_grid['{col}'] = {results_df[col].unique()}")
+
+    hypa_grid: Dict[str, List[str]] = {}
+    hypa_grid["words"] = ["k1", "w2"]
+    hypa_grid["dataset"] = ["mela1", "mel04", "mel05", "mel01"]
+    hypa_grid["conv"] = ["01", "02"]
+    hypa_grid["dropout"] = ["01", "02"]
+    hypa_grid["kernel"] = ["01", "02"]
+    hypa_grid["lstm"] = ["01"]
+    hypa_grid["att"] = ["01", "02"]
+    hypa_grid["query"] = ["01", "03", "02", "04"]
+    hypa_grid["dense"] = ["01", "02"]
+    hypa_grid["lr"] = ["01"]
+    hypa_grid["optimizer"] = ["a1"]
+    hypa_grid["batch"] = ["01", "02"]
+    hypa_grid["epoch"] = ["01", "02"]
+
+    hp_to_plot_names = [
+        "words",
+        "dataset",
+        "conv",
+        # "dropout",
+        # "kernel",
+        # "lstm",
+        "att",
+        "query",
+        # "dense",
+        # "lr",
+        # "optimizer",
+        "batch",
+        "epoch",
+    ]
+
+    # all_hp_to_plot = list(combinations(hypa_grid.keys(), 4))
+    all_hp_to_plot = list(combinations(hp_to_plot_names, 4))
+    logg.debug(f"len(all_hp_to_plot): {len(all_hp_to_plot)}")
+
+    quad_plotter(
+        all_hp_to_plot,
+        hypa_grid,
+        results_df,
+        pdf_split_fol,
+        png_split_fol,
+        pdf_grid_fol,
+        png_grid_fol,
+        do_single_images=True,
+    )
 
 
 def run_evaluate_attention(args: argparse.Namespace) -> None:

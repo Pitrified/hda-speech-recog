@@ -1,6 +1,5 @@
 from itertools import combinations
 from pathlib import Path
-from tqdm import tqdm  # type: ignore
 import argparse
 import json
 import logging
@@ -13,22 +12,20 @@ import tensorflow as tf  # type: ignore
 from plot_utils import plot_confusion_matrix
 from plot_utils import plot_pred
 from plot_utils import plot_spec
-from plot_utils import plot_triple_data
 from plot_utils import plot_waveform
+from plot_utils import quad_plotter
 from preprocess_data import get_spec_dict
 from preprocess_data import load_processed
 from preprocess_data import wav2mel
 from train import build_cnn_name
 from utils import analyze_confusion
 from utils import compute_permutation
-from utils import find_rowcol
 from utils import pred_hot_2_cm
 from utils import record_audios
 from utils import setup_gpus
 from utils import setup_logger
 from utils import words_types
 
-from typing import Any
 from typing import Dict
 from typing import Union
 import typing as ty
@@ -201,21 +198,20 @@ def make_plots_cnn() -> None:
         if not f.exists():
             f.mkdir(parents=True, exist_ok=True)
 
-    hypa_grid: Dict[str, Any] = {}
-    hypa_grid["filters"] = [10, 20, 30, 32, 64, 128]
+    # the real hypa values are not str but we only need them for the query
+    hypa_grid: Dict[str, ty.List[str]] = {}
+    hypa_grid["filters"] = ["10", "20", "30", "32", "64", "128"]
     hypa_grid["kernel_size"] = ["01", "02", "03"]
     hypa_grid["pool_size"] = ["01", "02"]
-    hypa_grid["dense_width"] = [16, 32, 64, 128]
+    hypa_grid["dense_width"] = ["16", "32", "64", "128"]
     hypa_grid["dropout"] = ["01", "02"]
-    hypa_grid["batch_size"] = [16, 32, 64]
-    hypa_grid["epoch_num"] = [15, 30, 60]
+    hypa_grid["batch_size"] = ["16", "32", "64"]
+    hypa_grid["epoch_num"] = ["15", "30", "60"]
     hypa_grid["lr"] = ["01", "02", "03"]
     hypa_grid["opt"] = ["a1", "r1"]
-
     ds = ["mel01", "mel02", "mel03", "mel04"]
     ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
     hypa_grid["dataset"] = ds
-    # hypa_grid["dataset"] = ["mfcc01", "mfcc02", "mfcc03", "mfcc04"]
     hypa_grid["words"] = ["f2", "f1", "num", "dir", "k1", "w2", "all"]
 
     all_hp_to_plot = list(combinations(hypa_grid.keys(), 4))
@@ -230,118 +226,129 @@ def make_plots_cnn() -> None:
     all_hp_to_plot.append(("batch_size", "dense_width", "words", "dataset"))
     all_hp_to_plot.append(("dense_width", "batch_size", "dataset", "words"))
 
-    for hp_to_plot in tqdm(all_hp_to_plot[:]):
-        outer_hp = hp_to_plot[-1]
-        inner_hp = hp_to_plot[:-1]
-        # logg.debug(f"outer_hp: {outer_hp} inner_hp: {inner_hp}")
+    quad_plotter(
+        all_hp_to_plot,
+        hypa_grid,
+        results_df,
+        pdf_split_fol,
+        png_split_fol,
+        pdf_grid_fol,
+        png_grid_fol,
+        do_single_images=True,
+    )
 
-        # split outer value (changes across subplots)
-        outer_values = hypa_grid[outer_hp]
-        outer_dim = len(outer_values)
+    # for hp_to_plot in tqdm(all_hp_to_plot[:]):
+    #     outer_hp = hp_to_plot[-1]
+    #     inner_hp = hp_to_plot[:-1]
+    #     # logg.debug(f"outer_hp: {outer_hp} inner_hp: {inner_hp}")
 
-        # and inner values (change within a subplot)
-        inner_values = [hypa_grid[hptp] for hptp in inner_hp]
-        labels_dim = [len(lab) for lab in inner_values]
+    #     # split outer value (changes across subplots)
+    #     outer_values = hypa_grid[outer_hp]
+    #     outer_dim = len(outer_values)
 
-        # build the grid of subplots
-        nrows, ncols = find_rowcol(outer_dim)
-        base_figsize = 10
-        figsize = (ncols * base_figsize * 1.5, nrows * base_figsize)
-        fig, axes = plt.subplots(nrows, ncols, figsize=figsize, sharey="all")
-        # make flat_ax always a list of axes
-        flat_ax = list(axes.flat) if outer_dim > 1 else [axes]
+    #     # and inner values (change within a subplot)
+    #     inner_values = [hypa_grid[hptp] for hptp in inner_hp]
+    #     labels_dim = [len(lab) for lab in inner_values]
 
-        f_mean = np.zeros((*labels_dim, outer_dim))
-        f_min = np.zeros((*labels_dim, outer_dim))
-        f_max = np.zeros((*labels_dim, outer_dim))
-        f_std = np.zeros((*labels_dim, outer_dim))
+    #     # build the grid of subplots
+    #     nrows, ncols = find_rowcol(outer_dim)
+    #     base_figsize = 10
+    #     figsize = (ncols * base_figsize * 1.5, nrows * base_figsize)
+    #     fig, axes = plt.subplots(nrows, ncols, figsize=figsize, sharey="all")
+    #     # make flat_ax always a list of axes
+    #     flat_ax = list(axes.flat) if outer_dim > 1 else [axes]
 
-        # first we compute all the f values
-        for iv, outer_value in enumerate(outer_values):
-            for iz, vz in enumerate(inner_values[2]):
-                for iy, vy in enumerate(inner_values[1]):
-                    for ix, vx in enumerate(inner_values[0]):
-                        q_str = f"({hp_to_plot[0]} == '{vx}')"
-                        q_str += f" and ({hp_to_plot[1]} == '{vy}')"
-                        q_str += f" and ({hp_to_plot[2]} == '{vz}')"
-                        q_str += f" and ({outer_hp} == '{outer_value}')"
-                        q_df = results_df.query(q_str)
+    #     f_mean = np.zeros((*labels_dim, outer_dim))
+    #     f_min = np.zeros((*labels_dim, outer_dim))
+    #     f_max = np.zeros((*labels_dim, outer_dim))
+    #     f_std = np.zeros((*labels_dim, outer_dim))
 
-                        if len(q_df) == 0:
-                            continue
+    #     # first we compute all the f values
+    #     for iv, outer_value in enumerate(outer_values):
+    #         for iz, vz in enumerate(inner_values[2]):
+    #             for iy, vy in enumerate(inner_values[1]):
+    #                 for ix, vx in enumerate(inner_values[0]):
+    #                     q_str = f"({hp_to_plot[0]} == '{vx}')"
+    #                     q_str += f" and ({hp_to_plot[1]} == '{vy}')"
+    #                     q_str += f" and ({hp_to_plot[2]} == '{vz}')"
+    #                     q_str += f" and ({outer_hp} == '{outer_value}')"
+    #                     q_df = results_df.query(q_str)
 
-                        f_mean[ix, iy, iz, iv] = q_df.fscore.mean()
-                        f_min[ix, iy, iz, iv] = q_df.fscore.min()
-                        f_max[ix, iy, iz, iv] = q_df.fscore.max()
-                        f_std[ix, iy, iz, iv] = q_df.fscore.std()
+    #                     if len(q_df) == 0:
+    #                         continue
 
-                        if f_std[ix, iy, iz, iv] is None:
-                            logg.debug("Found None std")
+    #                     f_mean[ix, iy, iz, iv] = q_df.fscore.mean()
+    #                     f_min[ix, iy, iz, iv] = q_df.fscore.min()
+    #                     f_max[ix, iy, iz, iv] = q_df.fscore.max()
+    #                     f_std[ix, iy, iz, iv] = q_df.fscore.std()
 
-        f_mean_nonzero = f_mean[f_mean > 0]
-        f_mean_all = f_mean_nonzero.mean()
-        # logg.debug(f"f_mean_all: {f_mean_all}")
+    #                     if f_std[ix, iy, iz, iv] is None:
+    #                         logg.debug("Found None std")
 
-        # then we plot them
-        for iv, outer_value in enumerate(outer_values):
-            # plot on the outer grid
-            plot_triple_data(
-                flat_ax[iv],
-                inner_values,
-                hp_to_plot,
-                f_mean[:, :, :, iv],
-                f_min[:, :, :, iv],
-                f_max[:, :, :, iv],
-                f_std[:, :, :, iv],
-                outer_hp,
-                outer_value,
-                f_mean_all,
-                f_max.max(),
-            )
+    #     f_mean_nonzero = f_mean[f_mean > 0]
+    #     f_mean_all = f_mean_nonzero.mean()
+    #     # logg.debug(f"f_mean_all: {f_mean_all}")
 
-            # do_single_images = True
-            do_single_images = False
-            if do_single_images:
-                # plot on a single image
-                base_figsize = 10
-                figsize_in = (1.5 * base_figsize, base_figsize)
-                fig_in, ax_in = plt.subplots(figsize=figsize_in)
+    #     # then we plot them
+    #     for iv, outer_value in enumerate(outer_values):
+    #         # plot on the outer grid
+    #         plot_triple_data(
+    #             flat_ax[iv],
+    #             inner_values,
+    #             hp_to_plot,
+    #             f_mean[:, :, :, iv],
+    #             f_min[:, :, :, iv],
+    #             f_max[:, :, :, iv],
+    #             f_std[:, :, :, iv],
+    #             outer_hp,
+    #             outer_value,
+    #             f_mean_all,
+    #             f_max.max(),
+    #         )
 
-                plot_triple_data(
-                    ax_in,
-                    inner_values,
-                    hp_to_plot,
-                    f_mean[:, :, :, iv],
-                    f_min[:, :, :, iv],
-                    f_max[:, :, :, iv],
-                    f_std[:, :, :, iv],
-                    outer_hp,
-                    outer_value,
-                    f_mean_all,
-                    f_max.max(),
-                )
+    #         # do_single_images = True
+    #         do_single_images = False
+    #         if do_single_images:
+    #             # plot on a single image
+    #             base_figsize = 10
+    #             figsize_in = (1.5 * base_figsize, base_figsize)
+    #             fig_in, ax_in = plt.subplots(figsize=figsize_in)
 
-                # save and close the single image
-                fig_name = "Fscore"
-                fig_name += f"_{hp_to_plot[2]}_{vz}"
-                fig_name += f"_{hp_to_plot[1]}_{vy}"
-                fig_name += f"_{hp_to_plot[0]}_{vx}"
-                fig_name += f"_{outer_hp}_{outer_value}.{{}}"
-                fig_in.tight_layout()
-                fig_in.savefig(pdf_split_fol / fig_name.format("pdf"))
-                fig_in.savefig(png_split_fol / fig_name.format("png"))
-                plt.close(fig_in)
+    #             plot_triple_data(
+    #                 ax_in,
+    #                 inner_values,
+    #                 hp_to_plot,
+    #                 f_mean[:, :, :, iv],
+    #                 f_min[:, :, :, iv],
+    #                 f_max[:, :, :, iv],
+    #                 f_std[:, :, :, iv],
+    #                 outer_hp,
+    #                 outer_value,
+    #                 f_mean_all,
+    #                 f_max.max(),
+    #             )
 
-        # save and close the composite image
-        fig_name = "Fscore"
-        fig_name += f"__{hp_to_plot[2]}"
-        fig_name += f"__{hp_to_plot[1]}"
-        fig_name += f"__{hp_to_plot[0]}"
-        fig_name += f"__{outer_hp}.{{}}"
-        fig.tight_layout()
-        fig.savefig(pdf_grid_fol / fig_name.format("pdf"))
-        fig.savefig(png_grid_fol / fig_name.format("png"))
-        plt.close(fig)
+    #             # save and close the single image
+    #             fig_name = "Fscore"
+    #             fig_name += f"_{hp_to_plot[2]}_{vz}"
+    #             fig_name += f"_{hp_to_plot[1]}_{vy}"
+    #             fig_name += f"_{hp_to_plot[0]}_{vx}"
+    #             fig_name += f"_{outer_hp}_{outer_value}.{{}}"
+    #             fig_in.tight_layout()
+    #             fig_in.savefig(pdf_split_fol / fig_name.format("pdf"))
+    #             fig_in.savefig(png_split_fol / fig_name.format("png"))
+    #             plt.close(fig_in)
+
+    #     # save and close the composite image
+    #     fig_name = "Fscore"
+    #     fig_name += f"__{hp_to_plot[2]}"
+    #     fig_name += f"__{hp_to_plot[1]}"
+    #     fig_name += f"__{hp_to_plot[0]}"
+    #     fig_name += f"__{outer_hp}.{{}}"
+    #     fig.tight_layout()
+    #     fig.savefig(pdf_grid_fol / fig_name.format("pdf"))
+    #     fig.savefig(png_grid_fol / fig_name.format("png"))
+    #     plt.close(fig)
 
 
 def evaluate_model_cnn(args):
