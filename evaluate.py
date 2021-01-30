@@ -373,12 +373,15 @@ def make_plots_cnn() -> None:
 
     results_df = build_cnn_results_df()
 
-    # you make them no check exists
-    plot_folder = Path("plot_results")
-    pdf_split_folder = plot_folder / "pdf_split"
-    pdf_grid_folder = plot_folder / "pdf_grid"
-    png_split_folder = plot_folder / "png_split"
-    png_grid_folder = plot_folder / "png_grid"
+    # the output folders
+    plot_fol = Path("plot_results") / "cnn"
+    pdf_split_fol = plot_fol / "pdf_split"
+    pdf_grid_fol = plot_fol / "pdf_grid"
+    png_split_fol = plot_fol / "png_split"
+    png_grid_fol = plot_fol / "png_grid"
+    for f in pdf_split_fol, pdf_grid_fol, png_split_fol, png_grid_fol:
+        if not f.exists():
+            f.mkdir(parents=True, exist_ok=True)
 
     hypa_grid: Dict[str, Any] = {}
     hypa_grid["filters"] = [10, 20, 30, 32, 64, 128]
@@ -401,12 +404,12 @@ def make_plots_cnn() -> None:
     logg.debug(f"len(all_hp_to_plot): {len(all_hp_to_plot)}")
 
     all_hp_to_plot = []
-    # all_hp_to_plot.append(("epoch_num", "dataset", "lr", "filters"))
-    # all_hp_to_plot.append(("batch_size", "filters", "kernel_size", "dropout"))
-    # all_hp_to_plot.append(("words", "dense_width", "batch_size", "dataset"))
-    # all_hp_to_plot.append(("dataset", "words", "dense_width", "batch_size"))
-    # all_hp_to_plot.append(("dataset", "batch_size", "dense_width", "words"))
-    # all_hp_to_plot.append(("batch_size", "dense_width", "words", "dataset"))
+    all_hp_to_plot.append(("epoch_num", "dataset", "lr", "filters"))
+    all_hp_to_plot.append(("batch_size", "filters", "kernel_size", "dropout"))
+    all_hp_to_plot.append(("words", "dense_width", "batch_size", "dataset"))
+    all_hp_to_plot.append(("dataset", "words", "dense_width", "batch_size"))
+    all_hp_to_plot.append(("dataset", "batch_size", "dense_width", "words"))
+    all_hp_to_plot.append(("batch_size", "dense_width", "words", "dataset"))
     all_hp_to_plot.append(("dense_width", "batch_size", "dataset", "words"))
 
     for hp_to_plot in tqdm(all_hp_to_plot[:]):
@@ -507,8 +510,8 @@ def make_plots_cnn() -> None:
                 fig_name += f"_{hp_to_plot[0]}_{vx}"
                 fig_name += f"_{outer_hp}_{outer_value}.{{}}"
                 fig_in.tight_layout()
-                fig_in.savefig(pdf_split_folder / fig_name.format("pdf"))
-                fig_in.savefig(png_split_folder / fig_name.format("png"))
+                fig_in.savefig(pdf_split_fol / fig_name.format("pdf"))
+                fig_in.savefig(png_split_fol / fig_name.format("png"))
                 plt.close(fig_in)
 
         # save and close the composite image
@@ -518,8 +521,8 @@ def make_plots_cnn() -> None:
         fig_name += f"__{hp_to_plot[0]}"
         fig_name += f"__{outer_hp}.{{}}"
         fig.tight_layout()
-        fig.savefig(pdf_grid_folder / fig_name.format("pdf"))
-        fig.savefig(png_grid_folder / fig_name.format("png"))
+        fig.savefig(pdf_grid_fol / fig_name.format("pdf"))
+        fig.savefig(png_grid_fol / fig_name.format("png"))
         plt.close(fig)
 
 

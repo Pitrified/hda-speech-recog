@@ -263,6 +263,7 @@ def plot_triple_data(
 
     f_dim = f_mean.shape
 
+    # the width of each super group
     width_outer_group = 0.9
 
     # scale the available space by 0.8 to leave space between subgroups
@@ -283,6 +284,22 @@ def plot_triple_data(
     # all the ticks and the relative labels
     all_x_ticks = np.array([])
     all_xticklabels = []
+
+    # if there are too many groups of columns draw less info
+    too_many_groups = f_dim[1] * f_dim[2] > 12
+
+    if not too_many_groups:
+        err_capsize = 5
+        std_capsize = 3
+        std_capthick = 4
+        xticklabels_rot = 0
+        xticklabels_ha = "center"
+    else:
+        err_capsize = 3
+        std_capsize = 2
+        std_capthick = 3
+        xticklabels_rot = 30
+        xticklabels_ha = "right"
 
     # for each super group
     for iz in range(f_dim[2]):
@@ -324,32 +341,41 @@ def plot_triple_data(
             # extract the values of the y columns in this batch
             y_f = f_mean[ix, :, iz]
 
-            # compute the relative min/max
-            y_min = y_f - f_min[ix, :, iz]
-            y_max = f_max[ix, :, iz] - y_f
-            y_err = np.vstack((y_min, y_max))
-
             # only put the label for the first z slice
             the_label = lab_values[0][ix] if iz == 0 else None
 
+            # plot the bars
             ax.bar(
                 x=x_col,
                 height=y_f,
                 width=width_inner_col,
-                yerr=y_err,
                 label=the_label,
                 align="edge",
-                capsize=5,
+                capsize=err_capsize,
             )
 
+            # compute the relative min/max
+            y_min = y_f - f_min[ix, :, iz]
+            y_max = f_max[ix, :, iz] - y_f
+            y_err = np.vstack((y_min, y_max))
+            ax.errorbar(
+                x=x_col + width_inner_col / 2,
+                y=y_f,
+                yerr=y_err,
+                linestyle="None",
+                capsize=err_capsize,
+                ecolor="k",
+            )
+
+            # get the standard deviation
             y_std = f_std[ix, :, iz]
             ax.errorbar(
                 x_col + width_inner_col / 2,
                 y_f,
                 yerr=y_std,
                 linestyle="None",
-                capsize=3,
-                capthick=4,
+                capsize=std_capsize,
+                capthick=std_capthick,
                 ecolor="b",
             )
 
@@ -369,5 +395,9 @@ def plot_triple_data(
         )
 
     ax.set_xticks(all_x_ticks)
-    ax.set_xticklabels(all_xticklabels)
+    ax.set_xticklabels(
+        labels=all_xticklabels,
+        rotation=xticklabels_rot,
+        horizontalalignment=xticklabels_ha,
+    )
     ax.legend(title=f"{lab_names[0]}", title_fontsize=lab_fontsize)
