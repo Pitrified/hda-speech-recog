@@ -735,7 +735,6 @@ def build_attention_name(hypa: Dict[str, str], use_validation: bool) -> str:
     model_name += f"_dr{hypa['dropout_type']}"
     model_name += f"_ks{hypa['kernel_size_type']}"
     model_name += f"_lu{hypa['lstm_units_type']}"
-    model_name += f"_as{hypa['att_sample_type']}"
     model_name += f"_qt{hypa['query_style_type']}"
     model_name += f"_dw{hypa['dense_width_type']}"
     model_name += f"_op{hypa['optimizer_type']}"
@@ -786,12 +785,8 @@ def hyper_train_attention(
     # hypa_grid["lstm_units_type"] = ["01", "02"]
     hypa_grid["lstm_units_type"] = ["01"]
 
-    # the vector picked for attention
-    # hypa_grid["att_sample_type"] = ["01", "02"]
-    hypa_grid["att_sample_type"] = ["02"]
-
     # the query style type
-    hypa_grid["query_style_type"] = ["01", "02", "03", "04"]
+    hypa_grid["query_style_type"] = ["01", "02", "03", "04", "05"]
     # hypa_grid["query_style_type"] = ["01"]
 
     # the width of the dense layers
@@ -916,14 +911,12 @@ def train_attention(
     lstm_units_types = {"01": [64, 64], "02": [64, 0]}
     model_param["lstm_units"] = lstm_units_types[hypa["lstm_units_type"]]
 
-    att_sample_types = {"01": "last", "02": "mid"}
-    model_param["att_sample"] = att_sample_types[hypa["att_sample_type"]]
-
     query_style_types = {
         "01": "dense01",
         "02": "conv01",
         "03": "conv02",
         "04": "conv03",
+        "05": "dense02",
     }
     model_param["query_style"] = query_style_types[hypa["query_style_type"]]
 

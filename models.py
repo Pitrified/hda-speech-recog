@@ -64,7 +64,6 @@ def AttentionModel(
     dropout,
     kernel_sizes,
     lstm_units,
-    att_sample,
     query_style,
     dense_width,
 ):
@@ -106,18 +105,22 @@ def AttentionModel(
             # save the dimension of the last LSTM layer
             last_lstm_dim = units * 2
 
-    if att_sample == "last":
-        sample_index = -1
-    elif att_sample == "mid":
-        sample_index = input_shape[1] // 2
+    # the query starts from (?, time_steps, units * 2)
+    # and ends with (?, units * 2)
 
-    if query_style == "dense01":
+    if query_style.startswith("dense"):
+
+        # the params for the extraction
+        if query_style == "dense01":
+            sample_index = -1
+        elif query_style == "dense02":
+            sample_index = input_shape[1] // 2
+
         x_first = L.Lambda(lambda q: q[:, sample_index], name="x_first")(x)
         # (?, units * 2)
         query = L.Dense(last_lstm_dim, name="query")(x_first)
         # (?, units * 2)
 
-    # start from (?, time_steps, units * 2) need to end with (?, units * 2)
     elif query_style.startswith("conv"):
 
         # the parameters for the conv net

@@ -99,7 +99,6 @@ def build_att_results_df() -> pd.DataFrame:
         "dropout": [],
         "kernel": [],
         "lstm": [],
-        "att": [],
         "query": [],
         "dense": [],
         "lr": [],
@@ -147,7 +146,6 @@ def build_att_results_df() -> pd.DataFrame:
         pandito["dropout"].append(hypa["dropout_type"])
         pandito["kernel"].append(hypa["kernel_size_type"])
         pandito["lstm"].append(hypa["lstm_units_type"])
-        pandito["att"].append(hypa["att_sample_type"])
         pandito["query"].append(hypa["query_style_type"])
         pandito["dense"].append(hypa["dense_width_type"])
 
@@ -183,7 +181,7 @@ def evaluate_results_attention() -> None:
     # filter the dataframe to find the best hypas
     # df_f = df_f.query("use_val == True")
     # df_f = df_f.query("words == 'k1'")
-    # df_f = df_f.query("words == 'w2'")
+    # df_f = df_f.query("query == '05'")
     df_f = df_f.sort_values("fscore", ascending=False)
     logg.info(f"{df_f.head(30)}")
     logg.info(f"{df_f.tail()}")
@@ -197,7 +195,6 @@ def evaluate_results_attention() -> None:
         hp += f"        'dropout_type': '{row['dropout']}',"
         hp += f"        'kernel_size_type': '{row['kernel']}',"
         hp += f"        'lstm_units_type': '{row['lstm']}',"
-        hp += f"        'att_sample_type': '{row['att']}',"
         hp += f"        'query_style_type': '{row['query']}',"
         hp += f"        'dense_width_type': '{row['dense']}',"
         hp += f"        'learning_rate_type': '{row['lr']}',"
@@ -380,8 +377,7 @@ def make_plots_attention() -> None:
     hypa_grid["dropout"] = ["01", "02"]
     hypa_grid["kernel"] = ["01", "02"]
     hypa_grid["lstm"] = ["01"]
-    hypa_grid["att"] = ["01", "02"]
-    hypa_grid["query"] = ["01", "02", "03", "04"]
+    hypa_grid["query"] = ["01", "02", "03", "04", "05"]
     hypa_grid["dense"] = ["01", "02"]
     hypa_grid["lr"] = ["01"]
     hypa_grid["optimizer"] = ["a1"]
@@ -395,7 +391,6 @@ def make_plots_attention() -> None:
         # "dropout",
         # "kernel",
         # "lstm",
-        "att",
         "query",
         # "dense",
         # "lr",
