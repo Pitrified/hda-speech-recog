@@ -771,12 +771,12 @@ def hyper_train_attention(
     hypa_grid["dataset_name"] = ["mela1", "mel04"]
 
     # how big are the first conv layers
-    hypa_grid["conv_size_type"] = ["01", "02"]
-    # hypa_grid["conv_size_type"] = ["02"]
+    # hypa_grid["conv_size_type"] = ["01", "02"]
+    hypa_grid["conv_size_type"] = ["02"]
 
     # dropout after conv, 0 to skip it
-    hypa_grid["dropout_type"] = ["01", "02"]
-    # hypa_grid["dropout_type"] = ["01"]
+    # hypa_grid["dropout_type"] = ["01", "02"]
+    hypa_grid["dropout_type"] = ["01"]
 
     # the shape of the kernels in the conv layers
     # hypa_grid["kernel_size_type"] = ["01", "02"]
@@ -787,16 +787,16 @@ def hyper_train_attention(
     hypa_grid["lstm_units_type"] = ["01"]
 
     # the vector picked for attention
-    hypa_grid["att_sample_type"] = ["01", "02"]
-    # hypa_grid["att_sample_type"] = ["02"]
+    # hypa_grid["att_sample_type"] = ["01", "02"]
+    hypa_grid["att_sample_type"] = ["02"]
 
     # the query style type
-    # hypa_grid["query_style_type"] = ["01", "02", "03", "04"]
-    hypa_grid["query_style_type"] = ["01"]
+    hypa_grid["query_style_type"] = ["01", "02", "03", "04"]
+    # hypa_grid["query_style_type"] = ["01"]
 
     # the width of the dense layers
-    hypa_grid["dense_width_type"] = ["01", "02"]
-    # hypa_grid["dense_width_type"] = ["01"]
+    # hypa_grid["dense_width_type"] = ["01", "02"]
+    hypa_grid["dense_width_type"] = ["01"]
 
     # the learning rates for the optimizer
     hypa_grid["learning_rate_type"] = ["01"]
@@ -806,11 +806,12 @@ def hyper_train_attention(
     hypa_grid["optimizer_type"] = ["a1"]
 
     # the batch size to use
-    hypa_grid["batch_size_type"] = ["01"]
+    hypa_grid["batch_size_type"] = ["01", "02"]
+    # hypa_grid["batch_size_type"] = ["01"]
 
     # the number of epochs
-    # hypa_grid["epoch_num_type"] = ["01", "02"]
-    hypa_grid["epoch_num_type"] = ["01"]
+    hypa_grid["epoch_num_type"] = ["01", "02"]
+    # hypa_grid["epoch_num_type"] = ["01"]
 
     logg.debug(f"hypa_grid: {hypa_grid}")
 

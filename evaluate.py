@@ -400,8 +400,14 @@ def make_plots_cnn() -> None:
     all_hp_to_plot = list(combinations(hypa_grid.keys(), 4))
     logg.debug(f"len(all_hp_to_plot): {len(all_hp_to_plot)}")
 
-    # all_hp_to_plot = [("epoch_num", "dataset", "lr", "filters")]
-    # all_hp_to_plot = [("batch_size", "filters", "kernel_size", "dropout")]
+    all_hp_to_plot = []
+    # all_hp_to_plot.append(("epoch_num", "dataset", "lr", "filters"))
+    # all_hp_to_plot.append(("batch_size", "filters", "kernel_size", "dropout"))
+    # all_hp_to_plot.append(("words", "dense_width", "batch_size", "dataset"))
+    # all_hp_to_plot.append(("dataset", "words", "dense_width", "batch_size"))
+    # all_hp_to_plot.append(("dataset", "batch_size", "dense_width", "words"))
+    # all_hp_to_plot.append(("batch_size", "dense_width", "words", "dataset"))
+    all_hp_to_plot.append(("dense_width", "batch_size", "dataset", "words"))
 
     for hp_to_plot in tqdm(all_hp_to_plot[:]):
         outer_hp = hp_to_plot[-1]
@@ -448,6 +454,9 @@ def make_plots_cnn() -> None:
                         f_max[ix, iy, iz, iv] = q_df.fscore.max()
                         f_std[ix, iy, iz, iv] = q_df.fscore.std()
 
+                        if f_std[ix, iy, iz, iv] is None:
+                            logg.debug("Found None std")
+
         f_mean_nonzero = f_mean[f_mean > 0]
         f_mean_all = f_mean_nonzero.mean()
         # logg.debug(f"f_mean_all: {f_mean_all}")
@@ -469,7 +478,8 @@ def make_plots_cnn() -> None:
                 f_max.max(),
             )
 
-            do_single_images = True
+            # do_single_images = True
+            do_single_images = False
             if do_single_images:
                 # plot on a single image
                 base_figsize = 10
@@ -503,10 +513,10 @@ def make_plots_cnn() -> None:
 
         # save and close the composite image
         fig_name = "Fscore"
-        fig_name += f"_{hp_to_plot[2]}_{vz}"
-        fig_name += f"_{hp_to_plot[1]}_{vy}"
-        fig_name += f"_{hp_to_plot[0]}_{vx}"
-        fig_name += f"_{outer_hp}.{{}}"
+        fig_name += f"__{hp_to_plot[2]}"
+        fig_name += f"__{hp_to_plot[1]}"
+        fig_name += f"__{hp_to_plot[0]}"
+        fig_name += f"__{outer_hp}.{{}}"
         fig.tight_layout()
         fig.savefig(pdf_grid_folder / fig_name.format("pdf"))
         fig.savefig(png_grid_folder / fig_name.format("png"))
@@ -1048,7 +1058,7 @@ def evaluate_results_attention() -> None:
         model_name = model_folder.name
         if not model_name.startswith("ATT"):
             continue
-        logg.debug(f"model_name: {model_name}")
+        # logg.debug(f"model_name: {model_name}")
 
         res_path = model_folder / "results_recap.json"
         if not res_path.exists():
@@ -1093,11 +1103,17 @@ def evaluate_results_attention() -> None:
 
     pd.set_option("max_colwidth", 100)
     df = pd.DataFrame(pandito)
-    filtered = df.sort_values("fscore", ascending=False).head(30)
-    logg.info(f"{filtered}")
+
+    # filter the dataframe to find the best hypas
+    df_f = df.query("use_val == True")
+    df_f = df_f.query("words == 'k1'")
+    # df_f = df_f.query("words == 'w2'")
+    df_f = df_f.sort_values("fscore", ascending=False)
+    logg.info(f"{df_f.head(30)}")
+    logg.info(f"{df_f.tail()}")
 
     # produce a dict for recreating the training
-    for index, row in filtered.iterrows():
+    for index, row in df_f.iterrows():
         hp = "    {"
         hp += f"        'words_type': '{row['words']}',"
         hp += f"        'dataset_name': '{row['dataset']}',"
@@ -1132,7 +1148,12 @@ def evaluate_results_attention() -> None:
         hypa_str = model_name[4:]  # chop off ATT_ at the beginning
         hypa_str = hypa_str[:-6]  # chop off _noval at the end
         # logg.debug(f"hypa_str: {hypa_str}")
-        rank[hypa_str][1] = i
+
+        # if you are a fool and trained with noval and not with val the key is not there
+        if hypa_str in rank:
+            rank[hypa_str][1] = i
+        else:
+            rank[hypa_str] = [0, i]
 
     rank_pd: Dict[str, Any] = {
         "hypa_str": list(rank.keys()),
