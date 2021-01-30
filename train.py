@@ -787,12 +787,12 @@ def hyper_train_attention(
     hypa_grid["lstm_units_type"] = ["01"]
 
     # the vector picked for attention
-    # hypa_grid["att_sample_type"] = ["01", "02"]
-    hypa_grid["att_sample_type"] = ["02"]
+    hypa_grid["att_sample_type"] = ["01", "02"]
+    # hypa_grid["att_sample_type"] = ["02"]
 
     # the query style type
-    hypa_grid["query_style_type"] = ["01", "02", "03", "04"]
-    # hypa_grid["query_style_type"] = ["04"]
+    # hypa_grid["query_style_type"] = ["01", "02", "03", "04"]
+    hypa_grid["query_style_type"] = ["01"]
 
     # the width of the dense layers
     hypa_grid["dense_width_type"] = ["01", "02"]

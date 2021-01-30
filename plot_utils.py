@@ -209,7 +209,7 @@ def plot_double_data(
 
 
 def plot_triple_data(
-    ax,
+    ax: plt.Axes,
     lab_values,
     lab_names,
     f_mean,
@@ -218,6 +218,8 @@ def plot_triple_data(
     f_std,
     outer_label=None,
     outer_value=None,
+    mean_all=None,
+    max_all=None,
 ):
     """Plot groups of groups of columns
 
@@ -241,15 +243,23 @@ def plot_triple_data(
 
     title = ""
     if outer_label is not None and outer_value is not None:
-        title += f"{outer_label}: {outer_value}"
+        title += f"{outer_label}"
+        # title += f": \\textbf{{{outer_value}}}"
+        title += f": $\\bf{{{outer_value}}}$"
         title += "\n"
     title += f"{lab_names[0]}"
-    title += f" grouped by {lab_names[1]}"
+    title += f": {lab_values[0]}"
     title += "\n"
-    title += f"grouped by {lab_names[2]}:"
-    title += f" {lab_values[2]}"
+    title += f" grouped by {lab_names[1]}"
+    title += f": {lab_values[1]}"
+    title += "\n"
+    title += f" grouped by {lab_names[2]}"
+    title += f": {lab_values[2]}"
     ax.set_title(title, fontsize=14)
-    ax.set_ylabel("F-score (min/mean/max and std-dev)", fontsize=14)
+
+    lab_fontsize = 14
+    ax.set_ylabel("F-score (min/mean/max and std-dev)", fontsize=lab_fontsize)
+    ax.set_xlabel(f"{lab_names[1]} ({lab_names[2]})", fontsize=lab_fontsize)
 
     f_dim = f_mean.shape
 
@@ -283,7 +293,8 @@ def plot_triple_data(
         # where to put the ticks
         this_ticks = x_inner_ticks + shift_group
         all_x_ticks = np.hstack((all_x_ticks, this_ticks))
-        all_xticklabels.extend(lab_values[1])
+        this_labels = [f"{vy} ({lab_values[2][iz]})" for vy in lab_values[1]]
+        all_xticklabels.extend(this_labels)
 
         # reset the cycler
         cc = cycler(
@@ -342,6 +353,21 @@ def plot_triple_data(
                 ecolor="b",
             )
 
+    if max_all is not None:
+        ax.set_ylim(0, max_all * 1.05)
+
+    if mean_all is not None:
+        ax.axhline(mean_all)
+
+        bottom, top = ax.get_ylim()
+        mean_rescaled = mean_all / top * 1.01
+        ax.annotate(
+            text=f"{mean_all:.02f}",
+            xy=(0.005, mean_rescaled),
+            xycoords="axes fraction",
+            fontsize=13,
+        )
+
     ax.set_xticks(all_x_ticks)
     ax.set_xticklabels(all_xticklabels)
-    ax.legend()
+    ax.legend(title=f"{lab_names[0]}", title_fontsize=lab_fontsize)
