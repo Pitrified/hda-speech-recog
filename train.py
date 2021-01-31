@@ -1,41 +1,39 @@
+from functools import partial
 from multiprocessing import Pool
 from pathlib import Path
+from sklearn.model_selection import ParameterGrid  # type: ignore
 import argparse
 import json
 import logging
-
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
+import typing as ty
 
 # from tensorflow.keras.callbacks import ModelCheckpoint  # type: ignore
 from tensorflow.data import Dataset  # type: ignore
 from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
+from tensorflow.keras.callbacks import LearningRateScheduler  # type: ignore
 from tensorflow.keras.optimizers import Adam  # type: ignore
 from tensorflow.keras.optimizers import RMSprop  # type: ignore
 from tensorflow.keras.optimizers.schedules import ExponentialDecay  # type: ignore
 
-from sklearn.model_selection import ParameterGrid  # type: ignore
-
+from clr_callback import CyclicLR
 from models import AttentionModel
 from models import CNNmodel
 from models import TRAmodel
-
 from plot_utils import plot_confusion_matrix
 from preprocess_data import compose_spec
 from preprocess_data import load_processed
 from preprocess_data import load_triple
 from preprocess_data import preprocess_spec
+from schedules import exp_decay_smooth
+from schedules import exp_decay_step
 from utils import analyze_confusion
 from utils import pred_hot_2_cm
 from utils import setup_gpus
 from utils import setup_logger
 from utils import words_types
-
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Union
 
 
 def parse_arguments():
@@ -50,12 +48,14 @@ def parse_arguments():
         choices=["smallCNN", "transfer", "attention"],
         help="Which training to execute",
     )
+
+    tra_types = [w for w in words_types.keys() if not w.startswith("_")]
     parser.add_argument(
         "-wt",
         "--words_type",
         type=str,
         default="f2",
-        choices=words_types.keys(),
+        choices=tra_types,
         help="Words to preprocess",
     )
 
@@ -109,7 +109,7 @@ def setup_env():
 #####################################################################
 
 
-def build_cnn_name(hypa: Dict[str, Union[str, int]]) -> str:
+def build_cnn_name(hypa: ty.Dict[str, ty.Union[str, int]]) -> str:
     """Build the name to load a CNN model
 
     There is an older version of the name without lr and opt, kept for loading purposes
@@ -413,7 +413,7 @@ def train_model(hypa):
 #####################################################################
 
 
-def build_transfer_name(hypa: Dict[str, str], use_validation: bool) -> str:
+def build_transfer_name(hypa: ty.Dict[str, str], use_validation: bool) -> str:
     """TODO: what is build_transfer_name doing?"""
 
     model_name = "TRA"
@@ -451,24 +451,25 @@ def hyper_train_transfer(
     # logg.setLevel("INFO")
     logg.debug("Start hyper_train_transfer")
 
-    hypa_grid: Dict[str, List[str]] = {}
+    hypa_grid: ty.Dict[str, ty.List[str]] = {}
 
     # TODO test again dense_width_type 1234 on f1
 
-    hypa_grid["dense_width_type"] = ["01", "02", "03", "04"]
+    # hypa_grid["dense_width_type"] = ["01", "02", "03", "04"]
     # hypa_grid["dense_width_type"] = ["01", "02"]
-    # hypa_grid["dense_width_type"] = ["03"]
+    hypa_grid["dense_width_type"] = ["03"]
     # hypa_grid["dense_width_type"] = ["02"]
 
     # hypa_grid["dropout_type"] = ["01", "03"]
     hypa_grid["dropout_type"] = ["01"]
 
-    hypa_grid["batch_size_type"] = ["01", "02"]
+    # hypa_grid["batch_size_type"] = ["01", "02"]
     # hypa_grid["batch_size_type"] = ["01"]
-    # hypa_grid["batch_size_type"] = ["02"]
+    hypa_grid["batch_size_type"] = ["02"]
 
-    hypa_grid["epoch_num_type"] = ["01", "02"]
+    # hypa_grid["epoch_num_type"] = ["01", "02"]
     # hypa_grid["epoch_num_type"] = ["01"]
+    hypa_grid["epoch_num_type"] = ["02"]
 
     hypa_grid["learning_rate_type"] = ["01"]
 
@@ -479,9 +480,9 @@ def hyper_train_transfer(
     hypa_grid["datasets_type"] = ["01"]
 
     # hypa_grid["words_type"] = [words_type]
-    hypa_grid["words_type"] = [words_type]
+    # hypa_grid["words_type"] = [words_type]
     # hypa_grid["words_type"] = ["f2", "f1", "dir", "num", "k1", "w2", "all"]
-    # hypa_grid["words_type"] = ["f2", "f1", "dir", "num"]
+    hypa_grid["words_type"] = ["f2", "f1", "dir", "num"]
     the_grid = list(ParameterGrid(hypa_grid))
 
     logg.debug(f"hypa_grid: {hypa_grid}")
@@ -530,7 +531,7 @@ def train_model_tra_dry(hypa, use_validation: bool) -> str:
 
 
 def train_transfer(
-    hypa: Dict[str, str], force_retrain: bool, use_validation: bool
+    hypa: ty.Dict[str, str], force_retrain: bool, use_validation: bool
 ) -> None:
     """TODO: what is train_transfer doing?
 
@@ -593,7 +594,7 @@ def train_transfer(
         # logg.debug(f"x.shape: {x.shape}")
         # logg.debug(f"y.shape: {y.shape}")
 
-    model_param: Dict[str, Union[List[int], int, float]] = {}
+    model_param: ty.Dict[str, ty.Union[ty.List[int], int, float]] = {}
     model_param["num_labels"] = num_labels
     model_param["input_shape"] = data["training"][0].shape
 
@@ -615,7 +616,7 @@ def train_transfer(
         info_folder.mkdir(parents=True, exist_ok=True)
 
     # a dict to recreate this training
-    recap: Dict[str, Any] = {}
+    recap: ty.Dict[str, ty.Any] = {}
     recap["words"] = words
     recap["hypa"] = hypa
     recap["model_param"] = model_param
@@ -651,16 +652,28 @@ def train_transfer(
         metrics=metrics,
     )
 
-    logg.debug("Start fit")
+    # setup callbacks
+    callbacks = []
+
+    metric_to_monitor = "val_loss" if use_validation else "loss"
+    early_stop = EarlyStopping(
+        monitor=metric_to_monitor,
+        patience=4,
+        restore_best_weights=True,
+        verbose=1,
+    )
+    callbacks.append(early_stop)
+
     results_freeze = model.fit(
         x,
         y,
         validation_data=val_data,
         epochs=epoch_nums[0],
         batch_size=batch_sizes[0],
+        callbacks=[early_stop],
     )
 
-    results_freeze_recap: Dict[str, Any] = {}
+    results_freeze_recap: ty.Dict[str, ty.Any] = {}
     results_freeze_recap["model_name"] = model_name
     results_freeze_recap["results_recap_version"] = "001"
     results_freeze_recap["history_train"] = {
@@ -696,9 +709,10 @@ def train_transfer(
         validation_data=val_data,
         epochs=epoch_nums[1],
         batch_size=batch_sizes[1],
+        callbacks=[early_stop],
     )
 
-    results_full_recap: Dict[str, Any] = {}
+    results_full_recap: ty.Dict[str, ty.Any] = {}
     results_full_recap["model_name"] = model_name
     results_full_recap["results_recap_version"] = "001"
 
@@ -746,7 +760,7 @@ def train_transfer(
 #####################################################################
 
 
-def build_attention_name(hypa: Dict[str, str], use_validation: bool) -> str:
+def build_attention_name(hypa: ty.Dict[str, str], use_validation: bool) -> str:
     """TODO: what is build_attention_name doing?"""
     model_name = "ATT"
 
@@ -777,7 +791,7 @@ def hyper_train_attention(
     # logg.setLevel("INFO")
     logg.debug("Start hyper_train_attention")
 
-    hypa_grid: Dict[str, List[str]] = {}
+    hypa_grid: ty.Dict[str, ty.List[str]] = {}
 
     # the words to train on
     hypa_grid["words_type"] = [words_type]
@@ -789,43 +803,45 @@ def hyper_train_attention(
     hypa_grid["dataset_name"] = ["mela1", "mel04"]
 
     # how big are the first conv layers
-    hypa_grid["conv_size_type"] = ["01", "02"]
-    # hypa_grid["conv_size_type"] = ["02"]
+    # hypa_grid["conv_size_type"] = ["01", "02"]
+    hypa_grid["conv_size_type"] = ["02"]
 
     # dropout after conv, 0 to skip it
     # hypa_grid["dropout_type"] = ["01", "02"]
     hypa_grid["dropout_type"] = ["01"]
 
     # the shape of the kernels in the conv layers
-    hypa_grid["kernel_size_type"] = ["01", "02"]
-    # hypa_grid["kernel_size_type"] = ["01"]
+    # hypa_grid["kernel_size_type"] = ["01", "02"]
+    hypa_grid["kernel_size_type"] = ["01"]
 
     # the dimension of the LSTM
-    hypa_grid["lstm_units_type"] = ["01", "02"]
-    # hypa_grid["lstm_units_type"] = ["01"]
+    # hypa_grid["lstm_units_type"] = ["01", "02"]
+    hypa_grid["lstm_units_type"] = ["01"]
 
     # the query style type
-    hypa_grid["query_style_type"] = ["01", "02", "03", "04", "05"]
-    # hypa_grid["query_style_type"] = ["01"]
+    # hypa_grid["query_style_type"] = ["01", "02", "03", "04", "05"]
+    hypa_grid["query_style_type"] = ["01"]
 
     # the width of the dense layers
     # hypa_grid["dense_width_type"] = ["01", "02"]
     hypa_grid["dense_width_type"] = ["01"]
 
     # the learning rates for the optimizer
-    hypa_grid["learning_rate_type"] = ["01"]
+    # hypa_grid["learning_rate_type"] = ["01", "02"]
+    # hypa_grid["learning_rate_type"] = ["03", "04", "05"]
+    hypa_grid["learning_rate_type"] = ["05"]
 
     # which optimizer to use
     # hypa_grid["optimizer_type"] = ["a1", "r1"]
     hypa_grid["optimizer_type"] = ["a1"]
 
     # the batch size to use
-    hypa_grid["batch_size_type"] = ["01", "02"]
-    # hypa_grid["batch_size_type"] = ["01"]
+    # hypa_grid["batch_size_type"] = ["01", "02"]
+    hypa_grid["batch_size_type"] = ["01"]
 
     # the number of epochs
-    hypa_grid["epoch_num_type"] = ["01", "02"]
-    # hypa_grid["epoch_num_type"] = ["01"]
+    # hypa_grid["epoch_num_type"] = ["01", "02"]
+    hypa_grid["epoch_num_type"] = ["01"]
 
     logg.debug(f"hypa_grid: {hypa_grid}")
 
@@ -868,7 +884,7 @@ def train_model_att_dry(hypa, use_validation: bool) -> str:
 
 
 def train_attention(
-    hypa: Dict[str, str], force_retrain: bool, use_validation: bool
+    hypa: ty.Dict[str, str], force_retrain: bool, use_validation: bool
 ) -> None:
     """TODO: what is train_attention doing?"""
     logg = logging.getLogger(f"c.{__name__}.train_attention")
@@ -914,7 +930,7 @@ def train_attention(
         logg.debug("NOT using validation data")
 
     # from hypa extract model param
-    model_param: Dict[str, Any] = {}
+    model_param: ty.Dict[str, ty.Any] = {}
     model_param["num_labels"] = num_labels
     model_param["input_shape"] = data["training"][0].shape
 
@@ -944,7 +960,7 @@ def train_attention(
     model_param["dense_width"] = dense_width_types[hypa["dense_width_type"]]
 
     batch_size_types = {"01": 32, "02": 16}
-    batch_sizes = batch_size_types[hypa["batch_size_type"]]
+    batch_size = batch_size_types[hypa["batch_size_type"]]
 
     epoch_num_types = {"01": 15, "02": 30}
     epoch_nums = epoch_num_types[hypa["epoch_num_type"]]
@@ -955,7 +971,7 @@ def train_attention(
         info_folder.mkdir(parents=True, exist_ok=True)
 
     # a dict to recreate this training
-    recap: Dict[str, Any] = {}
+    recap: ty.Dict[str, ty.Any] = {}
     recap["words"] = words
     recap["hypa"] = hypa
     recap["model_param"] = model_param
@@ -978,8 +994,18 @@ def train_attention(
         tf.keras.metrics.Recall(),
     ]
 
-    learning_rate_types = {"01": 1e-3, "02": 1e-4}
-    lr = learning_rate_types[hypa["learning_rate_type"]]
+    learning_rate_types = {
+        "01": 1e-3,
+        "02": 1e-4,
+        "03": "exp_decay_step_01",
+        "04": "exp_decay_smooth_01",
+        "05": "clr_triangular2_01",
+    }
+    learning_rate_type = hypa["learning_rate_type"]
+    if learning_rate_type in ["01", "02"]:
+        lr = learning_rate_types[learning_rate_type]
+    else:
+        lr = 1e-3
 
     optimizer_types = {"a1": Adam(learning_rate=lr), "r1": RMSprop(learning_rate=lr)}
     opt = optimizer_types[hypa["optimizer_type"]]
@@ -990,12 +1016,41 @@ def train_attention(
         metrics=metrics,
     )
 
+    # setup callbacks
+    callbacks = []
+
+    # setup exp decay step
+    if learning_rate_type in ["03"]:
+        exp_decay_part = partial(exp_decay_step, epochs_drop=5)
+        lrate = LearningRateScheduler(exp_decay_part)
+        callbacks.append(lrate)
+
+    # setup exp decay smooth
+    if learning_rate_type in ["04"]:
+        exp_decay_part = partial(exp_decay_smooth, epochs_drop=5)
+        lrate = LearningRateScheduler(exp_decay_part)
+        callbacks.append(lrate)
+
+    if learning_rate_type in ["05"]:
+        base_lr = 0.0001
+        max_lr = 0.006
+        step_factor = 8
+        step_size = step_factor * x.shape[0] // batch_size
+        logg.debug(f"CLR is using step_size: {step_size}")
+        mode = "triangular2"
+        cyclic_lr = CyclicLR(base_lr, max_lr, step_size, mode)
+        callbacks.append(cyclic_lr)
+
     # setup early stopping
-    early_stop = EarlyStopping(
-        monitor="val_loss",
-        patience=4,
-        restore_best_weights=True,
-    )
+    if learning_rate_type in ["01", "02", "03", "04"]:
+        metric_to_monitor = "val_loss" if use_validation else "loss"
+        early_stop = EarlyStopping(
+            monitor=metric_to_monitor,
+            patience=4,
+            restore_best_weights=True,
+            verbose=1,
+        )
+        callbacks.append(early_stop)
 
     # model_checkpoint = ModelCheckpoint(
     #     model_name,
@@ -1003,19 +1058,16 @@ def train_attention(
     #     save_best_only=True,
     # )
 
-    # callbacks = [early_stop, model_checkpoint]
-    callbacks = [early_stop]
-
     results = model.fit(
         x,
         y,
         validation_data=val_data,
         epochs=epoch_nums,
-        batch_size=batch_sizes,
+        batch_size=batch_size,
         callbacks=callbacks,
     )
 
-    results_recap: Dict[str, Any] = {}
+    results_recap: ty.Dict[str, ty.Any] = {}
     results_recap["model_name"] = model_name
     results_recap["results_recap_version"] = "002"
 
@@ -1056,8 +1108,19 @@ def train_attention(
     res_recap_path = info_folder / "results_recap.json"
     res_recap_path.write_text(json.dumps(results_recap, indent=4))
 
+    # if cyclic_lr was used save the history
+    if learning_rate_type in ["05"]:
+        logg.debug(f"cyclic_lr.history.keys(): {cyclic_lr.history.keys()}")
+        clr_recap = {}
+        for metric_name, values in cyclic_lr.history.items():
+            clr_recap[metric_name] = list(float(v) for v in values)
+        clr_recap_path = info_folder / "clr_recap.json"
+        clr_recap_path.write_text(json.dumps(clr_recap, indent=4))
+
     # save the trained model
     model.save(model_path)
+
+    logg.debug(f"results.history.keys(): {results.history.keys()}")
 
 
 def run_train(args) -> None:

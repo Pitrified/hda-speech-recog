@@ -173,8 +173,22 @@ def evaluate_results_cnn(args):
     logg.debug("Start evaluate_results_cnn")
 
     results_df = build_cnn_results_df()
-    fscore_df = results_df.sort_values("fscore", ascending=False).head(30)
-    logg.info(f"{fscore_df}")
+
+    # all the results so far
+    df_f = results_df
+    df_f = df_f.sort_values("fscore", ascending=False)
+    logg.info("All results:")
+    logg.info(f"{df_f.head(30)}")
+    logg.info(f"{df_f.tail()}")
+
+    # filter the dataframe to find the best hypas
+    df_f = results_df
+    df_f = df_f.query("use_val == True")
+    df_f = df_f.query("words == 'f1'")
+    df_f = df_f.sort_values("fscore", ascending=False)
+    logg.info("Only with val on f1")
+    logg.info(f"{df_f.head(30)}")
+    logg.info(f"{df_f.tail()}")
 
 
 def make_plots_cnn() -> None:

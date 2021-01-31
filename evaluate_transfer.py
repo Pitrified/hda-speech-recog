@@ -20,9 +20,7 @@ from utils import setup_gpus
 from utils import setup_logger
 from utils import words_types
 
-# import typing as ty
-from typing import Dict
-from typing import List
+import typing as ty
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -91,7 +89,7 @@ def build_tra_results_df() -> pd.DataFrame:
     # logg.setLevel("INFO")
     logg.debug("Start build_tra_results_df")
 
-    pandito: Dict[str, List[str]] = {
+    pandito: ty.Dict[str, ty.List[str]] = {
         "dense_width": [],
         "dropout": [],
         "batch_size": [],
@@ -165,8 +163,20 @@ def evaluate_results_transfer(args: argparse.Namespace) -> None:
     logg.debug("Start evaluate_results_transfer")
 
     results_df = build_tra_results_df()
-    fscore_df = results_df.sort_values("fscore", ascending=False).head(30)
-    logg.info(f"{fscore_df}")
+
+    df_f = results_df
+    df_f = df_f.sort_values("fscore", ascending=False)
+    logg.info("All results:")
+    logg.info(f"{df_f.head(30)}")
+    logg.info(f"{df_f.tail()}")
+
+    df_f = results_df
+    df_f = df_f.query("use_val == True")
+    df_f = df_f.query("words == 'f1'")
+    df_f = df_f.sort_values("fscore", ascending=False)
+    logg.info("Only with val on f1")
+    logg.info(f"{df_f.head(30)}")
+    logg.info(f"{df_f.tail()}")
 
 
 def delete_bad_models_transfer(args: argparse.Namespace) -> None:
@@ -262,7 +272,7 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
     audios = record_audios(rec_words, audio_folder, audio_path_fmt, timeout=0)
 
     # compute the spectrograms and build the dataset of correct shape
-    specs_3ch: List[np.ndarray] = []
+    specs_3ch: ty.List[np.ndarray] = []
     # params for the mel conversion
     p2d_kwargs = {"ref": np.max}
     spec_dict = get_spec_dict()
@@ -271,7 +281,7 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
         audio_path = audio_folder / audio_path_fmt.format(word)
 
         # convert it to mel for each type of dataset
-        specs: List[np.ndarray] = []
+        specs: ty.List[np.ndarray] = []
         for dataset_name in dataset_names:
             spec_kwargs = spec_dict[dataset_name]
             log_spec = wav2mel(audio_path, spec_kwargs, p2d_kwargs)
@@ -284,7 +294,7 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
     data = np.stack(specs_3ch)
     logg.debug(f"data.shape: {data.shape}")
 
-    hypa: Dict[str, str] = {}
+    hypa: ty.Dict[str, str] = {}
     hypa["dense_width_type"] = "03"
     hypa["dropout_type"] = "01"
     hypa["batch_size_type"] = "02"

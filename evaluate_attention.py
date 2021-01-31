@@ -38,7 +38,7 @@ def parse_arguments():
         choices=[
             "results",
             "attention_weights",
-            "make_plots",
+            "make_plots_hypa",
             "audio",
         ],
         help="Which evaluation to perform",
@@ -178,12 +178,20 @@ def evaluate_results_attention() -> None:
 
     results_df = build_att_results_df()
 
+    # all the results so far
     df_f = results_df
+    df_f = df_f.sort_values("fscore", ascending=False)
+    logg.info("All results:")
+    logg.info(f"{df_f.head(30)}")
+    logg.info(f"{df_f.tail()}")
+
     # filter the dataframe to find the best hypas
-    # df_f = df_f.query("use_val == True")
-    # df_f = df_f.query("words == 'k1'")
+    df_f = results_df
+    df_f = df_f.query("use_val == True")
+    df_f = df_f.query("words == 'k1'")
     # df_f = df_f.query("query == '05'")
     df_f = df_f.sort_values("fscore", ascending=False)
+    logg.info("Only with val on k1")
     logg.info(f"{df_f.head(30)}")
     logg.info(f"{df_f.tail()}")
 
@@ -423,11 +431,11 @@ def evaluate_attention_weights(
         plt.show()
 
 
-def make_plots_attention() -> None:
-    """TODO: what is make_plots_attention doing?"""
-    logg = logging.getLogger(f"c.{__name__}.make_plots_attention")
+def make_plots_hypa() -> None:
+    """TODO: what is make_plots_hypa doing?"""
+    logg = logging.getLogger(f"c.{__name__}.make_plots_hypa")
     # logg.setLevel("INFO")
-    logg.debug("Start make_plots_attention")
+    logg.debug("Start make_plots_hypa")
 
     results_df = build_att_results_df()
 
@@ -516,8 +524,8 @@ def run_evaluate_attention(args: argparse.Namespace) -> None:
         evaluate_attention_weights(train_words_type, rec_words_type, False)
     elif evaluation_type == "audio":
         evaluate_attention_weights(train_words_type, rec_words_type, True)
-    elif evaluation_type == "make_plots":
-        make_plots_attention()
+    elif evaluation_type == "make_plots_hypa":
+        make_plots_hypa()
 
 
 if __name__ == "__main__":
