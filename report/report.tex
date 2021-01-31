@@ -6,7 +6,7 @@
 \usepackage{amsfonts}
 \usepackage{amsmath}
 \usepackage{amssymb}
-\usepackage[ansinew]{inputenc} 
+\usepackage[ansinew]{inputenc}
 \usepackage{xcolor}
 \usepackage{mathtools}
 \usepackage{graphicx}
@@ -27,23 +27,23 @@
 \usepackage{listings}
 
 \lstset{%
- backgroundcolor=\color[gray]{.85},
- basicstyle=\small\ttfamily,
- breaklines = true,
- keywordstyle=\color{red!75},
- columns=fullflexible,
+    backgroundcolor=\color[gray]{.85},
+    basicstyle=\small\ttfamily,
+    breaklines = true,
+    keywordstyle=\color{red!75},
+    columns=fullflexible,
 }%
 
 \lstdefinelanguage{BibTeX}
-  {keywords={%
-      @article,@book,@collectedbook,@conference,@electronic,@ieeetranbstctl,%
-      @inbook,@incollectedbook,@incollection,@injournal,@inproceedings,%
-      @manual,@mastersthesis,@misc,@patent,@periodical,@phdthesis,@preamble,%
-      @proceedings,@standard,@string,@techreport,@unpublished%
-      },
-   comment=[l][\itshape]{@comment},
-   sensitive=false,
-  }
+{keywords={%
+        @article,@book,@collectedbook,@conference,@electronic,@ieeetranbstctl,%
+        @inbook,@incollectedbook,@incollection,@injournal,@inproceedings,%
+        @manual,@mastersthesis,@misc,@patent,@periodical,@phdthesis,@preamble,%
+        @proceedings,@standard,@string,@techreport,@unpublished%
+    },
+    comment=[l][\itshape]{@comment},
+    sensitive=false,
+}
 
 \usepackage{listings}
 
@@ -92,17 +92,17 @@
 % \setlength{\abovecaptionskip}{0pt}
 \setlength{\columnsep}{0.2in}
 
-% \IEEEoverridecommandlockouts\IEEEpubid{\makebox[\columnwidth]{PUT COPYRIGHT NOTICE HERE \hfill} \hspace{\columnsep}\makebox[\columnwidth]{ }} 
+% \IEEEoverridecommandlockouts\IEEEpubid{\makebox[\columnwidth]{PUT COPYRIGHT NOTICE HERE \hfill} \hspace{\columnsep}\makebox[\columnwidth]{ }}
 
 \title{Speech Command Recognition}
 
-\author{pmn} 
+\author{pmn}
 
 \IEEEoverridecommandlockouts
 
 \newcounter{remark}[section]
 \newenvironment{remark}[1][]{\refstepcounter{remark}\par\medskip
-   \textbf{Remark~\thesection.\theremark. #1} \rmfamily}{\medskip}
+\textbf{Remark~\thesection.\theremark. #1} \rmfamily}{\medskip}
 
 \begin{document}
 
@@ -111,14 +111,16 @@
 \begin{abstract}
     This report covers the work done to solve the speech command recognition task,
     following three approaches:
-    small footprint Convolutional Neural Networks, (SONO DAVVERO PICCOLI?)
-    transfer learning using VGG/ImageNet (FALLO),
-    a recurrent approach (FALLO),
-    and finally a recurrent attention model (FALLO ANCHE QUESTO). 
+    Convolutional Neural Networks,
+    transfer learning using Xception architecture,
+    and a recurrent attention model.
 
-    Results are compared with previous small footprint Convolutional implementation,
-    (SU CHE TASK LORO? FALLO)
-    and with the results obatined in the paper that proposed the attention model. 
+    A new method to compute the attention weight is proposed, using a Convolutional Neural Network to evaluate the scores, both directly from the spectrogram and from the LSTM features.
+
+    Experiments to identify the best input preprocess and hyperparameters are performed for the three architectures.
+
+    Results are compared with the results obtained in the paper that proposed the attention model.
+    (IN REALTA LORO SU TASK LEGGERMENTE DIVERSA)
 \end{abstract}
 
 \IEEEkeywords
