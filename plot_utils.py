@@ -389,7 +389,7 @@ def plot_triple_data(
             )
 
     if max_all is not None and min_all is not None:
-        ax.set_ylim(top=max_all * 1.02, bottom=min_all * 0.98)
+        ax.set_ylim(top=max_all * 1.01, bottom=min_all * 0.99)
     elif max_all is not None:
         ax.set_ylim(top=max_all * 1.05)
     elif min_all is not None:

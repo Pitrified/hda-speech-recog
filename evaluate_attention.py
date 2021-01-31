@@ -447,7 +447,8 @@ def make_plots_attention() -> None:
         logg.debug(f"hypa_grid['{col}'] = {results_df[col].unique()}")
 
     hypa_grid: ty.Dict[str, ty.List[str]] = {}
-    hypa_grid["words"] = ["k1", "w2"]
+    # hypa_grid["words"] = ["k1", "w2"]
+    hypa_grid["words"] = ["k1"]
     hypa_grid["dataset"] = ["mela1", "mel04", "mel05", "mel01"]
     hypa_grid["conv"] = ["01", "02"]
     hypa_grid["dropout"] = ["01", "02"]
@@ -461,14 +462,14 @@ def make_plots_attention() -> None:
     hypa_grid["epoch"] = ["01", "02"]
 
     hp_to_plot_names = [
-        "words",
+        # "words",
         "dataset",
         "conv",
-        # "dropout",
-        # "kernel",
+        "dropout",
+        "kernel",
         # "lstm",
         "query",
-        # "dense",
+        "dense",
         # "lr",
         # "optimizer",
         "batch",

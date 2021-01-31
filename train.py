@@ -443,37 +443,37 @@ def get_datasets_types():
     return datasets_types
 
 
-def hyper_train_transfer(args: argparse.Namespace) -> None:
+def hyper_train_transfer(
+    words_type: str, force_retrain: bool, use_validation: bool, dry_run: bool
+) -> None:
     """TODO: what is hyper_train_transfer doing?"""
     logg = logging.getLogger(f"c.{__name__}.hyper_train_transfer")
     # logg.setLevel("INFO")
     logg.debug("Start hyper_train_transfer")
 
-    words_type = args.words_type
-    force_retrain = args.force_retrain
-    use_validation = args.use_validation
-
     hypa_grid: Dict[str, List[str]] = {}
 
     # TODO test again dense_width_type 1234 on f1
 
-    # hypa_grid["dense_width_type"] = ["01", "02", "03", "04"]
+    hypa_grid["dense_width_type"] = ["01", "02", "03", "04"]
     # hypa_grid["dense_width_type"] = ["01", "02"]
-    hypa_grid["dense_width_type"] = ["03"]
+    # hypa_grid["dense_width_type"] = ["03"]
     # hypa_grid["dense_width_type"] = ["02"]
 
     # hypa_grid["dropout_type"] = ["01", "03"]
     hypa_grid["dropout_type"] = ["01"]
 
-    # hypa_grid["batch_size_type"] = ["01", "02"]
+    hypa_grid["batch_size_type"] = ["01", "02"]
     # hypa_grid["batch_size_type"] = ["01"]
-    hypa_grid["batch_size_type"] = ["02"]
+    # hypa_grid["batch_size_type"] = ["02"]
 
-    hypa_grid["epoch_num_type"] = ["01"]
+    hypa_grid["epoch_num_type"] = ["01", "02"]
+    # hypa_grid["epoch_num_type"] = ["01"]
+
     hypa_grid["learning_rate_type"] = ["01"]
 
     # hypa_grid["optimizer_type"] = ["a1", "r1"]
-    hypa_grid["optimizer_type"] = ["r1"]
+    hypa_grid["optimizer_type"] = ["a1"]
 
     # hypa_grid["datasets_type"] = ["01", "02", "03", "04", "05"]
     hypa_grid["datasets_type"] = ["01"]
@@ -488,6 +488,14 @@ def hyper_train_transfer(args: argparse.Namespace) -> None:
 
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
+
+    if dry_run:
+        tra_info = {"already_trained": 0, "to_train": 0}
+        for hypa in the_grid:
+            train_status = train_model_tra_dry(hypa, use_validation)
+            tra_info[train_status] += 1
+        logg.debug(f"tra_info: {tra_info}")
+        return
 
     # for each type of dataset that will be used
     datasets_types = get_datasets_types()
@@ -507,6 +515,18 @@ def hyper_train_transfer(args: argparse.Namespace) -> None:
         logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
         with Pool(1) as p:
             p.apply(train_transfer, (hypa, force_retrain, use_validation))
+
+
+def train_model_tra_dry(hypa, use_validation: bool) -> str:
+    """TODO: what is train_model_tra_dry doing?"""
+    model_name = build_transfer_name(hypa, use_validation)
+    model_folder = Path("trained_models")
+    model_path = model_folder / f"{model_name}.h5"
+
+    if model_path.exists():
+        return "already_trained"
+
+    return "to_train"
 
 
 def train_transfer(
@@ -586,7 +606,7 @@ def train_transfer(
     batch_size_types = {"01": [32, 32], "02": [16, 16]}
     batch_sizes = batch_size_types[hypa["batch_size_type"]]
 
-    epoch_num_types = {"01": [20, 10]}
+    epoch_num_types = {"01": [20, 10], "02": [40, 20]}
     epoch_nums = epoch_num_types[hypa["epoch_num_type"]]
 
     # save info regarding the model training in this folder
@@ -638,7 +658,6 @@ def train_transfer(
         validation_data=val_data,
         epochs=epoch_nums[0],
         batch_size=batch_sizes[0],
-        verbose=0,
     )
 
     results_freeze_recap: Dict[str, Any] = {}
@@ -782,8 +801,8 @@ def hyper_train_attention(
     # hypa_grid["kernel_size_type"] = ["01"]
 
     # the dimension of the LSTM
-    # hypa_grid["lstm_units_type"] = ["01", "02"]
-    hypa_grid["lstm_units_type"] = ["01"]
+    hypa_grid["lstm_units_type"] = ["01", "02"]
+    # hypa_grid["lstm_units_type"] = ["01"]
 
     # the query style type
     hypa_grid["query_style_type"] = ["01", "02", "03", "04", "05"]
@@ -841,6 +860,7 @@ def train_model_att_dry(hypa, use_validation: bool) -> str:
 
     model_name = build_attention_name(hypa, use_validation)
     model_path = model_folder / f"{model_name}.h5"
+
     if model_path.exists():
         return "already_trained"
 
@@ -1054,7 +1074,7 @@ def run_train(args) -> None:
     if training_type == "smallCNN":
         hyper_train(args)
     elif training_type == "transfer":
-        hyper_train_transfer(args)
+        hyper_train_transfer(words_type, force_retrain, use_validation, dry_run)
     elif training_type == "attention":
         hyper_train_attention(words_type, force_retrain, use_validation, dry_run)
 
