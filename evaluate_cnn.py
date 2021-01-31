@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 import tensorflow as tf  # type: ignore
+import typing as ty
 
 from plot_utils import plot_confusion_matrix
 from plot_utils import plot_pred
@@ -25,10 +26,6 @@ from utils import record_audios
 from utils import setup_gpus
 from utils import setup_logger
 from utils import words_types
-
-from typing import Dict
-from typing import Union
-import typing as ty
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -199,7 +196,7 @@ def make_plots_cnn() -> None:
             f.mkdir(parents=True, exist_ok=True)
 
     # the real hypa values are not str but we only need them for the query
-    hypa_grid: Dict[str, ty.List[str]] = {}
+    hypa_grid: ty.Dict[str, ty.List[str]] = {}
     hypa_grid["filters"] = ["10", "20", "30", "32", "64", "128"]
     hypa_grid["kernel_size"] = ["01", "02", "03"]
     hypa_grid["pool_size"] = ["01", "02"]
@@ -364,7 +361,7 @@ def evaluate_model_cnn(args):
     setup_gpus()
 
     # setup the parameters
-    hypa: Dict[str, Union[str, int]] = {}
+    hypa: ty.Dict[str, ty.Union[str, int]] = {}
     hypa["base_dense_width"] = 32
     hypa["base_filters"] = 20
     hypa["batch_size"] = 32
@@ -451,7 +448,7 @@ def evaluate_audio_cnn(args):
     audios = record_audios(rec_words, audio_folder, audio_path_fmt, timeout=0)
 
     # compute the spectrograms and build the dataset of correct shape
-    specs = []
+    img_specs = []
     spec_dict = get_spec_dict()
     spec_kwargs = spec_dict[dataset_name]
     p2d_kwargs = {"ref": np.max}
@@ -464,14 +461,14 @@ def evaluate_audio_cnn(args):
         img_spec = log_spec.reshape((*log_spec.shape, 1))
         logg.debug(f"img_spec.shape: {img_spec.shape}")  # img_spec.shape: (128, 32, 1)
 
-        specs.append(log_spec)
+        img_specs.append(img_spec)
 
     # the data needs to look like this data['testing'].shape: (735, 128, 32, 1)
     # data = log_spec.reshape((1, *log_spec.shape, 1))
-    data = np.stack(specs)
+    data = np.stack(img_specs)
     logg.debug(f"data.shape: {data.shape}")
 
-    hypa: Dict[str, Union[str, int]] = {}
+    hypa: ty.Dict[str, ty.Union[str, int]] = {}
     hypa["base_dense_width"] = 32
     hypa["base_filters"] = 20
     hypa["batch_size"] = 32
@@ -512,7 +509,8 @@ def evaluate_audio_cnn(args):
 
     for i, word in enumerate(rec_words):
         plot_waveform(audios[i], axes[i][0])
-        plot_spec(specs[i], axes[i][1])
+        spec = img_specs[i][:, :, 0]
+        plot_spec(spec, axes[i][1])
         plot_pred(
             pred[i][perm_pred],
             train_words,

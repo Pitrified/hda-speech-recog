@@ -13,10 +13,14 @@ import typing as ty
 from plot_utils import plot_att_weights
 from plot_utils import plot_pred
 from plot_utils import plot_spec
+from plot_utils import plot_waveform
 from plot_utils import quad_plotter
+from preprocess_data import get_spec_dict
 from preprocess_data import load_processed
+from preprocess_data import wav2mel
 from train import build_attention_name
 from utils import compute_permutation
+from utils import record_audios
 from utils import setup_gpus
 from utils import setup_logger
 from utils import words_types
@@ -35,6 +39,7 @@ def parse_arguments():
             "results",
             "attention_weights",
             "make_plots",
+            "audio",
         ],
         help="Which evaluation to perform",
     )
@@ -236,7 +241,9 @@ def evaluate_results_attention() -> None:
     logg.debug(f"ranked:\n{ranked}")
 
 
-def evaluate_attention_weights(train_words_type: str) -> None:
+def evaluate_attention_weights(
+    train_words_type: str, rec_words_type: str, do_new_record: bool = False
+) -> None:
     """TODO: what is evaluate_attention_weights doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_attention_weights")
     # logg.setLevel("INFO")
@@ -246,27 +253,21 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     setup_gpus()
 
     # ATT_ct02_dr02_ks02_lu01_as01_qt01_dw01_opa1_lr01_bs01_en01_dsmel04_wk1
-    dataset_name = "mel04"
-
     hypa: ty.Dict[str, str] = {}
-
     hypa["conv_size_type"] = "02"
     hypa["dropout_type"] = "02"
     hypa["kernel_size_type"] = "02"
     hypa["lstm_units_type"] = "01"
-    # hypa["att_sample_type"] = "01"
     hypa["query_style_type"] = "01"
     hypa["dense_width_type"] = "01"
     hypa["optimizer_type"] = "a1"
     hypa["learning_rate_type"] = "01"
     hypa["batch_size_type"] = "01"
     hypa["epoch_num_type"] = "01"
-
+    dataset_name = "mel04"
     hypa["dataset_name"] = dataset_name
     hypa["words_type"] = train_words_type
-
     use_validation = True
-
     model_name = build_attention_name(hypa, use_validation)
     logg.debug(f"model_name: {model_name}")
 
@@ -291,56 +292,135 @@ def evaluate_attention_weights(train_words_type: str) -> None:
         ],
     )
     att_weight_model.summary()
-    logg.debug(f"att_weight_model.outputs: {att_weight_model.outputs}")
+    # logg.debug(f"att_weight_model.outputs: {att_weight_model.outputs}")
 
-    # get the words
+    # get the training words
     train_words = words_types[train_words_type]
-    logg.debug(f"train_words: {train_words}")
+    # logg.debug(f"train_words: {train_words}")
     perm_pred = compute_permutation(train_words)
 
-    # select a word
-    correct_index = 0
-    word = train_words[correct_index]
+    rec_words_type = args.rec_words_type
+    if rec_words_type == "train":
+        rec_words = train_words
+    else:
+        rec_words = words_types[rec_words_type]
+    num_rec_words = len(rec_words)
 
-    # input data
-    processed_folder = Path("data_proc")
-    processed_path = processed_folder / f"{dataset_name}"
-    data, labels = load_processed(processed_path, [word])
+    # record new audios
+    if do_new_record:
+
+        # where to save the audios
+        audio_folder = Path("recorded_audio")
+        if not audio_folder.exists():
+            audio_folder.mkdir(parents=True, exist_ok=True)
+
+        # record the audios and save them in audio_folder
+        audio_path_fmt = "{}_02.wav"
+        audios = record_audios(rec_words, audio_folder, audio_path_fmt, timeout=0)
+
+        # compute the spectrograms and build the dataset of correct shape
+        img_specs = []
+        spec_dict = get_spec_dict()
+        spec_kwargs = spec_dict[dataset_name]
+        p2d_kwargs = {"ref": np.max}
+        for word in rec_words:
+            # get the name
+            audio_path = audio_folder / audio_path_fmt.format(word)
+
+            # convert it to mel
+            log_spec = wav2mel(audio_path, spec_kwargs, p2d_kwargs)
+            img_spec = log_spec.reshape((*log_spec.shape, 1))
+            # logg.debug(f"img_spec.shape: {img_spec.shape}")
+            # img_spec.shape: (128, 32, 1)
+
+            img_specs.append(img_spec)
+
+        # the data needs to look like this data['testing'].shape: (735, 128, 32, 1)
+        rec_data = np.stack(img_specs)
+        # logg.debug(f"rec_data.shape: {rec_data.shape}")
+
+    # load data if you do not want to record new audios
+    else:
+
+        # input data
+        processed_folder = Path("data_proc")
+        processed_path = processed_folder / f"{dataset_name}"
+
+        # which word in the dataset to plot
+        word_id = 0
+
+        # the loaded spectrograms
+        rec_data_l: ty.List[np.ndarray] = []
+
+        for i, word in enumerate(rec_words):
+            data, labels = load_processed(processed_path, [word])
+
+            # get one of the spectrograms
+            word_data = data["testing"][word_id]
+            rec_data_l.append(word_data)
+
+        # turn the list into np array
+        rec_data = np.stack(rec_data_l)
 
     # get prediction and attention weights
-    pred, att_weights = att_weight_model.predict(data["testing"])
-    logg.debug(f"att_weights.shape: {att_weights.shape}")
-    logg.debug(f"att_weights[0].shape: {att_weights[0].shape}")
+    pred, att_weights = att_weight_model.predict(rec_data)
+    # logg.debug(f"att_weights.shape: {att_weights.shape}")
+    # logg.debug(f"att_weights[0].shape: {att_weights[0].shape}")
 
-    # plot the spectrogram and the weights
-    fig, axes = plt.subplots(nrows=3, ncols=1, figsize=(12, 12))
-    fig.suptitle(f"Attention weights and prediction for {word}")
+    # if we recorded fresh audios we also have the waveform to plot
+    ax_add = 1 if do_new_record else 0
 
-    # which word in the dataset to plot
-    word_id = 0
+    # plot the wave, spectrogram, weights and predictions in each column
+    plot_size = 5
+    fw = plot_size * num_rec_words
+    nrows = 3 + ax_add
+    fh = plot_size * nrows
+    fig, axes = plt.subplots(nrows=nrows, ncols=num_rec_words, figsize=(fw, fh))
+    fig.suptitle(f"Attention weights and prediction for {rec_words}")
 
-    # extract the spectrogram, data shape (?, x, y, 1)
-    word_data = data["testing"][word_id][:, :, -1]
-    logg.debug(f"word_data.shape: {word_data.shape}")
-    title = f"Spectrogram for {word}"
-    plot_spec(word_data, axes[0], title=title)
+    for i, word in enumerate(rec_words):
+        word_spec = rec_data[i][:, :, 0]
+        # logg.debug(f"word_spec.shape: {word_spec.shape}")
 
-    # plot the weights
-    word_att_weights = att_weights[word_id]
-    title = f"Attention weights for {word}"
-    plot_att_weights(word_att_weights, axes[1], title)
+        # plot the waveform
+        if do_new_record:
+            plot_waveform(audios[i], axes[0][i])
 
-    # plot the predictions
-    word_pred = pred[word_id]
-    # permute the prediction from sorted to the order you have
-    word_pred = word_pred[perm_pred]
-    pred_index = np.argmax(word_pred)
-    title = f"Predictions for {word}"
-    plot_pred(word_pred, train_words, axes[2], title, pred_index)
+        # plot the spectrogram
+        title = f"Spectrogram for {word}"
+        plot_spec(word_spec, axes[0 + ax_add][i], title=title)
 
-    fig.tight_layout()
+        # plot the weights
+        word_att_weights = att_weights[i]
+        title = f"Attention weights for {word}"
+        plot_att_weights(word_att_weights, axes[1 + ax_add][i], title)
 
-    plt.show()
+        # plot the predictions
+        word_pred = pred[i]
+        # permute the prediction from sorted to the order you have
+        word_pred = word_pred[perm_pred]
+        pred_index = np.argmax(word_pred)
+        title = f"Predictions for {word}"
+        plot_pred(word_pred, train_words, axes[2 + ax_add][i], title, pred_index)
+
+    # fig.tight_layout()
+    fig.tight_layout(h_pad=3, rect=[0, 0.03, 1, 0.97])
+
+    fig_name = f"{model_name}"
+    fig_name += f"_{train_words_type}"
+    fig_name += f"_{rec_words_type}"
+    if do_new_record:
+        fig_name += "_new.{}"
+    else:
+        fig_name += "_data.{}"
+
+    results_path = audio_folder / fig_name.format("png")
+    fig.savefig(results_path)
+    results_path = audio_folder / fig_name.format("pdf")
+    fig.savefig(results_path)
+
+    if num_rec_words <= 6:
+        plt.show()
 
 
 def make_plots_attention() -> None:
@@ -425,14 +505,16 @@ def run_evaluate_attention(args: argparse.Namespace) -> None:
 
     evaluation_type = args.evaluation_type
     train_words_type = args.train_words_type
-    # rec_words_type = args.rec_words_type
+    rec_words_type = args.rec_words_type
 
     pd.set_option("max_colwidth", 100)
 
     if evaluation_type == "results":
         evaluate_results_attention()
     elif evaluation_type == "attention_weights":
-        evaluate_attention_weights(train_words_type)
+        evaluate_attention_weights(train_words_type, rec_words_type, False)
+    elif evaluation_type == "audio":
+        evaluate_attention_weights(train_words_type, rec_words_type, True)
     elif evaluation_type == "make_plots":
         make_plots_attention()
 
