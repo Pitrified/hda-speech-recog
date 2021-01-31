@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 import tensorflow as tf  # type: ignore
+import typing as ty
 
 from plot_utils import plot_att_weights
 from plot_utils import plot_pred
@@ -19,11 +20,6 @@ from utils import compute_permutation
 from utils import setup_gpus
 from utils import setup_logger
 from utils import words_types
-
-# import typing as ty
-from typing import Dict
-from typing import List
-from typing import Any
 
 
 def parse_arguments():
@@ -92,7 +88,7 @@ def build_att_results_df() -> pd.DataFrame:
     # logg.setLevel("INFO")
     logg.debug("Start build_att_results_df")
 
-    pandito: Dict[str, List[str]] = {
+    pandito: ty.Dict[str, ty.List[str]] = {
         "words": [],
         "dataset": [],
         "conv": [],
@@ -138,7 +134,7 @@ def build_att_results_df() -> pd.DataFrame:
         if res["results_recap_version"] == "001":
             logg.debug("\nWHAT ARE YOU DOING using this version\n")
 
-        hypa: Dict[str, Any] = recap["hypa"]
+        hypa: ty.Dict[str, ty.Any] = recap["hypa"]
 
         pandito["words"].append(hypa["words_type"])
         pandito["dataset"].append(hypa["dataset_name"])
@@ -210,7 +206,7 @@ def evaluate_results_attention() -> None:
         "fscore", ascending=False
     )
 
-    rank: Dict[str, List[int]] = {}
+    rank: ty.Dict[str, ty.List[int]] = {}
     num_head = 30
     for i, (_, row) in enumerate(best_val.head(num_head).iterrows()):
         model_name = row["model_name"]
@@ -230,7 +226,7 @@ def evaluate_results_attention() -> None:
         else:
             rank[hypa_str] = [0, i]
 
-    rank_pd: Dict[str, Any] = {
+    rank_pd: ty.Dict[str, ty.Any] = {
         "hypa_str": list(rank.keys()),
         "rank_val": [rank[hs][0] for hs in rank],
         "rank_noval": [rank[hs][1] for hs in rank],
@@ -252,13 +248,13 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     # ATT_ct02_dr02_ks02_lu01_as01_qt01_dw01_opa1_lr01_bs01_en01_dsmel04_wk1
     dataset_name = "mel04"
 
-    hypa: Dict[str, str] = {}
+    hypa: ty.Dict[str, str] = {}
 
     hypa["conv_size_type"] = "02"
     hypa["dropout_type"] = "02"
     hypa["kernel_size_type"] = "02"
     hypa["lstm_units_type"] = "01"
-    hypa["att_sample_type"] = "01"
+    # hypa["att_sample_type"] = "01"
     hypa["query_style_type"] = "01"
     hypa["dense_width_type"] = "01"
     hypa["optimizer_type"] = "a1"
@@ -370,7 +366,7 @@ def make_plots_attention() -> None:
             continue
         logg.debug(f"hypa_grid['{col}'] = {results_df[col].unique()}")
 
-    hypa_grid: Dict[str, List[str]] = {}
+    hypa_grid: ty.Dict[str, ty.List[str]] = {}
     hypa_grid["words"] = ["k1", "w2"]
     hypa_grid["dataset"] = ["mela1", "mel04", "mel05", "mel01"]
     hypa_grid["conv"] = ["01", "02"]
