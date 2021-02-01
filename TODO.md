@@ -22,6 +22,7 @@ ReduceLROnPlateau:
 
 Cyclic learning rate:
 
+* https://github.com/JonnoFTW/keras_find_lr_on_plateau
 * https://github.com/bckenstler/CLR/blob/master/clr_callback.py
 * https://www.pyimagesearch.com/2019/07/29/cyclical-learning-rates-with-keras-and-deep-learning/
 
