@@ -1,0 +1,356 @@
+from pathlib import Path
+from time import sleep
+import argparse
+import logging
+import math
+import typing as ty
+
+from tensorflow_addons.image import sparse_image_warp  # type: ignore
+from tqdm import tqdm  # type: ignore
+import librosa  # type: ignore
+import numpy as np  # type: ignore
+import tensorflow as tf  # type: ignore
+
+from utils import setup_logger
+from utils import words_types
+
+
+def parse_arguments() -> argparse.Namespace:
+    """Setup CLI interface"""
+    parser = argparse.ArgumentParser(description="")
+
+    parser.add_argument(
+        "-at",
+        "--augmentation_type",
+        type=str,
+        default="aug01",
+        choices=["aug01", "aug02"],
+        help="Which augmentation to perform",
+    )
+
+    parser.add_argument(
+        "-wt",
+        "--words_type",
+        type=str,
+        default="f2",
+        choices=words_types.keys(),
+        help="Words to augment",
+    )
+
+    parser.add_argument(
+        "-fp",
+        "--force_augment",
+        dest="force_augment",
+        action="store_true",
+        help="Force the augment and overwrite the previous results",
+    )
+
+    # last line to parse the args
+    args = parser.parse_args()
+    return args
+
+
+def setup_env():
+    setup_logger("DEBUG")
+
+    args = parse_arguments()
+
+    # build command string to repeat this run
+    # FIXME if an option is a flag this does not work, sorry
+    recap = "python3 augment_data.py"
+    for a, v in args._get_kwargs():
+        recap += f" --{a} {v}"
+
+    logmain = logging.getLogger(f"c.{__name__}.setup_env")
+    logmain.info(recap)
+
+    return args
+
+
+def pad_signal(sig: np.ndarray, req_len: int) -> np.ndarray:
+    """TODO: what is pad_signal doing?"""
+    sig_len = len(sig)
+
+    if sig_len >= req_len:
+        new_sig = np.copy(sig[:req_len])
+
+    else:
+        diff = req_len - sig_len
+        pad_needed = math.floor(diff / 2), math.ceil(diff / 2)
+        new_sig = np.pad(sig, pad_needed, "constant")
+
+    return new_sig
+
+
+def stretch_signal(sig, rate) -> np.ndarray:
+    """TODO: what is stretch_signal doing?"""
+    old_len = len(sig)
+    stretched = librosa.effects.time_stretch(sig, rate)
+    stretched = pad_signal(stretched, old_len)
+    return stretched
+
+
+def sig2mel(signal, mel_kwargs, p2d_kwargs, sample_rate=16000) -> np.ndarray:
+    """TODO: what is sig2mel doing?"""
+    # logg = logging.getLogger(f"c.{__name__}.sig2mel")
+    # logg.setLevel("INFO")
+    # logg.debug("Start sig2mel")
+
+    mel = librosa.feature.melspectrogram(signal, sr=sample_rate, **mel_kwargs)
+    log_mel = librosa.power_to_db(mel, **p2d_kwargs)
+
+    # the shape is not consistent, pad it
+    pad_needed = 16384 // mel_kwargs["hop_length"] - log_mel.shape[1]
+    # print(f"pad_needed: {pad_needed}")
+    # number of values padded to the edges of each axis.
+    pad_width = ((0, 0), (0, pad_needed))
+    padded_log_mel = np.pad(log_mel, pad_width=pad_width)
+    return padded_log_mel
+
+
+def get_aug_dict() -> ty.Dict[str, ty.Any]:
+    """TODO: what is get_aug_dict doing?"""
+    logg = logging.getLogger(f"c.{__name__}.get_aug_dict")
+    # logg.setLevel("INFO")
+    logg.debug("Start get_aug_dict")
+
+    aug_dict: ty.Dict[str, ty.Any] = {}
+
+    aug_dict["aug01"] = {
+        "max_time_shifts": [1600, 3200],
+        "stretch_rates": [0.8, 1.2],
+        "mel_kwargs": {
+            "n_mels": 64,
+            "n_fft": 1024,
+            "hop_length": 256,
+            "fmax": 8000,
+        },  # (64, 64)
+        "keep_originals": True,
+        "warp_params": {
+            "num_landmarks": 3,
+            "max_warp_time": 5,
+            "max_warp_freq": 6,
+        },
+    }
+
+    return aug_dict
+
+
+def do_augmentation(
+    augmentation_type: str,
+    words_type: str,
+    force_augment: bool = False,
+) -> None:
+    """TODO: what is do_augmentation doing?
+
+    * Load wav
+    * Time shift (data_roll = np.roll(data, 1600))
+    * Time warp (librosa.effects.time_stretch)
+    * Compute the right spectrogram
+    * Warp the spectrogram (tfa.image.sparse_image_warp)
+
+    """
+    logg = logging.getLogger(f"c.{__name__}.do_augmentation")
+    logg.setLevel("INFO")
+    logg.debug("Start do_augmentation")
+
+    # root of the Google dataset
+    raw_data_fol = Path("data_raw")
+
+    # output folder
+    aug_fol = Path("data_proc") / f"{augmentation_type}"
+    if not aug_fol.exists():
+        aug_fol.mkdir(parents=True, exist_ok=True)
+
+    # list of file names for validation
+    validation_path = raw_data_fol / "validation_list.txt"
+    validation_names = set()
+    with validation_path.open() as fvp:
+        for line in fvp:
+            validation_names.add(line.strip())
+
+    # list of file names for testing
+    testing_path = raw_data_fol / "testing_list.txt"
+    testing_names = set()
+    with testing_path.open() as fvp:
+        for line in fvp:
+            testing_names.add(line.strip())
+
+    # get the list of words
+    words = words_types[words_type]
+
+    # a random number generator to use
+    rng = np.random.default_rng(12345)
+
+    # get the params for the augmentation
+    aug_dict = get_aug_dict()
+    aug_param = aug_dict[augmentation_type]
+
+    # args for the power_to_db function
+    p2d_kwargs = {"ref": np.max}
+
+    # do everything on the three folds
+    # for which_fold in ["training"]:
+    for which_fold in ["training", "validation", "testing"]:
+
+        for word in words:
+
+            word_aug_path = aug_fol / f"{word}_{which_fold}.npy"
+            if word_aug_path.exists():
+                logg.debug(f"word_aug_path: {word_aug_path} already augmented")
+                if force_augment:
+                    logg.warn("OVERWRITING the previous results in 3 seconds")
+                    sleep(3)
+                else:
+                    continue
+
+            # the loaded audios
+            sig_original = []
+
+            raw_word_fol = raw_data_fol / word
+            logg.info(f"\nProcessing folder: {raw_word_fol}")
+
+            all_wavs = list(raw_word_fol.iterdir())
+            for wav_path in tqdm(all_wavs[:]):
+
+                # the name to lookup in the val/test list
+                wav_name = f"{word}/{wav_path.name}"
+
+                if wav_name in validation_names:
+                    word_fold = "validation"
+                elif wav_name in testing_names:
+                    word_fold = "testing"
+                else:
+                    word_fold = "training"
+
+                if word_fold != which_fold:
+                    continue
+
+                sig, sample_rate = librosa.load(wav_path, sr=None)
+                sig = pad_signal(sig, 16000)
+                sig_original.append(sig)
+
+            logg.debug(f"Loaded {len(sig_original)} of {word} for {which_fold}")
+
+            sig_rolled = []
+            max_time_shifts = aug_param["max_time_shifts"]
+            if len(max_time_shifts) > 0:
+                logg.info("Rolling")
+                for s in tqdm(sig_original):
+                    for max_shift in max_time_shifts:
+                        time_shift = rng.integers(-max_shift, max_shift + 1)
+                        rolled = np.roll(s, time_shift)
+                        sig_rolled.append(rolled)
+                logg.debug(f"len(sig_rolled): {len(sig_rolled)}")
+
+            sig_stretched = []
+            stretch_rates = aug_param["stretch_rates"]
+            if len(stretch_rates) > 0:
+                logg.info("Stretching")
+                for s in tqdm(sig_original):
+                    for stretch_rate in stretch_rates:
+                        stretched = stretch_signal(s, stretch_rate)
+                        sig_stretched.append(stretched)
+                logg.debug(f"len(sig_stretched): {len(sig_stretched)}")
+
+            # all the signals you generated
+            all_signals = []
+
+            keep_originals = aug_param["keep_originals"]
+            if keep_originals:
+                all_signals.extend(sig_original)
+            all_signals.extend(sig_rolled)
+            all_signals.extend(sig_stretched)
+            logg.debug(f"len(all_signals): {len(all_signals)}")
+
+            mel_kwargs = aug_param["mel_kwargs"]
+            specs = []
+            logg.info("Computing melspectrograms")
+            for s in tqdm(all_signals):
+                log_mel = sig2mel(s, mel_kwargs, p2d_kwargs)
+                img_mel = log_mel.reshape((*log_mel.shape, 1))
+                specs.append(img_mel)
+
+            data_specs = np.stack(specs)
+            logg.debug(f"data_specs.shape: {data_specs.shape}")
+
+            # source_control_point_locations: `[batch_size, num_control_points, 2]` float `Tensor`.
+            # dest_control_point_locations: `[batch_size, num_control_points, 2]` float `Tensor`.
+
+            num_samples = data_specs.shape[0]
+            spec_dim = data_specs.shape[1:3]
+            logg.debug(f"num_samples {num_samples} spec_dim {spec_dim}")
+
+            warp_params = aug_param["warp_params"]
+            num_landmarks = warp_params["num_landmarks"]
+            max_warp_time = warp_params["max_warp_time"]
+            max_warp_freq = warp_params["max_warp_freq"]
+
+            land_shape = num_samples, num_landmarks
+
+            # the source point has to be at least max_warp_* from the border
+            bounds_time = (max_warp_time, spec_dim[0] - max_warp_time)
+            bounds_freq = (max_warp_freq, spec_dim[1] - max_warp_freq)
+
+            # generate (num_sample, num_landmarks) time/freq positions
+            source_land_t = rng.uniform(*bounds_time, size=land_shape)
+            source_land_f = rng.uniform(*bounds_freq, size=land_shape)
+            source_landmarks = np.dstack((source_land_t, source_land_f))
+            logg.debug(f"land_t.shape: {source_land_t.shape}")
+            logg.debug(f"source_landmarks.shape: {source_landmarks.shape}")
+
+            # generate the deltas, how much to shift each point
+            delta_t = rng.uniform(-max_warp_time, max_warp_time, size=land_shape)
+            delta_f = rng.uniform(-max_warp_freq, max_warp_freq, size=land_shape)
+            dest_land_t = source_land_t + delta_t
+            dest_land_f = source_land_f + delta_f
+            dest_landmarks = np.dstack((dest_land_t, dest_land_f))
+            logg.debug(f"dest_landmarks.shape: {dest_landmarks.shape}")
+
+            # data_specs = data_specs.astype("float32")
+            # source_landmarks = source_landmarks.astype("float32")
+            # dest_landmarks = dest_landmarks.astype("float32")
+            # data_warped, _ = sparse_image_warp(
+            #     data_specs, source_landmarks, dest_landmarks, num_boundary_points=2
+            # )
+            # logg.debug(f"data_warped.shape: {data_warped.shape}")
+
+            data_specs = tf.convert_to_tensor(data_specs, dtype=tf.float32)
+            source_landmarks = tf.convert_to_tensor(source_landmarks, dtype=tf.float32)
+            dest_landmarks = tf.convert_to_tensor(dest_landmarks, dtype=tf.float32)
+            siw = tf.function(sparse_image_warp, experimental_relax_shapes=True)
+            data_warped, _ = siw(
+                data_specs, source_landmarks, dest_landmarks, num_boundary_points=2
+            )
+            logg.debug(f"data_warped.shape: {data_warped.shape}")
+
+            # save the warped data
+            all_data = np.concatenate((data_specs, data_warped), axis=0)
+            logg.debug(f"all_data.shape: {all_data.shape}")
+
+            squoze_data = tf.squeeze(all_data, axis=[-1])
+            logg.debug(f"squoze_data.shape: {squoze_data.shape}")
+
+            # np.save(squoze_data, all_data)
+            np.save(word_aug_path, squoze_data)
+
+
+def run_augment_data(args: argparse.Namespace) -> None:
+    """TODO: What is augment_data doing?"""
+    logg = logging.getLogger(f"c.{__name__}.run_augment_data")
+    logg.debug("Starting run_augment_data")
+
+    augmentation_type = args.augmentation_type
+    words_type = args.words_type
+    force_augment = args.force_augment
+
+    do_augmentation(
+        augmentation_type,
+        words_type,
+        force_augment,
+    )
+
+
+if __name__ == "__main__":
+    args = setup_env()
+    run_augment_data(args)

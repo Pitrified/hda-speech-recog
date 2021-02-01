@@ -1,4 +1,5 @@
 from itertools import combinations
+from itertools import product
 from pathlib import Path
 import argparse
 import json
@@ -37,6 +38,7 @@ def parse_arguments():
         default="results",
         choices=[
             "results",
+            "evaluate_batch_epoch",
             "attention_weights",
             "make_plots_hypa",
             "make_plots_clr",
@@ -248,6 +250,33 @@ def evaluate_results_attention() -> None:
     rank_df = pd.DataFrame(rank_pd)
     ranked = rank_df.sort_values("rank_val", ascending=True).head(30)
     logg.debug(f"ranked:\n{ranked}")
+
+
+def evaluate_batch_epoch() -> None:
+    """TODO: what is evaluate_batch_epoch doing?"""
+    logg = logging.getLogger(f"c.{__name__}.evaluate_batch_epoch")
+    # logg.setLevel("INFO")
+    logg.debug("Start evaluate_batch_epoch")
+
+    results_df = build_att_results_df()
+
+    # all the results so far
+    df_f = results_df
+    df_f = df_f.query("use_val == True")
+    df_f = df_f.query("words == 'k1'")
+
+    epoch_nums = df_f["epoch"].unique()
+    batch_sizes = df_f["batch"].unique()
+    for en, bs in product(epoch_nums, batch_sizes):
+        logg.debug(f"\nen {en} bs {bs}")
+        eb_f = df_f
+        eb_f = eb_f.query(f"epoch == '{en}'")
+        eb_f = eb_f.query(f"batch == '{bs}'")
+        eb_f = eb_f.sort_values("fscore", ascending=False)
+        logg.info(f"{eb_f.head(10)}")
+        logg.info(f"{eb_f.tail(4)}")
+        fscore_mean = eb_f.fscore.mean()
+        logg.debug(f"fscore_mean: {fscore_mean}")
 
 
 def evaluate_attention_weights(
@@ -523,7 +552,8 @@ def make_plots_clr() -> None:
 
     for model_folder in info_folder.iterdir():
         model_name = model_folder.name
-        if "_lr05" not in model_name:
+        # if "_lr05" not in model_name and "_lr06" not in model_name:
+        if "_lr07" not in model_name:
             continue
         logg.debug(f"model_name: {model_name}")
 
@@ -542,7 +572,12 @@ def make_plots_clr() -> None:
 
         prec_train = np.array(clr_recap["precision"])
         recall_train = np.array(clr_recap["recall"])
-        fscores_train = 2 * prec_train * recall_train / (prec_train + recall_train)
+
+        # fscores_train = 2 * prec_train * recall_train / (prec_train + recall_train)
+        pr_prod = 2 * prec_train * recall_train
+        pr_sum = prec_train + recall_train
+        fscores_train = np.zeros_like(pr_prod)
+        np.divide(pr_prod, pr_sum, out=fscores_train, where=pr_sum > 0)
 
         iterations = clr_recap["iterations"]
         lr = clr_recap["lr"]
@@ -577,6 +612,8 @@ def run_evaluate_attention(args: argparse.Namespace) -> None:
         make_plots_hypa()
     elif evaluation_type == "make_plots_clr":
         make_plots_clr()
+    elif evaluation_type == "evaluate_batch_epoch":
+        evaluate_batch_epoch()
 
 
 if __name__ == "__main__":

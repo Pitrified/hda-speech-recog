@@ -18,6 +18,7 @@ from tensorflow.keras.optimizers import Adam  # type: ignore
 from tensorflow.keras.optimizers import RMSprop  # type: ignore
 from tensorflow.keras.optimizers.schedules import ExponentialDecay  # type: ignore
 
+from augment_data import do_augmentation
 from clr_callback import CyclicLR
 from models import AttentionModel
 from models import CNNmodel
@@ -804,13 +805,6 @@ def hyper_train_attention(
     # logg.setLevel("INFO")
     logg.debug("Start hyper_train_attention")
 
-    # TODO finish this hypa_grid: {'words_type': ['k1'], 'dataset_name': ['mela1',
-    # 'mel04'], 'conv_size_type': ['02'], 'dropout_type': ['01'], 'kernel_size_type':
-    # ['01'], 'lstm_units_type': ['01'], 'query_style_type': ['01', '02', '03', '04',
-    # '05'], 'dense_width_type': ['01'], 'learning_rate_type': ['03', '04'],
-    # 'optimizer_type': ['a1'], 'batch_size_type': ['01', '02'], 'epoch_num_type':
-    # ['01', '02']}
-
     hypa_grid: ty.Dict[str, ty.List[str]] = {}
 
     # the words to train on
@@ -820,7 +814,8 @@ def hyper_train_attention(
     # hypa_grid["dataset_name"] = ["mel01", "mel04", "mel05", "mela1"]
     # hypa_grid["dataset_name"] = ["mela1"]
     # hypa_grid["dataset_name"] = ["mel04"]
-    hypa_grid["dataset_name"] = ["mela1", "mel04"]
+    # hypa_grid["dataset_name"] = ["mela1", "mel04"]
+    hypa_grid["dataset_name"] = ["aug01"]
 
     # how big are the first conv layers
     # hypa_grid["conv_size_type"] = ["01", "02"]
@@ -839,8 +834,8 @@ def hyper_train_attention(
     hypa_grid["lstm_units_type"] = ["01"]
 
     # the query style type
-    hypa_grid["query_style_type"] = ["01", "02", "03", "04", "05"]
-    # hypa_grid["query_style_type"] = ["01"]
+    # hypa_grid["query_style_type"] = ["01", "02", "03", "04", "05"]
+    hypa_grid["query_style_type"] = ["01"]
 
     # the width of the dense layers
     # hypa_grid["dense_width_type"] = ["01", "02"]
@@ -849,20 +844,27 @@ def hyper_train_attention(
     # the learning rates for the optimizer
     # hypa_grid["learning_rate_type"] = ["01", "02"]
     # hypa_grid["learning_rate_type"] = ["03", "04", "05"]
-    hypa_grid["learning_rate_type"] = ["03", "04"]
-    # hypa_grid["learning_rate_type"] = ["05"]
+    # hypa_grid["learning_rate_type"] = ["03", "04"]
+    hypa_grid["learning_rate_type"] = ["07"]
 
     # which optimizer to use
     # hypa_grid["optimizer_type"] = ["a1", "r1"]
     hypa_grid["optimizer_type"] = ["a1"]
 
     # the batch size to use
-    hypa_grid["batch_size_type"] = ["01", "02"]
-    # hypa_grid["batch_size_type"] = ["01"]
+    # hypa_grid["batch_size_type"] = ["01", "02"]
+    hypa_grid["batch_size_type"] = ["02"]
 
     # the number of epochs
-    hypa_grid["epoch_num_type"] = ["01", "02"]
-    # hypa_grid["epoch_num_type"] = ["01"]
+    # hypa_grid["epoch_num_type"] = ["01", "02"]
+    hypa_grid["epoch_num_type"] = ["01"]
+
+    # TODO finisci questa (16/40 RIP)
+    # hypa_grid = {'words_type': ['k1'], 'dataset_name': ['mela1', 'mel04'],
+    # 'conv_size_type': ['02'], 'dropout_type': ['01'], 'kernel_size_type': ['01'],
+    # 'lstm_units_type': ['01'], 'query_style_type': ['01', '02', '03', '04', '05'],
+    # 'dense_width_type': ['01'], 'learning_rate_type': ['07'], 'optimizer_type':
+    # ['a1'], 'batch_size_type': ['01', '02'], 'epoch_num_type': ['01', '02']}
 
     logg.debug(f"hypa_grid: {hypa_grid}")
 
@@ -882,10 +884,16 @@ def hyper_train_attention(
 
     # check that the data is available
     for dn in hypa_grid["dataset_name"]:
-        preprocess_spec(dn, words_type)
+        for wt in hypa_grid["words_type"]:
+            logg.debug(f"\nwt: {wt} dn: {dn}\n")
+            if dn.startswith("mel"):
+                preprocess_spec(dn, wt)
+            elif dn.startswith("aug"):
+                do_augmentation(dn, wt)
 
     if do_find_best_lr:
         hypa = the_grid[0]
+        logg.debug(f"\nSTARTING find_best_lr with hypa: {hypa}")
         find_best_lr(hypa)
         return
 
@@ -960,6 +968,7 @@ def train_attention(
 
     # build the model name
     model_name = build_attention_name(hypa, use_validation)
+    logg.debug(f"model_name: {model_name}")
 
     # save the trained model here
     model_folder = Path("trained_models")
@@ -1031,10 +1040,16 @@ def train_attention(
         "03": "exp_decay_step_01",
         "04": "exp_decay_smooth_01",
         "05": "clr_triangular2_01",
+        "06": "clr_triangular2_02",
+        "07": "clr_triangular2_03",
     }
     learning_rate_type = hypa["learning_rate_type"]
+    lr_value = learning_rate_types[learning_rate_type]
+    clr_types = ["05", "06", "07"]
+
+    # setup opt fixed lr values
     if learning_rate_type in ["01", "02"]:
-        lr = learning_rate_types[learning_rate_type]
+        lr = lr_value
     else:
         lr = 1e-3
 
@@ -1062,16 +1077,36 @@ def train_attention(
         lrate = LearningRateScheduler(exp_decay_part)
         callbacks.append(lrate)
 
-    if learning_rate_type in ["05"]:
+    # setup cyclic learning rate
+    if learning_rate_type in clr_types:
+        base_lr = 1e-5
+        max_lr = 1e-3
+
         # training iteration per epoch = num samples // batch size
         # step size suggested = 2~8 * iterations
-        base_lr = 0.0001
-        max_lr = 0.006
-        # step_factor = 8
-        step_factor = 2
+        if lr_value == "clr_triangular2_01":
+            step_factor = 8
+            step_size = step_factor * x.shape[0] // batch_size
+
+        elif lr_value == "clr_triangular2_02":
+            step_factor = 2
+            step_size = step_factor * x.shape[0] // batch_size
+
+        # TODO compute this from different direction starting from
+        # target_cycles = the number of cycles we want in those epochs
+        # it_per_epoch = num_samples // batch_size
+        # total_iterations = it_per_epoch * epoch_num
+        # step_size = total_iterations // target_cycles
+        elif lr_value == "clr_triangular2_03":
+            # the number of cycles we want in those epochs
+            target_cycles = 4
+            it_per_epoch = x.shape[0] // batch_size
+            total_iterations = it_per_epoch * epoch_num
+            step_size = total_iterations // (target_cycles * 2)
+
         logg.debug(f"x.shape[0]: {x.shape[0]}")
-        step_size = step_factor * x.shape[0] // batch_size
         logg.debug(f"CLR is using step_size: {step_size}")
+
         mode = "triangular2"
         cyclic_lr = CyclicLR(base_lr, max_lr, step_size, mode)
         callbacks.append(cyclic_lr)
@@ -1157,7 +1192,7 @@ def train_attention(
     res_recap_path.write_text(json.dumps(results_recap, indent=4))
 
     # if cyclic_lr was used save the history
-    if learning_rate_type in ["05"]:
+    if learning_rate_type in clr_types:
         logg.debug(f"cyclic_lr.history.keys(): {cyclic_lr.history.keys()}")
         clr_recap = {}
         for metric_name, values in cyclic_lr.history.items():
@@ -1205,13 +1240,13 @@ def find_best_lr(hypa: ty.Dict[str, str]) -> None:
     start_lr = 1e-9
     end_lr = 1e1
 
-    # batch_size_types = {"01": 32, "02": 16}
-    # batch_size = batch_size_types[hypa["batch_size_type"]]
+    batch_size_types = {"01": 32, "02": 16}
+    batch_size = batch_size_types[hypa["batch_size_type"]]
     batch_size = 16
 
-    # epoch_num_types = {"01": 15, "02": 30}
-    # epoch_num = epoch_num_types[hypa["epoch_num_type"]]
-    epoch_num = 4
+    epoch_num_types = {"01": 15, "02": 30}
+    epoch_num = epoch_num_types[hypa["epoch_num_type"]]
+    # epoch_num = 1
 
     optimizer_types = {"a1": Adam(), "r1": RMSprop()}
     opt = optimizer_types[hypa["optimizer_type"]]
@@ -1232,19 +1267,19 @@ def find_best_lr(hypa: ty.Dict[str, str]) -> None:
     lrf = LearningRateFinder(model)
     lrf.find((x, y), start_lr, end_lr, epochs=epoch_num, batchSize=batch_size)
 
-    fig_name = "LR_sweep"
-    fig_name += f"_bs{batch_size}"
-    fig_name += f"_en{epoch_num}"
-    fig_name += ".{}"
+    fig_title = "LR_sweep"
+    fig_title += f"_bs{batch_size}"
+    fig_title += f"_en{epoch_num}"
     fig, ax = plt.subplots(figsize=(8, 8))
 
     # get the plot
-    lrf.plot_loss(ax=ax, title=fig_name)
+    lrf.plot_loss(ax=ax, title=fig_title)
 
     # save the plot
     plot_fol = Path("plot_results") / "att" / "find_best_lr"
     if not plot_fol.exists():
         plot_fol.mkdir(parents=True, exist_ok=True)
+    fig_name = fig_title + ".{}"
     fig.savefig(plot_fol / fig_name.format("png"))
     fig.savefig(plot_fol / fig_name.format("pdf"))
 

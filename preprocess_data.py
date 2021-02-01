@@ -56,6 +56,7 @@ def parse_arguments():
         action="store_true",
         help="Force the preprocess and overwrite the previous results",
     )
+
     # last line to parse the args
     args = parser.parse_args()
     return args

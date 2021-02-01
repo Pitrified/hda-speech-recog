@@ -1,5 +1,9 @@
 # TODOs
 
+### Misc
+
+* https://www.pyimagesearch.com/faqs/single-faq/how-do-i-reference-or-cite-one-of-your-blog-posts-books-or-courses/
+
 ### Transfer learning
 
 * Use different base models in TRA
