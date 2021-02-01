@@ -176,7 +176,7 @@ def build_att_results_df() -> pd.DataFrame:
 def evaluate_results_attention() -> None:
     """TODO: what is evaluate_results_attention doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_results_attention")
-    # logg.setLevel("INFO")
+    logg.setLevel("INFO")
     logg.debug("Start evaluate_results_attention")
 
     results_df = build_att_results_df()
@@ -553,7 +553,7 @@ def make_plots_clr() -> None:
     for model_folder in info_folder.iterdir():
         model_name = model_folder.name
         # if "_lr05" not in model_name and "_lr06" not in model_name:
-        if "_lr07" not in model_name:
+        if "_lr08" not in model_name:
             continue
         logg.debug(f"model_name: {model_name}")
 

@@ -814,8 +814,8 @@ def hyper_train_attention(
     # hypa_grid["dataset_name"] = ["mel01", "mel04", "mel05", "mela1"]
     # hypa_grid["dataset_name"] = ["mela1"]
     # hypa_grid["dataset_name"] = ["mel04"]
-    # hypa_grid["dataset_name"] = ["mela1", "mel04"]
-    hypa_grid["dataset_name"] = ["aug01"]
+    # hypa_grid["dataset_name"] = ["aug01"]
+    hypa_grid["dataset_name"] = ["aug01", "mela1", "mel04"]
 
     # how big are the first conv layers
     # hypa_grid["conv_size_type"] = ["01", "02"]
@@ -845,7 +845,8 @@ def hyper_train_attention(
     # hypa_grid["learning_rate_type"] = ["01", "02"]
     # hypa_grid["learning_rate_type"] = ["03", "04", "05"]
     # hypa_grid["learning_rate_type"] = ["03", "04"]
-    hypa_grid["learning_rate_type"] = ["07"]
+    # hypa_grid["learning_rate_type"] = ["09"]
+    hypa_grid["learning_rate_type"] = ["03", "09", "04", "07", "10"]
 
     # which optimizer to use
     # hypa_grid["optimizer_type"] = ["a1", "r1"]
@@ -857,14 +858,25 @@ def hyper_train_attention(
 
     # the number of epochs
     # hypa_grid["epoch_num_type"] = ["01", "02"]
-    hypa_grid["epoch_num_type"] = ["01"]
+    # hypa_grid["epoch_num_type"] = ["01"]
+    # hypa_grid["epoch_num_type"] = ["03"]
+    hypa_grid["epoch_num_type"] = ["01", "03", "04"]
 
     # TODO finisci questa (16/40 RIP)
-    # hypa_grid = {'words_type': ['k1'], 'dataset_name': ['mela1', 'mel04'],
-    # 'conv_size_type': ['02'], 'dropout_type': ['01'], 'kernel_size_type': ['01'],
-    # 'lstm_units_type': ['01'], 'query_style_type': ['01', '02', '03', '04', '05'],
-    # 'dense_width_type': ['01'], 'learning_rate_type': ['07'], 'optimizer_type':
-    # ['a1'], 'batch_size_type': ['01', '02'], 'epoch_num_type': ['01', '02']}
+    # hypa_grid = {
+    #     "words_type": ["k1"],
+    #     "dataset_name": ["mela1", "mel04"],
+    #     "conv_size_type": ["02"],
+    #     "dropout_type": ["01"],
+    #     "kernel_size_type": ["01"],
+    #     "lstm_units_type": ["01"],
+    #     "query_style_type": ["01", "02", "03", "04", "05"],
+    #     "dense_width_type": ["01"],
+    #     "learning_rate_type": ["07"],
+    #     "optimizer_type": ["a1"],
+    #     "batch_size_type": ["01", "02"],
+    #     "epoch_num_type": ["01", "02"],
+    # }
 
     logg.debug(f"hypa_grid: {hypa_grid}")
 
@@ -1019,7 +1031,7 @@ def train_attention(
     batch_size_types = {"01": 32, "02": 16}
     batch_size = batch_size_types[hypa["batch_size_type"]]
 
-    epoch_num_types = {"01": 15, "02": 30}
+    epoch_num_types = {"01": 15, "02": 30, "03": 2, "04": 4}
     epoch_num = epoch_num_types[hypa["epoch_num_type"]]
 
     # magic to fix the GPUs
@@ -1035,21 +1047,26 @@ def train_attention(
     ]
 
     learning_rate_types = {
-        "01": 1e-3,
-        "02": 1e-4,
+        "01": "fixed01",
+        "02": "fixed02",
         "03": "exp_decay_step_01",
         "04": "exp_decay_smooth_01",
         "05": "clr_triangular2_01",
         "06": "clr_triangular2_02",
         "07": "clr_triangular2_03",
+        "08": "clr_triangular2_04",
+        "09": "clr_triangular2_05",
+        "10": "exp_decay_smooth_02",
     }
     learning_rate_type = hypa["learning_rate_type"]
     lr_value = learning_rate_types[learning_rate_type]
-    clr_types = ["05", "06", "07"]
 
     # setup opt fixed lr values
-    if learning_rate_type in ["01", "02"]:
-        lr = lr_value
+    if lr_value.startswith("fixed"):
+        if lr_value == "fixed01":
+            lr = 1e-3
+        elif lr_value == "fixed02":
+            lr = 1e-4
     else:
         lr = 1e-3
 
@@ -1065,20 +1082,19 @@ def train_attention(
     # setup callbacks
     callbacks = []
 
-    # setup exp decay step
-    if learning_rate_type in ["03"]:
-        exp_decay_part = partial(exp_decay_step, epochs_drop=5)
-        lrate = LearningRateScheduler(exp_decay_part)
-        callbacks.append(lrate)
-
-    # setup exp decay smooth
-    if learning_rate_type in ["04"]:
-        exp_decay_part = partial(exp_decay_smooth, epochs_drop=5)
+    # setup exp decay step / smooth
+    if lr_value.startswith("exp_decay"):
+        if lr_value == "exp_decay_step_01":
+            exp_decay_part = partial(exp_decay_step, epochs_drop=5)
+        elif lr_value == "exp_decay_smooth_01":
+            exp_decay_part = partial(exp_decay_smooth, epochs_drop=5)
+        elif lr_value == "exp_decay_smooth_02":
+            exp_decay_part = partial(exp_decay_smooth, epochs_drop=5, initial_lrate=1e-2)
         lrate = LearningRateScheduler(exp_decay_part)
         callbacks.append(lrate)
 
     # setup cyclic learning rate
-    if learning_rate_type in clr_types:
+    if lr_value.startswith("clr_triangular2"):
         base_lr = 1e-5
         max_lr = 1e-3
 
@@ -1092,7 +1108,6 @@ def train_attention(
             step_factor = 2
             step_size = step_factor * x.shape[0] // batch_size
 
-        # TODO compute this from different direction starting from
         # target_cycles = the number of cycles we want in those epochs
         # it_per_epoch = num_samples // batch_size
         # total_iterations = it_per_epoch * epoch_num
@@ -1103,6 +1118,22 @@ def train_attention(
             it_per_epoch = x.shape[0] // batch_size
             total_iterations = it_per_epoch * epoch_num
             step_size = total_iterations // (target_cycles * 2)
+
+        elif lr_value == "clr_triangular2_04":
+            # the number of cycles we want in those epochs
+            target_cycles = 2
+            it_per_epoch = x.shape[0] // batch_size
+            total_iterations = it_per_epoch * epoch_num
+            step_size = total_iterations // (target_cycles * 2)
+
+        elif lr_value == "clr_triangular2_05":
+            # the number of cycles we want in those epochs
+            target_cycles = 2
+            it_per_epoch = x.shape[0] // batch_size
+            total_iterations = it_per_epoch * epoch_num
+            step_size = total_iterations // (target_cycles * 2)
+            # set bigger starting value
+            max_lr = 1e-2
 
         logg.debug(f"x.shape[0]: {x.shape[0]}")
         logg.debug(f"CLR is using step_size: {step_size}")
@@ -1192,7 +1223,7 @@ def train_attention(
     res_recap_path.write_text(json.dumps(results_recap, indent=4))
 
     # if cyclic_lr was used save the history
-    if learning_rate_type in clr_types:
+    if lr_value.startswith("clr_triangular2"):
         logg.debug(f"cyclic_lr.history.keys(): {cyclic_lr.history.keys()}")
         clr_recap = {}
         for metric_name, values in cyclic_lr.history.items():
@@ -1242,11 +1273,9 @@ def find_best_lr(hypa: ty.Dict[str, str]) -> None:
 
     batch_size_types = {"01": 32, "02": 16}
     batch_size = batch_size_types[hypa["batch_size_type"]]
-    batch_size = 16
 
-    epoch_num_types = {"01": 15, "02": 30}
+    epoch_num_types = {"01": 15, "02": 30, "03": 2}
     epoch_num = epoch_num_types[hypa["epoch_num_type"]]
-    # epoch_num = 1
 
     optimizer_types = {"a1": Adam(), "r1": RMSprop()}
     opt = optimizer_types[hypa["optimizer_type"]]
@@ -1267,9 +1296,12 @@ def find_best_lr(hypa: ty.Dict[str, str]) -> None:
     lrf = LearningRateFinder(model)
     lrf.find((x, y), start_lr, end_lr, epochs=epoch_num, batchSize=batch_size)
 
+    model_name = build_attention_name(hypa, False)
+
     fig_title = "LR_sweep"
     fig_title += f"_bs{batch_size}"
     fig_title += f"_en{epoch_num}"
+    fig_title += f"__{model_name}"
     fig, ax = plt.subplots(figsize=(8, 8))
 
     # get the plot

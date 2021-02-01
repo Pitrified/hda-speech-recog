@@ -1,5 +1,4 @@
 from pathlib import Path
-from time import sleep
 import argparse
 import logging
 import math
@@ -136,6 +135,151 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
     return aug_dict
 
 
+def load_wav(
+    all_wavs_path: ty.List[Path],
+    word: str,
+    which_fold: str,
+    validation_names: ty.Iterable[str],
+    testing_names: ty.Iterable[str],
+) -> ty.List[np.ndarray]:
+    """TODO: what is load_wav doing?"""
+    logg = logging.getLogger(f"c.{__name__}.load_wav")
+    logg.setLevel("INFO")
+    logg.debug("Start load_wav")
+
+    # the loaded audios
+    sig_original = []
+
+    for wav_path in tqdm(all_wavs_path[:]):
+
+        # the name to lookup in the val/test list
+        wav_name = f"{word}/{wav_path.name}"
+
+        if wav_name in validation_names:
+            word_fold = "validation"
+        elif wav_name in testing_names:
+            word_fold = "testing"
+        else:
+            word_fold = "training"
+
+        if word_fold != which_fold:
+            continue
+
+        sig, sample_rate = librosa.load(wav_path, sr=None)
+        sig = pad_signal(sig, 16000)
+        sig_original.append(sig)
+
+    logg.debug(f"Loaded {len(sig_original)} of {word} for {which_fold}")
+    return sig_original
+
+
+def roll_signals(
+    sig_original: ty.List[np.ndarray],
+    max_time_shifts: ty.List[int],
+    rng: np.random.Generator,
+) -> ty.List[np.ndarray]:
+    """TODO: what is roll_signals doing?"""
+    sig_rolled: ty.List[np.ndarray] = []
+    for s in tqdm(sig_original):
+        for max_shift in max_time_shifts:
+            time_shift = rng.integers(-max_shift, max_shift + 1)
+            rolled = np.roll(s, time_shift)
+            sig_rolled.append(rolled)
+    return sig_rolled
+
+
+def stretch_signals(
+    sig_original: ty.List[np.ndarray],
+    stretch_rates: ty.List[float],
+    rng: np.random.Generator,
+) -> ty.List[np.ndarray]:
+    """TODO: what is stretch_signals doing?"""
+    sig_stretched: ty.List[np.ndarray] = []
+    for s in tqdm(sig_original):
+        for stretch_rate in stretch_rates:
+            stretched = stretch_signal(s, stretch_rate)
+            sig_stretched.append(stretched)
+    return sig_stretched
+
+
+def compute_spectrograms(
+    signals: ty.List[np.ndarray], mel_kwargs, p2d_kwargs
+) -> np.ndarray:
+    """TODO: what is compute_spectrograms doing?"""
+    logg = logging.getLogger(f"c.{__name__}.compute_spectrograms")
+    logg.setLevel("INFO")
+    logg.debug("Start compute_spectrograms")
+
+    specs = []
+    for s in tqdm(signals):
+        log_mel = sig2mel(s, mel_kwargs, p2d_kwargs)
+        img_mel = log_mel.reshape((*log_mel.shape, 1))
+        specs.append(img_mel)
+    data_specs = np.stack(specs)
+    logg.debug(f"data_specs.shape: {data_specs.shape}")
+
+    return data_specs
+
+
+def warp_spectrograms(
+    specs: np.ndarray,
+    num_landmarks: int,
+    max_warp_time: int,
+    max_warp_freq: int,
+    rng: np.random.Generator,
+) -> np.ndarray:
+    """TODO: what is warp_spectrograms doing?"""
+    logg = logging.getLogger(f"c.{__name__}.warp_spectrograms")
+    logg.setLevel("INFO")
+    logg.debug("Start warp_spectrograms")
+
+    # extract info on data and spectrogram shapes
+    num_samples = specs.shape[0]
+    spec_dim = specs.shape[1:3]
+    logg.debug(f"num_samples {num_samples} spec_dim {spec_dim}")
+
+    # the shape of the landmark for one dimension
+    land_shape = num_samples, num_landmarks
+
+    # the source point has to be at least max_warp_* from the border
+    bounds_time = (max_warp_time, spec_dim[0] - max_warp_time)
+    bounds_freq = (max_warp_freq, spec_dim[1] - max_warp_freq)
+
+    # generate (num_sample, num_landmarks) time/freq positions
+    source_land_t = rng.uniform(*bounds_time, size=land_shape)
+    source_land_f = rng.uniform(*bounds_freq, size=land_shape)
+    source_landmarks = np.dstack((source_land_t, source_land_f))
+    logg.debug(f"land_t.shape: {source_land_t.shape}")
+    logg.debug(f"source_landmarks.shape: {source_landmarks.shape}")
+
+    # generate the deltas, how much to shift each point
+    delta_t = rng.uniform(-max_warp_time, max_warp_time, size=land_shape)
+    delta_f = rng.uniform(-max_warp_freq, max_warp_freq, size=land_shape)
+    dest_land_t = source_land_t + delta_t
+    dest_land_f = source_land_f + delta_f
+    dest_landmarks = np.dstack((dest_land_t, dest_land_f))
+    logg.debug(f"dest_landmarks.shape: {dest_landmarks.shape}")
+
+    # data_specs = data_specs.astype("float32")
+    # source_landmarks = source_landmarks.astype("float32")
+    # dest_landmarks = dest_landmarks.astype("float32")
+    # data_warped, _ = sparse_image_warp(
+    #     data_specs, source_landmarks, dest_landmarks, num_boundary_points=2
+    # )
+    # logg.debug(f"data_warped.shape: {data_warped.shape}")
+
+    data_specs = tf.convert_to_tensor(specs, dtype=tf.float32)
+    source_landmarks = tf.convert_to_tensor(source_landmarks, dtype=tf.float32)
+    dest_landmarks = tf.convert_to_tensor(dest_landmarks, dtype=tf.float32)
+    siw = tf.function(sparse_image_warp, experimental_relax_shapes=True)
+    data_warped, _ = siw(
+        data_specs, source_landmarks, dest_landmarks, num_boundary_points=2
+    )
+    logg.debug(f"data_warped.shape: {data_warped.shape}")
+
+    return data_warped
+
+
 def do_augmentation(
     augmentation_type: str,
     words_type: str,
@@ -185,6 +329,13 @@ def do_augmentation(
     # get the params for the augmentation
     aug_dict = get_aug_dict()
     aug_param = aug_dict[augmentation_type]
+    max_time_shifts = aug_param["max_time_shifts"]
+    stretch_rates = aug_param["stretch_rates"]
+    keep_originals = aug_param["keep_originals"]
+    mel_kwargs = aug_param["mel_kwargs"]
+    num_landmarks = aug_param["warp_params"]["num_landmarks"]
+    max_warp_time = aug_param["warp_params"]["max_warp_time"]
+    max_warp_freq = aug_param["warp_params"]["max_warp_freq"]
 
     # args for the power_to_db function
     p2d_kwargs = {"ref": np.max}
@@ -199,139 +350,58 @@ def do_augmentation(
             if word_aug_path.exists():
                 logg.debug(f"word_aug_path: {word_aug_path} already augmented")
                 if force_augment:
-                    logg.warn("OVERWRITING the previous results in 3 seconds")
-                    sleep(3)
+                    logg.warn("OVERWRITING the previous results")
                 else:
                     continue
-
-            # the loaded audios
-            sig_original = []
 
             raw_word_fol = raw_data_fol / word
             logg.info(f"\nProcessing folder: {raw_word_fol}")
 
-            all_wavs = list(raw_word_fol.iterdir())
-            for wav_path in tqdm(all_wavs[:]):
+            # load the waveforms
+            all_wavs_path = list(raw_word_fol.iterdir())
+            sig_original = load_wav(
+                all_wavs_path, word, which_fold, validation_names, testing_names
+            )
 
-                # the name to lookup in the val/test list
-                wav_name = f"{word}/{wav_path.name}"
-
-                if wav_name in validation_names:
-                    word_fold = "validation"
-                elif wav_name in testing_names:
-                    word_fold = "testing"
-                else:
-                    word_fold = "training"
-
-                if word_fold != which_fold:
-                    continue
-
-                sig, sample_rate = librosa.load(wav_path, sr=None)
-                sig = pad_signal(sig, 16000)
-                sig_original.append(sig)
-
-            logg.debug(f"Loaded {len(sig_original)} of {word} for {which_fold}")
-
-            sig_rolled = []
-            max_time_shifts = aug_param["max_time_shifts"]
-            if len(max_time_shifts) > 0:
-                logg.info("Rolling")
-                for s in tqdm(sig_original):
-                    for max_shift in max_time_shifts:
-                        time_shift = rng.integers(-max_shift, max_shift + 1)
-                        rolled = np.roll(s, time_shift)
-                        sig_rolled.append(rolled)
-                logg.debug(f"len(sig_rolled): {len(sig_rolled)}")
-
-            sig_stretched = []
-            stretch_rates = aug_param["stretch_rates"]
-            if len(stretch_rates) > 0:
-                logg.info("Stretching")
-                for s in tqdm(sig_original):
-                    for stretch_rate in stretch_rates:
-                        stretched = stretch_signal(s, stretch_rate)
-                        sig_stretched.append(stretched)
-                logg.debug(f"len(sig_stretched): {len(sig_stretched)}")
-
-            # all the signals you generated
+            # the signals you are generating
             all_signals = []
-
-            keep_originals = aug_param["keep_originals"]
             if keep_originals:
                 all_signals.extend(sig_original)
-            all_signals.extend(sig_rolled)
-            all_signals.extend(sig_stretched)
+
+            if len(max_time_shifts) > 0 and which_fold != "testing":
+                logg.info("Rolling")
+                sig_rolled = roll_signals(sig_original, max_time_shifts, rng)
+                all_signals.extend(sig_rolled)
+
+            if len(stretch_rates) > 0 and which_fold != "testing":
+                logg.info("Stretching")
+                sig_stretched = stretch_signals(sig_original, stretch_rates, rng)
+                all_signals.extend(sig_stretched)
+
             logg.debug(f"len(all_signals): {len(all_signals)}")
 
-            mel_kwargs = aug_param["mel_kwargs"]
-            specs = []
+            # compute the spectrograms
             logg.info("Computing melspectrograms")
-            for s in tqdm(all_signals):
-                log_mel = sig2mel(s, mel_kwargs, p2d_kwargs)
-                img_mel = log_mel.reshape((*log_mel.shape, 1))
-                specs.append(img_mel)
-
-            data_specs = np.stack(specs)
-            logg.debug(f"data_specs.shape: {data_specs.shape}")
-
-            # source_control_point_locations: `[batch_size, num_control_points, 2]` float `Tensor`.
-            # dest_control_point_locations: `[batch_size, num_control_points, 2]` float `Tensor`.
-
-            num_samples = data_specs.shape[0]
-            spec_dim = data_specs.shape[1:3]
-            logg.debug(f"num_samples {num_samples} spec_dim {spec_dim}")
-
-            warp_params = aug_param["warp_params"]
-            num_landmarks = warp_params["num_landmarks"]
-            max_warp_time = warp_params["max_warp_time"]
-            max_warp_freq = warp_params["max_warp_freq"]
-
-            land_shape = num_samples, num_landmarks
-
-            # the source point has to be at least max_warp_* from the border
-            bounds_time = (max_warp_time, spec_dim[0] - max_warp_time)
-            bounds_freq = (max_warp_freq, spec_dim[1] - max_warp_freq)
-
-            # generate (num_sample, num_landmarks) time/freq positions
-            source_land_t = rng.uniform(*bounds_time, size=land_shape)
-            source_land_f = rng.uniform(*bounds_freq, size=land_shape)
-            source_landmarks = np.dstack((source_land_t, source_land_f))
-            logg.debug(f"land_t.shape: {source_land_t.shape}")
-            logg.debug(f"source_landmarks.shape: {source_landmarks.shape}")
-
-            # generate the deltas, how much to shift each point
-            delta_t = rng.uniform(-max_warp_time, max_warp_time, size=land_shape)
-            delta_f = rng.uniform(-max_warp_freq, max_warp_freq, size=land_shape)
-            dest_land_t = source_land_t + delta_t
-            dest_land_f = source_land_f + delta_f
-            dest_landmarks = np.dstack((dest_land_t, dest_land_f))
-            logg.debug(f"dest_landmarks.shape: {dest_landmarks.shape}")
-
-            # data_specs = data_specs.astype("float32")
-            # source_landmarks = source_landmarks.astype("float32")
-            # dest_landmarks = dest_landmarks.astype("float32")
-            # data_warped, _ = sparse_image_warp(
-            #     data_specs, source_landmarks, dest_landmarks, num_boundary_points=2
-            # )
-            # logg.debug(f"data_warped.shape: {data_warped.shape}")
-
-            data_specs = tf.convert_to_tensor(data_specs, dtype=tf.float32)
-            source_landmarks = tf.convert_to_tensor(source_landmarks, dtype=tf.float32)
-            dest_landmarks = tf.convert_to_tensor(dest_landmarks, dtype=tf.float32)
-            siw = tf.function(sparse_image_warp, experimental_relax_shapes=True)
-            data_warped, _ = siw(
-                data_specs, source_landmarks, dest_landmarks, num_boundary_points=2
+            data_specs: np.ndarray = compute_spectrograms(
+                all_signals, mel_kwargs, p2d_kwargs
             )
-            logg.debug(f"data_warped.shape: {data_warped.shape}")
 
-            # save the warped data
-            all_data = np.concatenate((data_specs, data_warped), axis=0)
+            # warp the spectrograms
+            if num_landmarks > 0 and which_fold != "testing":
+                logg.info("Warping")
+                data_warped: np.ndarray = warp_spectrograms(
+                    data_specs, num_landmarks, max_warp_time, max_warp_freq, rng
+                )
+                all_data = np.concatenate((data_specs, data_warped), axis=0)
+            else:
+                all_data = data_specs
             logg.debug(f"all_data.shape: {all_data.shape}")
 
+            # remove the last dimension, will be added again when loading (legacy load)
             squoze_data = tf.squeeze(all_data, axis=[-1])
             logg.debug(f"squoze_data.shape: {squoze_data.shape}")
 
-            # np.save(squoze_data, all_data)
+            # save the thingy
             np.save(word_aug_path, squoze_data)
 
 
