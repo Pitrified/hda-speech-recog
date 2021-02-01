@@ -819,8 +819,8 @@ def hyper_train_attention(
     hypa_grid["lstm_units_type"] = ["01"]
 
     # the query style type
-    # hypa_grid["query_style_type"] = ["01", "02", "03", "04", "05"]
-    hypa_grid["query_style_type"] = ["01"]
+    hypa_grid["query_style_type"] = ["01", "02", "03", "04", "05"]
+    # hypa_grid["query_style_type"] = ["01"]
 
     # the width of the dense layers
     # hypa_grid["dense_width_type"] = ["01", "02"]
@@ -829,19 +829,20 @@ def hyper_train_attention(
     # the learning rates for the optimizer
     # hypa_grid["learning_rate_type"] = ["01", "02"]
     # hypa_grid["learning_rate_type"] = ["03", "04", "05"]
-    hypa_grid["learning_rate_type"] = ["05"]
+    hypa_grid["learning_rate_type"] = ["03", "04"]
+    # hypa_grid["learning_rate_type"] = ["05"]
 
     # which optimizer to use
     # hypa_grid["optimizer_type"] = ["a1", "r1"]
     hypa_grid["optimizer_type"] = ["a1"]
 
     # the batch size to use
-    # hypa_grid["batch_size_type"] = ["01", "02"]
-    hypa_grid["batch_size_type"] = ["01"]
+    hypa_grid["batch_size_type"] = ["01", "02"]
+    # hypa_grid["batch_size_type"] = ["01"]
 
     # the number of epochs
-    # hypa_grid["epoch_num_type"] = ["01", "02"]
-    hypa_grid["epoch_num_type"] = ["01"]
+    hypa_grid["epoch_num_type"] = ["01", "02"]
+    # hypa_grid["epoch_num_type"] = ["01"]
 
     logg.debug(f"hypa_grid: {hypa_grid}")
 
@@ -1032,9 +1033,13 @@ def train_attention(
         callbacks.append(lrate)
 
     if learning_rate_type in ["05"]:
+        # training iteration per epoch = num samples // batch size
+        # step size suggested = 2~8 * iterations
         base_lr = 0.0001
         max_lr = 0.006
-        step_factor = 8
+        # step_factor = 8
+        step_factor = 2
+        logg.debug(f"x.shape[0]: {x.shape[0]}")
         step_size = step_factor * x.shape[0] // batch_size
         logg.debug(f"CLR is using step_size: {step_size}")
         mode = "triangular2"

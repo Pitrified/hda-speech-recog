@@ -147,6 +147,8 @@ class CyclicLR(Callback):
 
     def on_test_batch_end(self, epoch, logs=None):
         logs = logs or {}
+        # print(f"received logs {logs}")
 
         for k, v in logs.items():
-            self.history.setdefault(k, []).append(v)
+            # self.history.setdefault(k, []).append(v)
+            self.history.setdefault(f'val_{k}', []).append(v)

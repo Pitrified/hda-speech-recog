@@ -39,6 +39,7 @@ def parse_arguments():
             "results",
             "attention_weights",
             "make_plots_hypa",
+            "make_plots_clr",
             "audio",
         ],
         help="Which evaluation to perform",
@@ -507,6 +508,54 @@ def make_plots_hypa() -> None:
     )
 
 
+def make_plots_clr() -> None:
+    """TODO: what is make_plots_clr doing?"""
+    logg = logging.getLogger(f"c.{__name__}.make_plots_clr")
+    # logg.setLevel("INFO")
+    logg.debug("Start make_plots_clr")
+
+    # the output folders
+    plot_fol = Path("plot_results") / "att" / "clr"
+    if not plot_fol.exists():
+        plot_fol.mkdir(parents=True, exist_ok=True)
+
+    info_folder = Path("info")
+
+    for model_folder in info_folder.iterdir():
+        model_name = model_folder.name
+        if "_lr05" not in model_name:
+            continue
+        logg.debug(f"model_name: {model_name}")
+
+        clr_recap_path = model_folder / "clr_recap.json"
+        if not clr_recap_path.exists():
+            logg.info(f"Skipping clr_recap: {clr_recap_path}, not found")
+            continue
+        clr_recap = json.loads(clr_recap_path.read_text())
+
+        metrics_names = list(clr_recap.keys())
+        metrics_names.remove("iterations")
+        metrics_names_train = [mn for mn in metrics_names if "val" not in mn]
+        metrics_names_val = [mn for mn in metrics_names if "val" in mn]
+        logg.debug(f"metrics_names: {metrics_names}")
+        logg.debug(f"train {metrics_names_train} val {metrics_names_val}")
+
+        prec_train = np.array(clr_recap["precision"])
+        recall_train = np.array(clr_recap["recall"])
+        fscores_train = 2 * prec_train * recall_train / (prec_train + recall_train)
+
+        iterations = clr_recap["iterations"]
+        lr = clr_recap["lr"]
+        loss_train = np.array(clr_recap["loss"])
+
+        fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(12, 12))
+        ax[0].plot(iterations, fscores_train)
+        ax[0].plot(iterations, loss_train)
+        ax[1].plot(iterations, lr)
+
+        plt.show()
+
+
 def run_evaluate_attention(args: argparse.Namespace) -> None:
     """TODO: What is evaluate_attention doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate_attention")
@@ -526,6 +575,8 @@ def run_evaluate_attention(args: argparse.Namespace) -> None:
         evaluate_attention_weights(train_words_type, rec_words_type, True)
     elif evaluation_type == "make_plots_hypa":
         make_plots_hypa()
+    elif evaluation_type == "make_plots_clr":
+        make_plots_clr()
 
 
 if __name__ == "__main__":
