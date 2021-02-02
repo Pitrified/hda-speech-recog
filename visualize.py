@@ -1,14 +1,11 @@
+from pathlib import Path
 import argparse
 import logging
 
-import numpy as np  # type: ignore
-
-# from random import seed as rseed
-# from timeit import default_timer as timer
-
-import matplotlib.pyplot as plt  # type: ignore
+from tensorflow_addons.image import sparse_image_warp  # type: ignore
 import librosa  # type: ignore
-from pathlib import Path
+import matplotlib.pyplot as plt  # type: ignore
+import numpy as np  # type: ignore
 
 from plot_utils import plot_spec
 from plot_utils import plot_waveform
@@ -21,15 +18,16 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="")
 
     parser.add_argument(
-        "-i",
-        "--path_input",
+        "-vt",
+        "--visualization_type",
         type=str,
-        default="hp.jpg",
-        help="path to input image to use",
-    )
-
-    parser.add_argument(
-        "-s", "--rand_seed", type=int, default=-1, help="random seed to use"
+        default="augment",
+        choices=[
+            "augment",
+            "spec",
+            "datasets",
+        ],
+        help="Which visualization to perform",
     )
 
     # last line to parse the args
@@ -158,13 +156,112 @@ def visualize_datasets():
     #     fig.tight_layout()
 
 
+def visualize_augment() -> None:
+    """TODO: what is visualize_augment doing?"""
+    logg = logging.getLogger(f"c.{__name__}.visualize_augment")
+    # logg.setLevel("INFO")
+    logg.debug("Start visualize_augment")
+
+    # build a sample image to warp
+    grid_stride = 8
+    grid_w = 8
+    # grid_h = 8
+    grid_h = 4
+    grid = np.zeros((grid_w * grid_stride, grid_h * grid_stride), dtype=np.float32)
+    for x in range(grid_w):
+        for y in range(grid_h):
+            val = (x + 1) * (y + 1)
+            xs = x * grid_stride
+            xe = (x + 1) * grid_stride
+            ys = y * grid_stride
+            ye = (y + 1) * grid_stride
+            grid[xs:xe, ys:ye] = val
+
+    # rng = np.random.default_rng(12345)
+
+    # word = "down"
+    # which_fold = "training"
+    # dataset_name = "mel04"
+    # data_fol = Path("data_proc") / f"{dataset_name}"
+    # word_aug_path = data_fol / f"{word}_{which_fold}.npy"
+    # data = np.load(word_aug_path)
+    # grid = data[0]
+
+    source_lnd = np.array(
+        [
+            [1 * grid_stride, 1 * grid_stride],
+            [1 * grid_stride, (grid_h - 2) * grid_stride],
+            [(grid_w - 2) * grid_stride, 1 * grid_stride],
+            [(grid_w - 2) * grid_stride, (grid_h - 2) * grid_stride],
+        ],
+        dtype=np.float32,
+    )
+    logg.debug(f"source_lnd.shape: {source_lnd.shape}")
+
+    dw = grid_stride // 2
+    delta_land = np.array(
+        [
+            [dw, dw],
+            [dw, dw],
+            [dw, dw],
+            [dw, dw],
+        ],
+        dtype=np.float32,
+    )
+
+    dest_lnd = source_lnd + delta_land
+    logg.debug(f"dest_lnd:\n{dest_lnd}")
+
+    # add the batch dimension
+    grid_b = np.expand_dims(grid, axis=0)
+    source_lnd_b = np.expand_dims(source_lnd, axis=0)
+    dest_lnd_b = np.expand_dims(dest_lnd, axis=0)
+    grid_b = np.expand_dims(grid, axis=-1)
+
+    # warp the image
+    grid_warped_b, _ = sparse_image_warp(
+        grid_b, source_lnd_b, dest_lnd_b, num_boundary_points=2
+    )
+
+    logg.debug(f"grid_warped_b.shape: {grid_warped_b.shape}")
+
+    # extract the single image
+    grid_warped = grid_warped_b[:, :, 0].numpy()
+    logg.debug(f"grid_warped.shape: {grid_warped.shape}")
+
+    # plot all the results
+    fig, axes = plt.subplots(nrows=2, ncols=1, figsize=(8, 10))
+
+    im_args = {"origin": "lower", "cmap": "YlOrBr"}
+    axes[0].imshow(grid.T, **im_args)
+    axes[1].imshow(grid_warped.T, **im_args)
+
+    pl_args = {"linestyle": "none", "color": "c", "markersize": 8}
+    pl_args["marker"] = "d"
+    axes[0].plot(*source_lnd.T, label="Source landmarks", **pl_args)
+
+    pl_args["marker"] = "^"
+    axes[0].plot(*dest_lnd.T, label="Dest landmarks", **pl_args)
+    # axes[0].legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+    axes[0].legend()
+
+    fig.tight_layout()
+    plt.show()
+
+
 def run_visualize(args):
     """TODO: What is visualize doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_visualize")
     logg.debug("Starting run_visualize")
 
-    # visualize_spec()
-    visualize_datasets()
+    visualization_type = args.visualization_type
+
+    if visualization_type == "augment":
+        visualize_augment()
+    elif visualization_type == "spec":
+        visualize_spec()
+    elif visualization_type == "datasets":
+        visualize_datasets()
 
     plt.show()
 

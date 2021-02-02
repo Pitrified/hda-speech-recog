@@ -152,7 +152,8 @@ def hyper_train_attention(
     # hypa_grid["dataset_name"] = ["mela1"]
     # hypa_grid["dataset_name"] = ["mel04"]
     # hypa_grid["dataset_name"] = ["aug01"]
-    hypa_grid["dataset_name"] = ["aug01", "mela1", "mel04"]
+    # hypa_grid["dataset_name"] = ["aug01", "mela1", "mel04"]
+    hypa_grid["dataset_name"] = ["mela1", "mel04"]
 
     # how big are the first conv layers
     # hypa_grid["conv_size_type"] = ["01", "02"]
@@ -200,20 +201,20 @@ def hyper_train_attention(
     hypa_grid["epoch_num_type"] = ["01", "03", "04"]
 
     # TODO finisci questa (16/40 RIP)
-    # hypa_grid = {
-    #     "words_type": ["k1"],
-    #     "dataset_name": ["mela1", "mel04"],
-    #     "conv_size_type": ["02"],
-    #     "dropout_type": ["01"],
-    #     "kernel_size_type": ["01"],
-    #     "lstm_units_type": ["01"],
-    #     "query_style_type": ["01", "02", "03", "04", "05"],
-    #     "dense_width_type": ["01"],
-    #     "learning_rate_type": ["07"],
-    #     "optimizer_type": ["a1"],
-    #     "batch_size_type": ["01", "02"],
-    #     "epoch_num_type": ["01", "02"],
-    # }
+    hypa_grid = {
+        "words_type": ["k1"],
+        "dataset_name": ["mela1", "mel04"],
+        "conv_size_type": ["02"],
+        "dropout_type": ["01"],
+        "kernel_size_type": ["01"],
+        "lstm_units_type": ["01"],
+        "query_style_type": ["01", "02", "03", "04", "05"],
+        "dense_width_type": ["01"],
+        "learning_rate_type": ["07"],
+        "optimizer_type": ["a1"],
+        "batch_size_type": ["01", "02"],
+        "epoch_num_type": ["01", "02"],
+    }
 
     logg.debug(f"hypa_grid: {hypa_grid}")
 
