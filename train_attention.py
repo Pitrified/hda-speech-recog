@@ -149,7 +149,8 @@ def hyper_train_attention(
 
     # the dataset to train on
     ds = []
-    ds.extend(["aug02", "aug03", "aug04", "aug05"])
+    # ds.extend(["aug02", "aug03", "aug04", "aug05"])
+    ds.extend(["aug06", "aug07", "aug08", "aug09"])
     # hypa_grid["dataset_name"] = ["mel01", "mel04", "mel05", "mela1"]
     # hypa_grid["dataset_name"] = ["mela1"]
     # hypa_grid["dataset_name"] = ["mel04"]

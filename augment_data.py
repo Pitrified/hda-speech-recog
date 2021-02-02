@@ -138,6 +138,8 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 6},
     }
+
+    # mel_02
     aug_dict["aug02"] = {
         "max_time_shifts": [],
         "stretch_rates": [],
@@ -163,6 +165,36 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_02,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
+    }
+
+    # mel_01
+    aug_dict["aug06"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_01,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 5},
+    }
+    aug_dict["aug07"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_01,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 0},
+    }
+    aug_dict["aug08"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_01,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 3, "max_warp_time": 0, "max_warp_freq": 5},
+    }
+    aug_dict["aug09"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_01,
         "keep_originals": True,
         "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
     }

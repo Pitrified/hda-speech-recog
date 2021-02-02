@@ -216,40 +216,15 @@ def evaluate_results_attention() -> None:
         hp += "    },"
         # logg.debug(f"hp: {hp}")
 
-    # compare the rankings with and without validation
-    best_val = results_df.query("use_val==True").sort_values("fscore", ascending=False)
-    best_noval = results_df.query("use_val==False").sort_values(
-        "fscore", ascending=False
-    )
-
-    rank: ty.Dict[str, ty.List[int]] = {}
-    num_head = 30
-    for i, (_, row) in enumerate(best_val.head(num_head).iterrows()):
-        model_name = row["model_name"]
-        hypa_str = model_name[4:]  # chop off ATT_ at the beginning
-        # logg.debug(f"hypa_str: {hypa_str}")
-        rank[hypa_str] = [i, 0]
-
-    for i, (_, row) in enumerate(best_noval.head(num_head).iterrows()):
-        model_name = row["model_name"]
-        hypa_str = model_name[4:]  # chop off ATT_ at the beginning
-        hypa_str = hypa_str[:-6]  # chop off _noval at the end
-        # logg.debug(f"hypa_str: {hypa_str}")
-
-        # if you are a fool and trained with noval and not with val the key is not there
-        if hypa_str in rank:
-            rank[hypa_str][1] = i
-        else:
-            rank[hypa_str] = [0, i]
-
-    rank_pd: ty.Dict[str, ty.Any] = {
-        "hypa_str": list(rank.keys()),
-        "rank_val": [rank[hs][0] for hs in rank],
-        "rank_noval": [rank[hs][1] for hs in rank],
-    }
-    rank_df = pd.DataFrame(rank_pd)
-    ranked = rank_df.sort_values("rank_val", ascending=True).head(30)
-    logg.debug(f"ranked:\n{ranked}")
+    aug_list = [dn for dn in df_f.dataset.unique() if dn.startswith("aug")]
+    logg.info(f"Only on aug_list: {aug_list}")
+    df_f = results_df
+    df_f = df_f.query("use_val == True")
+    df_f = df_f.query("words == 'k1'")
+    df_f = df_f[df_f["dataset"].isin(aug_list)]
+    df_f = df_f.sort_values("fscore", ascending=False)
+    logg.info(f"{df_f.head(30)}")
+    logg.info(f"{df_f.tail()}")
 
 
 def evaluate_batch_epoch() -> None:
