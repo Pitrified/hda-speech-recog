@@ -185,14 +185,16 @@ def visualize_augment() -> None:
     # data_fol = Path("data_proc") / f"{dataset_name}"
     # word_aug_path = data_fol / f"{word}_{which_fold}.npy"
     # data = np.load(word_aug_path)
-    # grid = data[0]
+    # grid = data[0].T
 
+    dx = grid_stride // 3
+    dy = grid_stride // 3
     source_lnd = np.array(
         [
-            [1 * grid_stride, 1 * grid_stride],
-            [1 * grid_stride, (grid_h - 2) * grid_stride],
-            [(grid_w - 2) * grid_stride, 1 * grid_stride],
-            [(grid_w - 2) * grid_stride, (grid_h - 2) * grid_stride],
+            [1 * grid_stride + dx, 1 * grid_stride + dy],
+            [1 * grid_stride + dx, (grid_h - 2) * grid_stride + dy],
+            [(grid_w - 2) * grid_stride + dx, 1 * grid_stride + dy],
+            [(grid_w - 2) * grid_stride + dx, (grid_h - 2) * grid_stride + dy],
         ],
         dtype=np.float32,
     )
@@ -239,11 +241,13 @@ def visualize_augment() -> None:
     pl_args = {"linestyle": "none", "color": "c", "markersize": 8}
     pl_args["marker"] = "d"
     axes[0].plot(*source_lnd.T, label="Source landmarks", **pl_args)
+    # axes[0].legend()
+    axes[0].set_title("Original image")
 
-    pl_args["marker"] = "^"
-    axes[0].plot(*dest_lnd.T, label="Dest landmarks", **pl_args)
-    # axes[0].legend(bbox_to_anchor=(1.05, 1), loc="upper left")
-    axes[0].legend()
+    # pl_args["marker"] = "^"
+    axes[1].plot(*dest_lnd.T, label="Dest landmarks", **pl_args)
+    # axes[1].legend()
+    axes[1].set_title("Warped image")
 
     fig.tight_layout()
     plt.show()

@@ -165,7 +165,8 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     hypa_grid_best["base_dense_width"] = [32]
     hypa_grid_best["base_filters"] = [20]
     hypa_grid_best["batch_size"] = [32]
-    hypa_grid_best["dataset"] = ["mel01"]
+    # hypa_grid_best["dataset"] = ["mel01"]
+    hypa_grid_best["dataset"] = ["aug01", "aug02", "aug03", "aug04"]
     hypa_grid_best["dropout_type"] = ["01"]
     hypa_grid_best["epoch_num"] = [16]
     hypa_grid_best["kernel_size_type"] = ["02"]
@@ -176,8 +177,10 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     hypa_grid_best["words"] = [words_type]
 
     # hypa_grid = hypa_grid_tiny
-    # hypa_grid = hypa_grid_best
-    hypa_grid = hypa_grid_big
+    hypa_grid = hypa_grid_best
+    # hypa_grid = hypa_grid_big
+    logg.debug(f"hypa_grid: {hypa_grid}")
+
     the_grid = list(ParameterGrid(hypa_grid))
 
     num_hypa = len(the_grid)

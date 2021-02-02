@@ -183,10 +183,18 @@ def evaluate_results_cnn(args):
 
     # filter the dataframe to find the best hypas
     df_f = results_df
-    df_f = df_f.query("use_val == True")
+    # df_f = df_f.query("use_val == True")
     df_f = df_f.query("words == 'f1'")
     df_f = df_f.sort_values("fscore", ascending=False)
-    logg.info("Only with val on f1")
+    logg.info("Only on f1")
+    logg.info(f"{df_f.head(30)}")
+    logg.info(f"{df_f.tail()}")
+
+    aug_list = [dn for dn in df_f.dataset.unique() if dn.startswith("mel")]
+    logg.info(f"Only on aug_list: {aug_list}")
+    df_f = results_df
+    df_f = df_f[df_f["dataset"].isin(aug_list)]
+    df_f = df_f.sort_values("fscore", ascending=False)
     logg.info(f"{df_f.head(30)}")
     logg.info(f"{df_f.tail()}")
 
