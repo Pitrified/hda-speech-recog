@@ -142,6 +142,8 @@ def hyper_train_attention(
     # logg.setLevel("INFO")
     logg.debug("Start hyper_train_attention")
 
+    # TODO do them with more epochs (at least on those with early_stop)
+
     hypa_grid: ty.Dict[str, ty.List[str]] = {}
 
     # the words to train on
@@ -176,8 +178,12 @@ def hyper_train_attention(
     hypa_grid["lstm_units_type"] = ["01"]
 
     # the query style type
+    qs = []
     # hypa_grid["query_style_type"] = ["01", "02", "03", "04", "05"]
-    hypa_grid["query_style_type"] = ["01"]
+    # qs.extend(["01"])
+    qs.extend(["04"])
+    # qs.extend(["05"])
+    hypa_grid["query_style_type"] = qs
 
     # the width of the dense layers
     # hypa_grid["dense_width_type"] = ["01", "02"]
