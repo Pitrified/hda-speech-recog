@@ -148,12 +148,15 @@ def hyper_train_attention(
     hypa_grid["words_type"] = [words_type]
 
     # the dataset to train on
+    ds = []
+    ds.extend(["aug02", "aug03", "aug04", "aug05"])
     # hypa_grid["dataset_name"] = ["mel01", "mel04", "mel05", "mela1"]
     # hypa_grid["dataset_name"] = ["mela1"]
     # hypa_grid["dataset_name"] = ["mel04"]
     # hypa_grid["dataset_name"] = ["aug01"]
     # hypa_grid["dataset_name"] = ["aug01", "mela1", "mel04"]
-    hypa_grid["dataset_name"] = ["mela1", "mel04"]
+    # hypa_grid["dataset_name"] = ["mela1", "mel04"]
+    hypa_grid["dataset_name"] = ds
 
     # how big are the first conv layers
     # hypa_grid["conv_size_type"] = ["01", "02"]
@@ -180,11 +183,14 @@ def hyper_train_attention(
     hypa_grid["dense_width_type"] = ["01"]
 
     # the learning rates for the optimizer
-    # hypa_grid["learning_rate_type"] = ["01", "02"]
-    # hypa_grid["learning_rate_type"] = ["03", "04", "05"]
-    # hypa_grid["learning_rate_type"] = ["03", "04"]
-    # hypa_grid["learning_rate_type"] = ["09"]
-    hypa_grid["learning_rate_type"] = ["03", "09", "04", "07", "10"]
+    lr = []
+    # lr.extend(["01", "02"])  # fixed
+    lr.extend(["03"])  # exp_decay_step_01
+    lr.extend(["04"])  # exp_decay_smooth_01
+    lr.extend(["07"])  # clr_triangular2_03
+    lr.extend(["09"])  # clr_triangular2_05
+    lr.extend(["10"])  # exp_decay_smooth_02
+    hypa_grid["learning_rate_type"] = lr
 
     # which optimizer to use
     # hypa_grid["optimizer_type"] = ["a1", "r1"]
@@ -195,26 +201,10 @@ def hyper_train_attention(
     hypa_grid["batch_size_type"] = ["02"]
 
     # the number of epochs
-    # hypa_grid["epoch_num_type"] = ["01", "02"]
-    # hypa_grid["epoch_num_type"] = ["01"]
-    # hypa_grid["epoch_num_type"] = ["03"]
-    hypa_grid["epoch_num_type"] = ["01", "03", "04"]
-
-    # TODO finisci questa (16/40 RIP)
-    hypa_grid = {
-        "words_type": ["k1"],
-        "dataset_name": ["mela1", "mel04"],
-        "conv_size_type": ["02"],
-        "dropout_type": ["01"],
-        "kernel_size_type": ["01"],
-        "lstm_units_type": ["01"],
-        "query_style_type": ["01", "02", "03", "04", "05"],
-        "dense_width_type": ["01"],
-        "learning_rate_type": ["07"],
-        "optimizer_type": ["a1"],
-        "batch_size_type": ["01", "02"],
-        "epoch_num_type": ["01", "02"],
-    }
+    en = []
+    # en.extend(["01", "02"])
+    en.extend(["03", "04"])
+    hypa_grid["epoch_num_type"] = en
 
     logg.debug(f"hypa_grid: {hypa_grid}")
 
