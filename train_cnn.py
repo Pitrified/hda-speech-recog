@@ -14,6 +14,7 @@ from tensorflow.keras.optimizers import Adam  # type: ignore
 from tensorflow.keras.optimizers import RMSprop  # type: ignore
 from tensorflow.keras.optimizers.schedules import ExponentialDecay  # type: ignore
 
+from augment_data import do_augmentation
 from models import CNNmodel
 from plot_utils import plot_confusion_matrix
 from preprocess_data import load_processed
@@ -140,8 +141,10 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     hypa_grid_big["learning_rate_type"] = ["01", "02", "03"]
     hypa_grid_big["optimizer_type"] = ["a1"]
 
-    ds = ["mel01", "mel02", "mel03", "mel04"]
-    ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
+    ds = []
+    # ds.extend(["mel01", "mel02", "mel03", "mel04"])
+    # ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
+    ds.extend(["aug02", "aug03", "aug04", "aug05"])
     hypa_grid_big["dataset"] = ds
 
     hypa_grid_big["words"] = [words_type]
@@ -165,8 +168,7 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     hypa_grid_best["base_dense_width"] = [32]
     hypa_grid_best["base_filters"] = [20]
     hypa_grid_best["batch_size"] = [32]
-    # hypa_grid_best["dataset"] = ["mel01"]
-    hypa_grid_best["dataset"] = ["aug01", "aug02", "aug03", "aug04"]
+    hypa_grid_best["dataset"] = ["mel01"]
     hypa_grid_best["dropout_type"] = ["01"]
     hypa_grid_best["epoch_num"] = [16]
     hypa_grid_best["kernel_size_type"] = ["02"]
@@ -197,12 +199,16 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     # check that the data is available
     for dn in hypa_grid["dataset"]:
         for wt in hypa_grid["words"]:
-            preprocess_spec(dn, wt)
+            logg.debug(f"\nwt: {wt} dn: {dn}\n")
+            if dn.startswith("mel"):
+                preprocess_spec(dn, wt)
+            elif dn.startswith("aug"):
+                do_augmentation(dn, wt)
 
     for i, hypa in enumerate(the_grid):
         logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
         with Pool(1) as p:
-            p.apply(train_model, (hypa,))
+            p.apply(train_model, (hypa, force_retrain))
 
 
 def train_model_cnn_dry(hypa) -> str:
@@ -227,7 +233,7 @@ def train_model_cnn_dry(hypa) -> str:
     return "to_train"
 
 
-def train_model(hypa):
+def train_model(hypa, force_retrain):
     """TODO: What is train_model doing?"""
     logg = logging.getLogger(f"c.{__name__}.train_model")
     # logg.debug("Starting train_model")
@@ -248,7 +254,11 @@ def train_model(hypa):
 
     # check if this model has already been trained
     if model_path.exists():
-        return "already_trained"
+        if force_retrain:
+            logg.warn("\nRETRAINING MODEL!!\n")
+        else:
+            logg.debug("Already trained")
+            return
 
     # magic to fix the GPUs
     setup_gpus()
@@ -286,7 +296,7 @@ def train_model(hypa):
     opt = optimizer_types[hypa["optimizer_type"]]
 
     # save info regarding the model training in this folder
-    info_folder = Path("info") / model_name
+    info_folder = Path("info") / "cnn" / model_name
     if not info_folder.exists():
         info_folder.mkdir(parents=True, exist_ok=True)
 

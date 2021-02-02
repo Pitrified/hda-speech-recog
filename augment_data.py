@@ -18,12 +18,13 @@ def parse_arguments() -> argparse.Namespace:
     """Setup CLI interface"""
     parser = argparse.ArgumentParser(description="")
 
+    aug_dict = get_aug_dict()
     parser.add_argument(
         "-at",
         "--augmentation_type",
         type=str,
         default="aug01",
-        choices=["aug01", "aug02"],
+        choices=aug_dict.keys(),
         help="Which augmentation to perform",
     )
 
@@ -110,7 +111,7 @@ def sig2mel(signal, mel_kwargs, p2d_kwargs, sample_rate=16000) -> np.ndarray:
 def get_aug_dict() -> ty.Dict[str, ty.Any]:
     """TODO: what is get_aug_dict doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_aug_dict")
-    # logg.setLevel("INFO")
+    logg.setLevel("INFO")
     logg.debug("Start get_aug_dict")
 
     aug_dict: ty.Dict[str, ty.Any] = {}
@@ -422,7 +423,7 @@ def do_augmentation(
 
             # warp the spectrograms
             if num_landmarks > 0 and which_fold != "testing":
-                logg.info("Warping")
+                logg.info("Warping...")
                 data_warped: np.ndarray = warp_spectrograms(
                     data_specs, num_landmarks, max_warp_time, max_warp_freq, rng
                 )
