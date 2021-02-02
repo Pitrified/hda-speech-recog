@@ -23,6 +23,8 @@ Nice diagram
 
 ##### Signals and Features
 
+Valutazione della scelta di fare preprocessing separato.
+
 ##### Learning Framework
 
 Describe the learning strategy, the learning model, its parameters, any optimization over a given parameter set

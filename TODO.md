@@ -4,6 +4,8 @@
 
 * https://www.pyimagesearch.com/faqs/single-faq/how-do-i-reference-or-cite-one-of-your-blog-posts-books-or-courses/
 
+* Top one error as metric (described in the Google dataset paper)
+
 ### Transfer learning
 
 * Use different base models in TRA

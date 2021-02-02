@@ -12,9 +12,17 @@ Throughout the report: extract Spectrograms, classify image.
 
 \subsection{Google Dataset}
 
-Measurement setup, data preprocess (describe the google dataset)
+% Measurement setup, data preprocess (describe the google dataset)
 
-Train/validation/test
+The Speech Commands datasets, described in \cite{warden2018speech}, provides thousands of one second recording of 35 words.
+The recordings are mainly of volounteers, who used their own device to record the words in a closed room wherever they happened to be (not in a studio setting), and ideally each volounteer only recorded the 135 requested utterances once, so the dataset provides good variability of voices and background noises.
+The utterances have a duration of one second.
+To more precisely align the recorded clips, the audio was acquired for $1.5$ seconds and the 1 second clip that contained the highest overrall volume was extracted.
+Several background noise recording are included as well.
+The full dataset includes $105829$ utterances of $35$ words, saved in \textit{.wav} format at $16$ KHz rate.
+The dataset is released under the Creative Commons BY 4.0 License \cite{ccby4}.
+
+% TODO Train/validation/test
 
 \subsection{Spectrograms}
 
