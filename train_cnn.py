@@ -1,3 +1,4 @@
+from functools import partial
 from multiprocessing import Pool
 from pathlib import Path
 from sklearn.model_selection import ParameterGrid  # type: ignore
@@ -5,11 +6,13 @@ import argparse
 import json
 import logging
 import matplotlib.pyplot as plt  # type: ignore
+import tensorflow as tf  # type: ignore
 import typing as ty
 
 # from tensorflow.keras.callbacks import ModelCheckpoint  # type: ignore
 from tensorflow.data import Dataset  # type: ignore
 from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
+from tensorflow.keras.callbacks import LearningRateScheduler  # type: ignore
 from tensorflow.keras.optimizers import Adam  # type: ignore
 from tensorflow.keras.optimizers import RMSprop  # type: ignore
 from tensorflow.keras.optimizers.schedules import ExponentialDecay  # type: ignore
@@ -19,6 +22,8 @@ from models import CNNmodel
 from plot_utils import plot_confusion_matrix
 from preprocess_data import load_processed
 from preprocess_data import preprocess_spec
+from schedules import exp_decay_smooth
+from schedules import exp_decay_step
 from utils import analyze_confusion
 from utils import pred_hot_2_cm
 from utils import setup_gpus
@@ -131,22 +136,32 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
 
     # big grid
     hypa_grid_big = {}
-    hypa_grid_big["base_filters"] = [10, 20, 30, 32, 64, 128]
-    hypa_grid_big["kernel_size_type"] = ["01", "02"]
-    hypa_grid_big["pool_size_type"] = ["01", "02"]
-    hypa_grid_big["base_dense_width"] = [16, 32, 64, 128]
-    hypa_grid_big["dropout_type"] = ["01", "02"]
-    hypa_grid_big["batch_size"] = [16, 32, 64]
-    hypa_grid_big["epoch_num"] = [15, 30, 60]
-    hypa_grid_big["learning_rate_type"] = ["01", "02", "03"]
-    hypa_grid_big["optimizer_type"] = ["a1"]
-
+    # hypa_grid_big["base_dense_width"] = [16, 32, 64, 128]
+    hypa_grid_big["base_dense_width"] = [32]
+    # hypa_grid_big["base_filters"] = [10, 20, 30, 32, 64, 128]
+    hypa_grid_big["base_filters"] = [20]
+    # hypa_grid_big["batch_size"] = [16, 32, 64]
+    hypa_grid_big["batch_size"] = [32]
     ds = []
     # ds.extend(["mel01", "mel02", "mel03", "mel04"])
     # ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
     ds.extend(["aug02", "aug03", "aug04", "aug05"])
     hypa_grid_big["dataset"] = ds
-
+    # hypa_grid_big["dropout_type"] = ["01", "02"]
+    hypa_grid_big["dropout_type"] = ["01"]
+    # hypa_grid_big["epoch_num"] = [15, 30, 60]
+    hypa_grid_big["epoch_num"] = [15]
+    # hypa_grid_big["kernel_size_type"] = ["01", "02"]
+    hypa_grid_big["kernel_size_type"] = ["01"]
+    # hypa_grid_big["pool_size_type"] = ["01", "02"]
+    hypa_grid_big["pool_size_type"] = ["01"]
+    lr = []
+    lr.extend(["01", "02", "03"])  # fixed
+    lr.extend(["04"])  # exp_decay_step_01
+    lr.extend(["05"])  # exp_decay_smooth_01
+    lr.extend(["06"])  # exp_decay_smooth_02
+    hypa_grid_big["learning_rate_type"] = lr
+    hypa_grid_big["optimizer_type"] = ["a1"]
     hypa_grid_big["words"] = [words_type]
 
     # tiny grid
@@ -179,8 +194,8 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     hypa_grid_best["words"] = [words_type]
 
     # hypa_grid = hypa_grid_tiny
-    hypa_grid = hypa_grid_best
-    # hypa_grid = hypa_grid_big
+    # hypa_grid = hypa_grid_best
+    hypa_grid = hypa_grid_big
     logg.debug(f"hypa_grid: {hypa_grid}")
 
     the_grid = list(ParameterGrid(hypa_grid))
@@ -260,6 +275,11 @@ def train_model(hypa, force_retrain):
             logg.debug("Already trained")
             return
 
+    # save info regarding the model training in this folder
+    info_folder = Path("info") / model_name
+    if not info_folder.exists():
+        info_folder.mkdir(parents=True, exist_ok=True)
+
     # magic to fix the GPUs
     setup_gpus()
 
@@ -284,22 +304,6 @@ def train_model(hypa, force_retrain):
     dropout_types = {"01": [0.03, 0.01], "02": [0.3, 0.1]}
     model_param["dropouts"] = dropout_types[hypa["dropout_type"]]
 
-    # setup learning rates
-    e1 = ExponentialDecay(0.1, decay_steps=100000, decay_rate=0.96, staircase=True)
-    learning_rate_types = {"01": 0.01, "02": 0.001, "03": 0.0001, "e1": e1}
-    lr = learning_rate_types[hypa["learning_rate_type"]]
-
-    optimizer_types = {
-        "a1": Adam(learning_rate=lr),
-        "r1": RMSprop(learning_rate=lr),
-    }
-    opt = optimizer_types[hypa["optimizer_type"]]
-
-    # save info regarding the model training in this folder
-    info_folder = Path("info") / "cnn" / model_name
-    if not info_folder.exists():
-        info_folder.mkdir(parents=True, exist_ok=True)
-
     # a dict to recreate this training
     recap = {}
     recap["words"] = words
@@ -311,18 +315,79 @@ def train_model(hypa, force_retrain):
     recap_path = info_folder / "recap.json"
     recap_path.write_text(json.dumps(recap, indent=4))
 
+    learning_rate_types = {
+        "01": "fixed01",
+        "02": "fixed02",
+        "03": "fixed03",
+        "e1": "exp_decay_keras_01",
+        "04": "exp_decay_step_01",
+        "05": "exp_decay_smooth_01",
+        "06": "exp_decay_smooth_02",
+    }
+    learning_rate_type = hypa["learning_rate_type"]
+    lr_value = learning_rate_types[learning_rate_type]
+
+    # setup opt fixed lr values
+    if lr_value.startswith("fixed"):
+        if lr_value == "fixed01":
+            lr = 1e-2
+        elif lr_value == "fixed02":
+            lr = 1e-3
+        elif lr_value == "fixed03":
+            lr = 1e-4
+    else:
+        lr = 1e-3
+
+    if lr_value == "exp_decay_keras_01":
+        lr = ExponentialDecay(0.1, decay_steps=100000, decay_rate=0.96, staircase=True)
+
+    optimizer_types = {
+        "a1": Adam(learning_rate=lr),
+        "r1": RMSprop(learning_rate=lr),
+    }
+    opt = optimizer_types[hypa["optimizer_type"]]
+
     # create the model
     model = CNNmodel(**model_param)
+    # model.summary()
 
-    # model = AttRNNmodel(len(words), data["training"][0].shape)
-    # model = AttentionModel(len(words), data["training"][0].shape)
+    metrics = [
+        tf.keras.metrics.CategoricalAccuracy(),
+        tf.keras.metrics.Precision(),
+        tf.keras.metrics.Recall(),
+    ]
 
     model.compile(
         optimizer=opt,
-        loss=["categorical_crossentropy"],
-        metrics=["categorical_accuracy"],
+        loss=tf.keras.losses.CategoricalCrossentropy(),
+        metrics=metrics,
     )
-    # model.summary()
+
+    # setup callbacks
+    callbacks = []
+
+    # setup exp decay step / smooth
+    if lr_value.startswith("exp_decay"):
+        if lr_value == "exp_decay_step_01":
+            exp_decay_part = partial(exp_decay_step, epochs_drop=5)
+        elif lr_value == "exp_decay_smooth_01":
+            exp_decay_part = partial(exp_decay_smooth, epochs_drop=5)
+        elif lr_value == "exp_decay_smooth_02":
+            exp_decay_part = partial(
+                exp_decay_smooth, epochs_drop=5, initial_lrate=1e-2
+            )
+        lrate = LearningRateScheduler(exp_decay_part)
+        callbacks.append(lrate)
+
+    # setup early stopping
+    early_stop = EarlyStopping(
+        # monitor="val_categorical_accuracy",
+        monitor="val_loss",
+        patience=4,
+        verbose=1,
+        restore_best_weights=True,
+    )
+    callbacks.append(early_stop)
 
     # get training parameters
     BATCH_SIZE = hypa["batch_size"]
@@ -336,15 +401,6 @@ def train_model(hypa, force_retrain):
         datasets[which] = Dataset.from_tensor_slices((data[which], labels[which]))
         datasets[which] = datasets[which].shuffle(SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE)
 
-    # setup early stopping
-    early_stop = EarlyStopping(
-        # monitor="val_categorical_accuracy",
-        monitor="val_loss",
-        patience=4,
-        verbose=1,
-        restore_best_weights=True,
-    )
-
     # train the model
     results = model.fit(
         data["training"],
@@ -353,7 +409,7 @@ def train_model(hypa, force_retrain):
         batch_size=BATCH_SIZE,
         epochs=EPOCH_NUM,
         verbose=1,
-        callbacks=[early_stop],
+        callbacks=callbacks,
     )
 
     # save the trained model
