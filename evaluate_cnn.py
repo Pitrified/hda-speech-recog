@@ -174,6 +174,12 @@ def evaluate_results_cnn(args):
 
     results_df = build_cnn_results_df()
 
+    # all the unique values of the hypa ever used
+    for col in results_df:
+        if col in ["model_name", "loss", "fscore", "recall", "precision", "cat_acc"]:
+            continue
+        logg.info(f"hypa_grid['{col}'] = {results_df[col].unique()}")
+
     # all the results so far
     df_f = results_df
     df_f = df_f.sort_values("fscore", ascending=False)
@@ -190,7 +196,7 @@ def evaluate_results_cnn(args):
     logg.info(f"{df_f.head(30)}")
     logg.info(f"{df_f.tail()}")
 
-    aug_list = [dn for dn in df_f.dataset.unique() if dn.startswith("mel")]
+    aug_list = [dn for dn in df_f.dataset.unique() if dn.startswith("aug")]
     logg.info(f"Only on aug_list: {aug_list}")
     df_f = results_df
     df_f = df_f[df_f["dataset"].isin(aug_list)]
