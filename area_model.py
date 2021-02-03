@@ -22,6 +22,8 @@ class AreaNet:
 
         aa = inputs
 
+        ## area conv
+
         # extract the areas of interest
         aa = AreaNet.conv_module(aa, 20, (3, 3), (1, 1))
         aa = L.MaxPooling2D(pool_size=(2, 2))(aa)
@@ -44,6 +46,8 @@ class AreaNet:
 
         x = L.Multiply()([aa, inputs])
 
+        ## feature conv
+
         x = AreaNet.conv_module(x, 40, (3, 3), (1, 1))
         x = L.MaxPooling2D(pool_size=(2, 2))(x)
         x = L.Dropout(0.2)(x)
@@ -51,6 +55,8 @@ class AreaNet:
         x = AreaNet.conv_module(x, 80, (3, 3), (1, 1))
         x = L.MaxPooling2D(pool_size=(2, 2))(x)
         x = L.Dropout(0.2)(x)
+
+        ## classifier
 
         # softmax classifier
         x = L.GlobalAvgPool2D()(x)

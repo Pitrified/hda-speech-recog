@@ -22,11 +22,7 @@ def parse_arguments():
         "--visualization_type",
         type=str,
         default="augment",
-        choices=[
-            "augment",
-            "spec",
-            "datasets",
-        ],
+        choices=["augment", "spec", "datasets"],
         help="Which visualization to perform",
     )
 
@@ -57,30 +53,64 @@ def visualize_spec():
     logg = logging.getLogger(f"c.{__name__}.visualize_spec")
     logg.debug("Start visualize_spec")
 
+    plot_folder = Path("plot_models")
+
     dataset_path = Path("data_raw")
     logg.debug(f"dataset_path: {dataset_path}")
 
     sample_path = dataset_path / "happy" / "0a2b400e_nohash_0.wav"
     logg.debug(f"sample_path: {sample_path}")
-    sample_sig, sample_rate = librosa.load(sample_path, sr=None)
+    sample_sig, sr = librosa.load(sample_path, sr=None)
     logg.debug(f"sample_sig.shape: {sample_sig.shape}")
 
-    fig, ax = plt.subplots(3, 1, figsize=(12, 12))
-    plot_waveform(sample_sig, ax[0], sample_rate=sample_rate)
+    # fig, ax = plt.subplots(3, 1, figsize=(12, 12))
+    fig, ax = plt.subplots(3, 1, figsize=(10, 10))
+    plot_waveform(sample_sig, ax[0], sample_rate=sr, title="Waveform for happy")
+    # plot_waveform(sample_sig, ax[0], sample_rate=sr)
 
-    sample_melspec = librosa.feature.melspectrogram(sample_sig, sr=sample_rate)
+    sample_melspec = librosa.feature.melspectrogram(sample_sig, sr=sr)
     logg.debug(f"sample_melspec.shape: {sample_melspec.shape}")
     sample_log_melspec = librosa.power_to_db(sample_melspec, ref=np.max)
     logg.debug(f"sample_log_melspec.shape: {sample_log_melspec.shape}")
-    plot_spec(sample_log_melspec, ax[1])
+    plot_spec(sample_log_melspec, ax[1], title="Mel spectrogram for happy")
+    # plot_spec(sample_log_melspec, ax[1])
 
-    sample_mfcc = librosa.feature.mfcc(sample_sig, sr=sample_rate)
+    sample_mfcc = librosa.feature.mfcc(sample_sig, sr=sr)
     logg.debug(f"sample_mfcc.shape: {sample_mfcc.shape}")
     sample_log_mfcc = librosa.power_to_db(sample_mfcc, ref=np.max)
     logg.debug(f"sample_log_mfcc.shape: {sample_log_mfcc.shape}")
-    plot_spec(sample_log_mfcc, ax[2])
+    plot_spec(sample_log_mfcc, ax[2], title="MFCCs for happy")
+    # plot_spec(sample_log_mfcc, ax[2])
 
-    plt.tight_layout()
+    fig.tight_layout()
+    fig.savefig(plot_folder / "happy_specs.pdf")
+
+    sr = 16000
+    n_fft = 2048
+    hop_length = 512
+    mel_10 = librosa.filters.mel(sr=sr, n_fft=n_fft, n_mels=10)
+
+    fig, ax = plt.subplots(1, 1, figsize=(12, 12))
+    librosa.display.specshow(
+        mel_10,
+        sr=sr,
+        hop_length=hop_length,
+        x_axis="linear",
+        y_axis="linear",
+        cmap="viridis",
+        ax=ax,
+    )
+    ax.set_ylabel("Mel filter")
+    ax.set_xlabel("Hz")
+    fig.tight_layout()
+    fig.savefig(plot_folder / "mel10_bins.pdf")
+
+    fig, ax = plt.subplots(1, 1, figsize=(8, 4))
+    for i, m in enumerate(mel_10):
+        ax.plot(m, label=i)
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(plot_folder / "mel10_filterbank.pdf")
 
 
 def visualize_datasets():
@@ -201,15 +231,7 @@ def visualize_augment() -> None:
     logg.debug(f"source_lnd.shape: {source_lnd.shape}")
 
     dw = grid_stride // 2
-    delta_land = np.array(
-        [
-            [dw, dw],
-            [dw, dw],
-            [dw, dw],
-            [dw, dw],
-        ],
-        dtype=np.float32,
-    )
+    delta_land = np.array([[dw, dw], [dw, dw], [dw, dw], [dw, dw]], dtype=np.float32,)
 
     dest_lnd = source_lnd + delta_land
     logg.debug(f"dest_lnd:\n{dest_lnd}")

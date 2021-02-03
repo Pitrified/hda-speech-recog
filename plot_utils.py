@@ -17,7 +17,7 @@ from utils import find_rowcol
 def plot_waveform(sample_sig, ax, title="Sample waveform", sample_rate=16000):
     """TODO: what is plot_waveform doing?"""
     ax.plot(sample_sig)
-    ax.set_title(title)
+    ax.set_title(title, fontsize=20)
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Amplitude")
     # one tick every tenth of a second
@@ -36,7 +36,7 @@ def plot_spec(log_spec, ax, title="Spectrogram", sample_rate=16000):
     ld.specshow(
         log_spec, sr=sample_rate, x_axis="time", y_axis="mel", cmap="viridis", ax=ax
     )
-    ax.set_title(title)
+    ax.set_title(title, fontsize=20)
     ax.set_xlabel("Time (s)")
     # the ticks are wrong if the sample is not 1 sec
     # ax.set_xticks(np.linspace(0, 1, 11))

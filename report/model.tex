@@ -58,18 +58,33 @@ $8200$ Hz are almost indistinguishable. The mel scale, proposed by Stevens,
 Volkmann, and Newmann \cite{melscale1937}, introduces a unit of pitch built in
 such a way that equal distances on the scale sound equally distant to the human
 listener.
-
 The mel spectrogram is a spectrogram where the frequencies are converted to the
-mel scale.
+mel scale. To do so, a Mel spaced filterbank is generated (a 10 filters version
+is shown in \fig{fig:mel10_filterbank}) and the FFT results are multiplied with
+a dot product with each filter, obtaining \texttt{n_mel} values for each
+timestep.
 
-TODO: explain the filterbanks bins
-TODO: add picture of the filterbanks
-TODO: add picture of the signal, mel and mfcc spectrograms
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=0.8\linewidth]{mel10_filterbank.pdf}
+    \caption{An example of a 10 filters Mel filterbank}
+    \label{fig:mel10_filterbank}
+\end{figure}
 
 The resulting coefficients are highly correlated: the Discrete Cosine Transform
 can be applied to decorrelate the filter bank coefficients and obtain a
 compressed representation.
 The results are the Mel-frequency Cepstral Coefficients.
+
+An example waveform for the word ``happy'' and the relative spectrograms are
+shown in \fig{fig:happy_specs}.
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=0.8\linewidth]{happy_specs.pdf}
+    \caption{Waveform and spectrograms for the word happy}%
+    \label{fig:happy_specs}
+\end{figure}
 
 % The entire process is as follows:
 % \begin{enumerate}
