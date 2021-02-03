@@ -79,10 +79,7 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "-dr",
-        "--dry_run",
-        action="store_true",
-        help="Do a dry run for the hypa grid",
+        "-dr", "--dry_run", action="store_true", help="Do a dry run for the hypa grid",
     )
 
     # last line to parse the args
@@ -199,10 +196,18 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     # hypa_grid_best["words"] = ["f2", "f1", "num", "dir", "k1", "w2", "all"]
     hypa_grid_best["words"] = [words_type]
 
+    # TODO finisci questa
+    # hypa_grid: {'base_dense_width': [32], 'base_filters': [20, 32], 'batch_size':
+    # [32], 'dataset': ['mel01', 'mel04', 'mela1', 'aug02', 'aug03', 'aug04', 'aug05',
+    # 'aug06', 'aug07', 'aug08', 'aug09', 'aug10', 'aug11', 'aug12', 'aug13'],
+    # 'dropout_type': ['01', '02'], 'epoch_num': [15], 'kernel_size_type': ['01', '02'],
+    # 'pool_size_type': ['01', '02'], 'learning_rate_type': ['01', '02', '03', '04',
+    # '05', '06'], 'optimizer_type': ['a1'], 'words': ['f1']}
+
     # hypa_grid = hypa_grid_tiny
     # hypa_grid = hypa_grid_best
     hypa_grid = hypa_grid_big
-    logg.debug(f"hypa_grid: {hypa_grid}")
+    logg.debug(f"hypa_grid = {hypa_grid}")
 
     the_grid = list(ParameterGrid(hypa_grid))
 
@@ -364,9 +369,7 @@ def train_model(hypa, force_retrain):
     ]
 
     model.compile(
-        optimizer=opt,
-        loss=tf.keras.losses.CategoricalCrossentropy(),
-        metrics=metrics,
+        optimizer=opt, loss=tf.keras.losses.CategoricalCrossentropy(), metrics=metrics,
     )
 
     # setup callbacks
