@@ -82,24 +82,50 @@ shown in \fig{fig:happy_specs}.
 \begin{figure}[t!]
     \centering
     \includegraphics[width=0.8\linewidth]{happy_specs.pdf}
-    \caption{Waveform and spectrograms for the word happy}%
+    \caption{Waveform and spectrograms for the word happy. Note that the y axis of the spectrograms are labeled as Hz, but this is only to read more easily the plot and understand to which frequencies the important bins correspond to.}%
     \label{fig:happy_specs}
 \end{figure}
 
-% The entire process is as follows:
-% \begin{enumerate}
-%     \item Split the signal in windows
-%     \item Compute the FFT for each window
-%     \item Convert to Mel scale
-% \end{enumerate}
+TODO: con che libreria sono implementati
+
+TODO: che valori usati per generare gli spettrogrammi
+
+TODO: che valori usati per generare l'augmentation
 
 \subsection{Data augmentation}
 
+Data augmentation is a technique to increase the amount of data available by
+applying random, but meaningful, transformations to the data. This leads to a
+noisier dataset, that should make the trained model more robust and less prone
+to overfitting. The data was augmented both by modifying the waveform and the
+spectrograms.
+
 \subsubsection{Time shift}
+
+The waveform is shifted by a random amount of samples, controlled by the
+parameter \texttt{max_time_shift}.
 
 \subsubsection{Time stretch}
 
+The waveform is stretched, making the sound slower or faster, controlled by the
+parameter \texttt{stretch_rate}.
+
 \subsubsection{Spectrogram warp}
+
+The spectrogram is warped using the \texttt{sparse_image_warp} function
+available as a tensorflow addon.
+A sequence of source points is randomly selected within the image, and the
+points are shifted by a random amount along both time and frequency axis. The
+warp is controlled by the parameters \texttt{num_landmarks},
+\texttt{max_warp_time} and \texttt{max_warp_freq}.
+An example is shown in \fig{fig:warp_grid}.
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=0.8\linewidth]{warp_grid.pdf}
+    \caption{Example of a \texttt{sparse_image_warp} with \texttt{num_landmarks} $=4$, \texttt{max_warp_time} $=2$ and \texttt{max_warp_freq} $=2$.}%
+    \label{fig:warp_grid}
+\end{figure}
 
 \section{Learning Framework}
 \label{sec:learning_framework}

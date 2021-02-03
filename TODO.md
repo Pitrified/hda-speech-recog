@@ -8,6 +8,8 @@
 
 * Top one error as metric (described in the Google dataset paper)
 
+* Mode data augmentation, mask, only roll, only stratch...
+
 ### Transfer learning
 
 * Use different base models in TRA

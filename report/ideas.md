@@ -26,6 +26,7 @@ Describe the problem we are solving, task, number of words...
 ##### Signals and Features
 
 Valutazione della scelta di fare preprocessing separato.
+Offline/online augmentation
 
 ##### Learning Framework
 
