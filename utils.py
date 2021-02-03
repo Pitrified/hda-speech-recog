@@ -246,7 +246,7 @@ def setup_gpus():
     https://github.com/tensorflow/tensorflow/issues/25138
     """
     logg = logging.getLogger(f"c.{__name__}.setup_gpus")
-    logg.debug("Start setup_gpus")
+    # logg.debug("Start setup_gpus")
 
     gpus = tf.config.experimental.list_physical_devices("GPU")
     if gpus:

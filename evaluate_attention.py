@@ -43,6 +43,7 @@ def parse_arguments():
             "make_plots_hypa",
             "make_plots_clr",
             "audio",
+            "delete_bad_models",
         ],
         help="Which evaluation to perform",
     )
@@ -291,10 +292,7 @@ def evaluate_attention_weights(
     # model = tf.keras.models.load_model(model_path)
     # https://github.com/keras-team/keras/issues/5088#issuecomment-401498334
     model = tf.keras.models.load_model(
-        model_path,
-        custom_objects={
-            "backend": tf.keras.backend,
-        },
+        model_path, custom_objects={"backend": tf.keras.backend}
     )
 
     att_weight_model = tf.keras.models.Model(
@@ -566,6 +564,65 @@ def make_plots_clr() -> None:
         plt.show()
 
 
+def delete_bad_models_att() -> None:
+    """TODO: what is delete_bad_models_att doing?"""
+    logg = logging.getLogger(f"c.{__name__}.delete_bad_models_att")
+    # logg.setLevel("INFO")
+    logg.debug("Start delete_bad_models_att")
+
+    info_folder = Path("info")
+    trained_folder = Path("trained_models")
+    f_tresh = 0.96
+    deleted = 0
+    recreated = 0
+    bad_models = 0
+
+    for model_folder in info_folder.iterdir():
+        # logg.debug(f"model_folder: {model_folder}")
+
+        model_name = model_folder.name
+        if not model_name.startswith("ATT"):
+            continue
+
+        res_recap_path = model_folder / "results_recap.json"
+        if not res_recap_path.exists():
+            continue
+
+        results_recap = json.loads(res_recap_path.read_text())
+        # logg.debug(f"results_recap['cm']: {results_recap['cm']}")
+
+        # recap_path = model_folder / "recap.json"
+        # recap = json.loads(recap_path.read_text())
+        # logg.debug(f"recap['words']: {recap['words']}")
+
+        fscore = results_recap["fscore"]
+        # logg.debug(f"fscore: {fscore}")
+
+        if fscore < f_tresh:
+            model_name = model_folder.name
+            model_path = trained_folder / f"{model_name}.h5"
+            bad_models += 1
+
+            if model_path.exists():
+                # check for file size, if it is big remove the model
+                if model_path.stat().st_size > 10:
+                    model_path.unlink()
+                    deleted += 1
+                    logg.debug(f"Deleting model_path: {model_path}")
+                    logg.debug(f"\tfscore: {fscore}")
+                    model_path.write_text("Deleted")
+
+            # you gone goofed and deleted a model you have info of, put the placeholder
+            else:
+                model_path.write_text("Deleted")
+                logg.debug(f"Recreating model_path: {model_path}")
+                recreated += 1
+
+    logg.debug(f"bad_models: {bad_models}")
+    logg.debug(f"deleted: {deleted}")
+    logg.debug(f"recreated: {recreated}")
+
+
 def run_evaluate_attention(args: argparse.Namespace) -> None:
     """TODO: What is evaluate_attention doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate_attention")
@@ -589,6 +646,8 @@ def run_evaluate_attention(args: argparse.Namespace) -> None:
         make_plots_clr()
     elif evaluation_type == "evaluate_batch_epoch":
         evaluate_batch_epoch()
+    elif evaluation_type == "delete_bad_models":
+        delete_bad_models_att()
 
 
 if __name__ == "__main__":

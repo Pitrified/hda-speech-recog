@@ -571,9 +571,14 @@ def delete_bad_models_cnn(args) -> None:
     ca_tresh = 0.95
     deleted = 0
     recreated = 0
+    bad_models = 0
 
     for model_folder in info_folder.iterdir():
         # logg.debug(f"model_folder: {model_folder}")
+
+        model_name = model_folder.name
+        if not model_name.startswith("CNN"):
+            continue
 
         res_recap_path = model_folder / "results_recap.json"
         if not res_recap_path.exists():
@@ -596,21 +601,25 @@ def delete_bad_models_cnn(args) -> None:
         if fscore < f_tresh and categorical_accuracy < ca_tresh:
             model_name = model_folder.name
             model_path = trained_folder / f"{model_name}.h5"
+            bad_models += 1
 
             if model_path.exists():
-                # model_path.unlink()
-                deleted += 1
-                logg.debug(f"Deleting model_path: {model_path}")
-                logg.debug(f"fscore: {fscore}")
-                logg.debug(f"categorical_accuracy: {categorical_accuracy}")
-                # model_path.write_text("Deleted")
+                # check for file size, if it is big remove the model
+                if model_path.stat().st_size > 10:
+                    model_path.unlink()
+                    deleted += 1
+                    logg.debug(f"Deleting model_path: {model_path}")
+                    logg.debug(f"\tfscore: {fscore}")
+                    logg.debug(f"\tcategorical_accuracy: {categorical_accuracy}")
+                    model_path.write_text("Deleted")
 
-            # you gone goofed and deleted a model, put the placeholder
+            # you gone goofed and deleted a model you have info of, put the placeholder
             else:
-                # model_path.write_text("Deleted")
+                model_path.write_text("Deleted")
                 logg.debug(f"Recreating model_path: {model_path}")
                 recreated += 1
 
+    logg.debug(f"bad_models: {bad_models}")
     logg.debug(f"deleted: {deleted}")
     logg.debug(f"recreated: {recreated}")
 

@@ -187,9 +187,10 @@ def delete_bad_models_transfer(args: argparse.Namespace) -> None:
 
     info_folder = Path("info")
     trained_folder = Path("trained_models")
-    f_tresh = 0.93
+    f_tresh = 0.95
     deleted = 0
     recreated = 0
+    bad_models = 0
 
     for model_folder in info_folder.iterdir():
 
@@ -206,20 +207,24 @@ def delete_bad_models_transfer(args: argparse.Namespace) -> None:
 
         if fscore < f_tresh:
             model_path = trained_folder / f"{model_name}.h5"
+            bad_models += 1
 
             if model_path.exists():
-                # model_path.unlink()
-                deleted += 1
-                logg.debug(f"Deleting model_path: {model_path}")
-                logg.debug(f"fscore: {fscore}")
-                # model_path.write_text("Deleted")
+                # check for file size, if it is big remove the model
+                if model_path.stat().st_size > 10:
+                    model_path.unlink()
+                    deleted += 1
+                    logg.debug(f"Deleting model_path: {model_path}")
+                    logg.debug(f"\tfscore: {fscore}")
+                    model_path.write_text("Deleted")
 
             # you gone goofed and deleted a model
             else:
-                # model_path.write_text("Deleted")
+                model_path.write_text("Deleted")
                 logg.debug(f"Recreating model_path: {model_path}")
                 recreated += 1
 
+    logg.debug(f"bad_models: {bad_models}")
     logg.info(f"deleted: {deleted}")
     logg.info(f"recreated: {recreated}")
 

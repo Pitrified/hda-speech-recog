@@ -21,6 +21,8 @@ High-level description of the involved processing blocks, i.e., you describe the
 
 Nice diagram
 
+Describe the problem we are solving, task, number of words...
+
 ##### Signals and Features
 
 Valutazione della scelta di fare preprocessing separato.

@@ -2,6 +2,8 @@
 
 ### Misc
 
+* Add silence and unknown labels to learn
+
 * https://www.pyimagesearch.com/faqs/single-faq/how-do-i-reference-or-cite-one-of-your-blog-posts-books-or-courses/
 
 * Top one error as metric (described in the Google dataset paper)
