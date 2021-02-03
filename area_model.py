@@ -8,7 +8,7 @@ from tensorflow.keras.models import Model  # type: ignore
 class AreaNet:
     @staticmethod
     def conv_module(x, num_filters, filters_shape, stride, padding="same"):
-        # define a CONV => BN => RELU => DROPOUT pattern
+        # define a CONV => BN => RELU pattern
         x = L.Conv2D(num_filters, filters_shape, strides=stride, padding=padding)(x)
         x = L.BatchNormalization()(x)
         x = L.Activation("relu")(x)
