@@ -68,6 +68,13 @@ change. How architectural choices affect the overall performance.
 
 ## Conclusions
 
+##### Add
+
+Check results consistency: cat\_acc high, fscore low: bad inputs somewhere.
+Also had same problem in training.
+
+Writing report a lot slower than I thought.
+
 ##### Tips
 
 What I would like to see here is:

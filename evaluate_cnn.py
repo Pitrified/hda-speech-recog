@@ -18,7 +18,7 @@ from plot_utils import quad_plotter
 from preprocess_data import get_spec_dict
 from preprocess_data import load_processed
 from preprocess_data import wav2mel
-from train import build_cnn_name
+from train_cnn import build_cnn_name
 from utils import analyze_confusion
 from utils import compute_permutation
 from utils import pred_hot_2_cm
@@ -182,7 +182,8 @@ def evaluate_results_cnn(args):
 
     # all the results so far
     df_f = results_df
-    df_f = df_f.sort_values("fscore", ascending=False)
+    # df_f = df_f.sort_values("fscore", ascending=False)
+    df_f = df_f.sort_values("cat_acc", ascending=False)
     logg.info("All results:")
     logg.info(f"{df_f.head(30)}")
     logg.info(f"{df_f.tail()}")
@@ -191,7 +192,8 @@ def evaluate_results_cnn(args):
     df_f = results_df
     # df_f = df_f.query("use_val == True")
     df_f = df_f.query("words == 'f1'")
-    df_f = df_f.sort_values("fscore", ascending=False)
+    # df_f = df_f.sort_values("fscore", ascending=False)
+    df_f = df_f.sort_values("cat_acc", ascending=False)
     logg.info("Only on f1")
     logg.info(f"{df_f.head(30)}")
     logg.info(f"{df_f.tail()}")
@@ -200,7 +202,8 @@ def evaluate_results_cnn(args):
     logg.info(f"Only on aug_list: {aug_list}")
     df_f = results_df
     df_f = df_f[df_f["dataset"].isin(aug_list)]
-    df_f = df_f.sort_values("fscore", ascending=False)
+    # df_f = df_f.sort_values("fscore", ascending=False)
+    df_f = df_f.sort_values("cat_acc", ascending=False)
     logg.info(f"{df_f.head(30)}")
     logg.info(f"{df_f.tail()}")
 

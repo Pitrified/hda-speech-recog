@@ -2,6 +2,8 @@
 
 ### Misc
 
+* Nel paper di Xception ti dicono che parametri usare per gli optimizer
+
 * Check fscore in CNN: when doing evaluate precision/recall are at 95 then fscore is 87
 
 * Add silence and unknown labels to learn

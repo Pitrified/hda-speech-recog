@@ -19,7 +19,7 @@ from plot_utils import quad_plotter
 from preprocess_data import get_spec_dict
 from preprocess_data import load_processed
 from preprocess_data import wav2mel
-from train import build_attention_name
+from train_attention import build_attention_name
 from utils import compute_permutation
 from utils import record_audios
 from utils import setup_gpus

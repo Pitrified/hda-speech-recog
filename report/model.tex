@@ -148,6 +148,8 @@ has the parameter \texttt{fmin}$=40$.}
     \end{tabular}
 \end{table}
 
+TODO: copmosing datasets, multichannel
+
 \subsection{Data augmentation}
 
 Data augmentation is a technique to increase the amount of data available by
@@ -306,13 +308,36 @@ The possible values for the hyper-parameters are:
 
 \subsection{Transfer learning}
 
-Transfer learning is a technique where a model developed and trained for a task is modified slightly and used as a starting point for a different task.
+Transfer learning is a technique where a model developed and trained for a task
+is modified slightly and used as a starting point for a different task.
+A Convolutional Neural Network can be seen as a feature extractor composed with
+a classifier.
+The idea behind transfer learning is to leverage the knowledge acquired
+regarding the first part, extracting meaningful features from an image, and
+modifying the latter, re-learning the classifier.
+The feature extractor is the largest part of the network, consisting in roughly
+90\% of the trainable weights.
+Training these big networks (10-100 millions of parameters) on ImageNet (14
+millions of images in 1000 classes) can take from days to over a month even on
+supercomputers with dozens of top of the line graphics cards.
+Adapting the networks for a new task, on the other hand, is a matter of roughly
+half an hour on a single GPU.
 
-\subsection{Xception structure}
+% TODO cite image net
+% TODO cite Xception
+% TODO cite EfficientNet
 
-\subsection{EfficientNet structure}
+As spectrograms can be interpreted as images, starting from an image classifier
+makes perfect sense. The two architecture used are Xception 
+cite
+and EfficientNets
+cite.
 
-Chose B4
+\subsubsection{Xception structure}
+
+\subsubsection{EfficientNet structure}
+
+\subsection{Transfer learning and fine tuning}
 
 \section{Attention Model}
 \label{sec:attention_model}

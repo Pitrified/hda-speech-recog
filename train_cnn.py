@@ -138,7 +138,7 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     # hypa_grid_big["base_dense_width"] = [16, 32, 64, 128]
     hypa_grid_big["base_dense_width"] = [32]
     # hypa_grid_big["base_filters"] = [10, 20, 30, 32, 64, 128]
-    hypa_grid_big["base_filters"] = [20, 32]
+    hypa_grid_big["base_filters"] = [33]
     # hypa_grid_big["batch_size"] = [16, 32, 64]
     hypa_grid_big["batch_size"] = [32]
     ds = []
@@ -148,12 +148,13 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     # ds.extend(["aug02", "aug03", "aug04", "aug05"])
     # ds.extend(["aug06", "aug07", "aug08", "aug09"])
     # ds.extend(["aug10", "aug11", "aug12", "aug13"])
-    ds.extend(["aug14", "aug15", "aug16", "aug17"])
+    # ds.extend(["aug14", "aug15", "aug16", "aug17"])
+    ds.extend(["aug14"])
     hypa_grid_big["dataset"] = ds
-    hypa_grid_big["dropout_type"] = ["01", "02"]
-    # hypa_grid_big["dropout_type"] = ["01"]
+    # hypa_grid_big["dropout_type"] = ["01", "02"]
+    hypa_grid_big["dropout_type"] = ["01"]
     # hypa_grid_big["epoch_num"] = [15, 30, 60]
-    hypa_grid_big["epoch_num"] = [15, 30]
+    hypa_grid_big["epoch_num"] = [15]
     # hypa_grid_big["kernel_size_type"] = ["01", "02"]
     hypa_grid_big["kernel_size_type"] = ["02"]
     # hypa_grid_big["pool_size_type"] = ["01", "02"]
@@ -161,12 +162,13 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     lr = []
     # lr.extend(["01", "02", "03"])  # fixed
     # lr.extend(["e1"])  # exp_decay_keras_01
-    lr.extend(["04"])  # exp_decay_step_01
+    # lr.extend(["04"])  # exp_decay_step_01
     lr.extend(["05"])  # exp_decay_smooth_01
-    lr.extend(["06"])  # exp_decay_smooth_02
+    # lr.extend(["06"])  # exp_decay_smooth_02
     hypa_grid_big["learning_rate_type"] = lr
     hypa_grid_big["optimizer_type"] = ["a1"]
     hypa_grid_big["words"] = [words_type]
+    # hypa_grid_big["words"] = ["f2", "f1", "num", "dir", "k1", "w2", "all"]
 
     # tiny grid
     hypa_grid_tiny = {}
@@ -407,15 +409,18 @@ def train_model(hypa, force_retrain):
     # load the datasets
     datasets = {}
     for which in ["training", "validation", "testing"]:
-        # logg.debug(f"data[{which}].shape: {data[which].shape}")
+        logg.debug(f"data[{which}].shape: {data[which].shape}")
         datasets[which] = Dataset.from_tensor_slices((data[which], labels[which]))
+        logg.debug(f"datasets[{which}]: {datasets[which]}")
         datasets[which] = datasets[which].shuffle(SHUFFLE_BUFFER_SIZE).batch(BATCH_SIZE)
+        logg.debug(f"datasets[{which}]: {datasets[which]}")
 
     # train the model
     results = model.fit(
         data["training"],
         labels["training"],
-        validation_data=datasets["validation"],
+        # validation_data=datasets["validation"],
+        validation_data=(data["validation"], labels["validation"]),
         batch_size=BATCH_SIZE,
         epochs=EPOCH_NUM,
         verbose=1,
@@ -439,12 +444,17 @@ def train_model(hypa, force_retrain):
 
     # save the evaluation results
     logg.debug("Evaluate on test data:")
-    eval_testing = model.evaluate(datasets["testing"])
-    results_recap[model.metrics_names[0]] = eval_testing[0]
-    results_recap[model.metrics_names[1]] = eval_testing[1]
+    # eval_testing = model.evaluate(datasets["testing"])
+    # results_recap[model.metrics_names[0]] = eval_testing[0]
+    # results_recap[model.metrics_names[1]] = eval_testing[1]
+    eval_testing = model.evaluate(data["testing"], labels["testing"])
+    for metrics_name, value in zip(model.metrics_names, eval_testing):
+        logg.debug(f"{metrics_name}: {value}")
+        results_recap[metrics_name] = value
 
     # compute the confusion matrix
-    y_pred = model.predict(datasets["testing"])
+    # y_pred = model.predict(datasets["testing"])
+    y_pred = model.predict(data["testing"])
     cm = pred_hot_2_cm(labels["testing"], y_pred, words)
     # logg.debug(f"cm: {cm}")
     results_recap["cm"] = cm.tolist()
@@ -471,6 +481,15 @@ def train_model(hypa, force_retrain):
     # save the results
     res_recap_path = info_folder / "results_recap.json"
     res_recap_path.write_text(json.dumps(results_recap, indent=4))
+
+    y_pred_dataset = model.predict(datasets["testing"])
+    cm_dataset = pred_hot_2_cm(labels["testing"], y_pred_dataset, words)
+    fscore_dataset = analyze_confusion(cm_dataset, words)
+    logg.debug(f"fscore_dataset: {fscore_dataset} fscore {fscore}")
+    # for i, (ys, yd) in enumerate(zip(y_pred, y_pred_dataset)):
+    #     pred_split = np.argmax(ys)
+    #     pred_dataset = np.argmax(yd)
+    #     logg.debug(f"i: {i} pred_split: {pred_split} pred_dataset: {pred_dataset}")
 
     # plt.show()
     return "done_training"
