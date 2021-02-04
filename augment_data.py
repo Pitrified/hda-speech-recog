@@ -19,12 +19,14 @@ def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="")
 
     aug_dict = get_aug_dict()
+    aug_keys = list(aug_dict.keys())
+    aug_keys.extend(["2345", "6789", "10123", "14567"])
     parser.add_argument(
         "-at",
         "--augmentation_type",
         type=str,
         default="aug01",
-        choices=aug_dict.keys(),
+        choices=aug_keys,
         help="Which augmentation to perform",
     )
 
@@ -548,11 +550,19 @@ def run_augment_data(args: argparse.Namespace) -> None:
     words_type = args.words_type
     force_augment = args.force_augment
 
-    do_augmentation(
-        augmentation_type,
-        words_type,
-        force_augment,
-    )
+    if words_type == "2345":
+        words_type_list = ["aug02", "aug03", "aug04", "aug05"]
+    elif words_type == "6789":
+        words_type_list = ["aug06", "aug07", "aug08", "aug09"]
+    elif words_type == "10123":
+        words_type_list = ["aug10", "aug11", "aug12", "aug13"]
+    elif words_type == "14567":
+        words_type_list = ["aug14", "aug15", "aug16", "aug17"]
+    else:
+        words_type_list = [words_type]
+
+    for wt in words_type_list:
+        do_augmentation(augmentation_type, wt, force_augment)
 
 
 if __name__ == "__main__":
