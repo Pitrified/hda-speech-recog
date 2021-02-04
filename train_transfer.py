@@ -105,7 +105,8 @@ def setup_env():
 def build_transfer_name(hypa: ty.Dict[str, str], use_validation: bool) -> str:
     """TODO: what is build_transfer_name doing?"""
 
-    model_name = "TB4"
+    # model_name = "TB4"
+    model_name = "TB7"
     model_name += f"_dw{hypa['dense_width_type']}"
     model_name += f"_dr{hypa['dropout_type']}"
     model_name += f"_bs{hypa['batch_size_type']}"
@@ -348,7 +349,8 @@ def train_transfer(
     metric_to_monitor = "val_loss" if use_validation else "loss"
     early_stop = EarlyStopping(
         monitor=metric_to_monitor,
-        patience=4,
+        # patience=4,
+        patience=6,
         restore_best_weights=True,
         verbose=1,
     )

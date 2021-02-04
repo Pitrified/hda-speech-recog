@@ -189,7 +189,8 @@ def TRAmodel(num_labels, input_shape, dense_widths, dropout, data):
     # )
     # base_model = models.load_model("/home/pietro/.keras/models/efficientnetb4_notop.h5")
     # base_model = # .keras/models/efficientnetb4_notop.h5
-    base_model = applications.EfficientNetB4(
+    # base_model = applications.EfficientNetB4(
+    base_model = applications.EfficientNetB7(
         weights="imagenet",
         input_shape=input_shape,
         include_top=False,

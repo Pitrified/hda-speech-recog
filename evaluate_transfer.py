@@ -13,7 +13,7 @@ from plot_utils import plot_spec
 from plot_utils import plot_waveform
 from preprocess_data import get_spec_dict
 from preprocess_data import wav2mel
-from train import build_transfer_name
+from train_transfer import build_transfer_name
 from utils import compute_permutation
 from utils import record_audios
 from utils import setup_gpus
@@ -111,7 +111,7 @@ def build_tra_results_df() -> pd.DataFrame:
     for model_folder in info_folder.iterdir():
         # logg.debug(f"model_folder: {model_folder}")
         model_name = model_folder.name
-        if not model_name.startswith("TRA"):
+        if not (model_name.startswith("TRA") or model_name.startswith("TB")):
             continue
         logg.debug(f"model_name: {model_name}")
 
