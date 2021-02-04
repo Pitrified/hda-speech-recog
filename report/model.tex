@@ -192,7 +192,7 @@ landmarks.}%
 
 \begin{table*}[t!]
     \centering
-    \caption{Values used to augment the dataset}
+    \caption{Values used to augment the dataset. The first lines list the parameters used to compute the spectrograms.}
     \label{tab:aug_values}
     \begin{tabular}{|c|cccccc|}
         \hline
@@ -229,12 +229,48 @@ How did it learn anything at all?
 
 \subsection{Learning rate schedule}
 
+\subsubsection{Fixed LR}
+\subsubsection{Exp decay LR}
+\subsubsection{Cyclic LR}
+
 \subsection{Hyper-parameter tuning}
 
-\section{Convolutional Architecture}
+\section{Convolutional Neural Network}
 \label{sec:convolutional_arch}
 
-\section{Transfer Learning approach}
+\subsection{Architecture}
+
+As a starting benchmark, a standard Convolutional Neural Network was implemented.
+Three convolutional modules are instantiated, followed by a dense classifier.
+Each convolutional module is composed of the convolutional layer, a batch
+normalization layer, a max pooling layer and a dropout layer.
+The classifier is composed by three dense layers, the last with softmax
+activation and a number of units equal to the number of classes to predict.
+
+\subsection{Model hyper-parameters}
+
+When building the model, aside from the number of classes to predict and the
+input shape of the spectrogram, five parameters can be set:
+
+\begin{enumerate}
+    \item Number of convolutional filters: deeper layers have to learn more
+        filters, as the feature maps decrease in width and height after the
+        pooling.
+    \item Shape of the convolutional filters:
+        both square and rectangular filters were tested.
+        A vertical rectangular filters (e.g. (5, 1)) emphasizes the
+        relationship between mel coefficients within the same time step
+    \item Shape of the pooling window: 
+        both square and rectangular windows were tested.
+        Again, a rectangular filter allows to push into deeper layers more
+        information along the time or frequency axis.
+    \item Dropout rates after the convolutional modules.
+    \item Width of the dense classifier layers.
+\end{enumerate}
+
+TODO: the hypa values
+
+\section{Transfer Learning Approach}
 \label{sec:transfer_learning}
 
 \section{Attention Model}
@@ -243,3 +279,8 @@ How did it learn anything at all?
 \subsection{Attention architecture}
 
 \subsection{Query style}
+
+\subsection{AreaNet}
+
+Dream a dream
+
