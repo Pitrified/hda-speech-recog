@@ -1,17 +1,21 @@
 # Ideas for the report
 
-### Introduction
+## Introduction
+
+##### Tips
 
 Paper contribution (what you do in the paper), problem, approach (technique
 used + novelty), value ().
 
 Paper structure (this report is structured as follows bla bla).
 
-### Related
+## Related
 
-### Model
+## Model
 
-##### Processing pipeline
+### Processing pipeline
+
+##### Tips
 
 High level description of the approach: which processing blocks you used, what
 they do (in words) and how these were combined
@@ -23,23 +27,37 @@ Nice diagram
 
 Describe the problem we are solving, task, number of words...
 
-##### Signals and Features
+### Signals and Features
+
+##### Add
 
 Valutazione della scelta di fare preprocessing separato.
 Offline/online augmentation
 
-##### Learning Framework
+##### Tips
+
+### Learning Framework
+
+##### Add
+
+CyclicLR has a paper describing it: https://arxiv.org/abs/1506.01186
+
+##### Tips
 
 Describe the learning strategy, the learning model, its parameters, any
 optimization over a given parameter set
 
 Diagram with details of learning framework
 
-CyclicLR has a paper describing it: https://arxiv.org/abs/1506.01186
+## Results
 
-### Results
+##### Add
 
 Plots to describe Fscore as function of the learning parameters.
+
+Intro su come leggere i grafici, gruppi di gruppi di colonne.
+
+##### Tips
 
 Progressive and logical manner, starting with simple things and adding details.
 Address one concept at a time.
@@ -48,9 +66,9 @@ Hyper-parameters, show selected results for several values of these. Tables are
 a good approach to concisely visualize the performance as hyper-parameters
 change. How architectural choices affect the overall performance.
 
-Intro su come leggere i grafici, gruppi di gruppi di colonne.
+## Conclusions
 
-### Conclusions
+##### Tips
 
 What I would like to see here is:
 * a very short summary of what done, 

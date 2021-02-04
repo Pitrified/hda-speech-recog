@@ -36,6 +36,8 @@ Throughout the experiments, those lists were used.
 % both for the practicality of having them ready, but also to keep with the
 % spirit of the dataset as a tool to enable meaningf
 
+TODO: how the words are grouped
+
 \subsection{Mel spectrogram and Mel-frequency Cepstral Coefficients}
 
 The audio data in the dataset is available as a vector of amplitudes over time,
@@ -233,7 +235,19 @@ How did it learn anything at all?
 \subsubsection{Exp decay LR}
 \subsubsection{Cyclic LR}
 
+\subsection{Early stopping}
+
+Loss, validation, overfitting
+
+Show a plot
+
 \subsection{Hyper-parameter tuning}
+
+Come lo fai
+
+Usare Pool
+
+Ovviamente non su tutte le combinazioni
 
 \section{Convolutional Neural Network}
 \label{sec:convolutional_arch}
@@ -267,11 +281,38 @@ input shape of the spectrogram, five parameters can be set:
     \item Dropout rates after the convolutional modules.
     \item Width of the dense classifier layers.
 \end{enumerate}
+The possible values for the hyper-parameters are:
+\begin{itemize}
+    \item dense\_width = [16, 32, 64, 128]
+    \item filters = [10, 20, 32, 64, 128]
+    \item dropout = [[0.03, 0.01],  [0.3, 0.1]]
+    \item kernel\_size = [[(2,2), (2,2), (2,2)], [(5,1), (3,3), (3,3)]]
+    \item pool\_size = [[(2,2), (2,2), (2,2)], [(2,1), (2,2), (2,2)]]
+\end{itemize}
 
-TODO: the hypa values
+% hypa_grid['dataset'] = ['mfcc01' 'aug13' 'mel01' 'aug02' 'mfcc03' 'aug07' 'aug04' 'mel03'
+%  'mfcc04' 'mfcc02' 'mel04' 'aug10' 'aug03' 'mel02' 'aug06' 'aug05' 'mela1'
+%  'aug09' 'aug08' 'aug12' 'aug11' 'aug14' 'aug15']
+% hypa_grid['words'] = ['f1' 'num' 'k1' 'w2' 'f2' 'all' 'dir']
+
+% hypa_grid['batch_size'] = [128  32  64]
+% hypa_grid['epoch_num'] = [ 60  15  16  30  59  58  61  31  62 101]
+% hypa_grid['lr'] = ['default' '01' '03' '02' '06' '04' '05' 'e1']
+% hypa_grid['opt'] = ['adam' 'a1' 'r1']
+
 
 \section{Transfer Learning Approach}
 \label{sec:transfer_learning}
+
+\subsection{Transfer learning}
+
+Transfer learning is a technique where a model developed and trained for a task is modified slightly and used as a starting point for a different task.
+
+\subsection{Xception structure}
+
+\subsection{EfficientNet structure}
+
+Chose B4
 
 \section{Attention Model}
 \label{sec:attention_model}

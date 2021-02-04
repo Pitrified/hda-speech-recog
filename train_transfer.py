@@ -105,7 +105,7 @@ def setup_env():
 def build_transfer_name(hypa: ty.Dict[str, str], use_validation: bool) -> str:
     """TODO: what is build_transfer_name doing?"""
 
-    model_name = "TRA"
+    model_name = "TB4"
     model_name += f"_dw{hypa['dense_width_type']}"
     model_name += f"_dr{hypa['dropout_type']}"
     model_name += f"_bs{hypa['batch_size_type']}"
@@ -171,7 +171,8 @@ def hyper_train_transfer(
     # hypa_grid["words_type"] = [words_type]
     # hypa_grid["words_type"] = [words_type]
     # hypa_grid["words_type"] = ["f2", "f1", "dir", "num", "k1", "w2", "all"]
-    hypa_grid["words_type"] = ["f2", "f1", "dir", "num"]
+    # hypa_grid["words_type"] = ["f2", "f1", "dir", "num"]
+    hypa_grid["words_type"] = ["f1"]
     the_grid = list(ParameterGrid(hypa_grid))
 
     logg.debug(f"hypa_grid: {hypa_grid}")

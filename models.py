@@ -3,7 +3,8 @@ from tensorflow.keras import models  # type: ignore
 from tensorflow.keras import layers as L  # type: ignore
 from tensorflow.keras import backend as K  # type: ignore
 from tensorflow.keras import utils as U  # type: ignore
-from tensorflow.keras.applications import Xception  # type: ignore
+# from tensorflow.keras.applications import Xception  # type: ignore
+from tensorflow.keras import applications  # type: ignore
 
 from pathlib import Path
 
@@ -181,7 +182,14 @@ def TRAmodel(num_labels, input_shape, dense_widths, dropout, data):
 
     # load weights pre-trained on ImageNet
     # do not include the ImageNet classifier at the top
-    base_model = Xception(
+    # base_model = applications.Xception(
+    #     weights="imagenet",
+    #     input_shape=input_shape,
+    #     include_top=False,
+    # )
+    # base_model = models.load_model("/home/pietro/.keras/models/efficientnetb4_notop.h5")
+    # base_model = # .keras/models/efficientnetb4_notop.h5
+    base_model = applications.EfficientNetB4(
         weights="imagenet",
         input_shape=input_shape,
         include_top=False,
