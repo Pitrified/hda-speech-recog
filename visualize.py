@@ -288,9 +288,12 @@ def visualize_augment() -> None:
     ################################
 
     rng = np.random.default_rng()
-    num_landmarks = 4
-    max_warp_time = 2
-    max_warp_freq = 2
+    # num_landmarks = 4
+    # max_warp_time = 2
+    # max_warp_freq = 2
+    num_landmarks = 3
+    max_warp_time = 5
+    max_warp_freq = 5
     num_samples = 1
     spec_dim = grid.shape
 

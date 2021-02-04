@@ -48,8 +48,8 @@ is efficiently computed using the Fast Fourier Transform algorithm.
 The short-time Fourier transform accounts for variations of the content of an
 audio signal over time. Instead of computing the FFT of the entire signal, the
 FFT is computed on overlapping windowed segments of the signal: each window has
-length \texttt{n_fft} and the next window is extracted after
-\texttt{hop_length} samples.
+length \texttt{n\_fft} and the next window is extracted after
+\texttt{hop\_length} samples.
 The results of the FFT in each window are stacked to obtain the spectrogram.
 
 The human ear does not perceive frequencies on a linear scale: the difference
@@ -61,7 +61,7 @@ listener.
 The mel spectrogram is a spectrogram where the frequencies are converted to the
 mel scale. To do so, a Mel spaced filterbank is generated (a 10 filters version
 is shown in \fig{fig:mel10_filterbank}) and the FFT results are multiplied with
-a dot product with each filter, obtaining \texttt{n_mel} values for each
+a dot product with each filter, obtaining \texttt{n\_mel} values for each
 timestep.
 
 \begin{figure}[t!]
@@ -76,21 +76,75 @@ can be applied to decorrelate the filter bank coefficients and obtain a
 compressed representation.
 The results are the Mel-frequency Cepstral Coefficients.
 
+The spectrograms were obtained using the \texttt{librosa} library \cite{brian_mcfee_2020_3955228}.
+The values used to generate the mel spectrograms are listed in
+\tab{tab:mel_values}.
+The values used to generate the mel frequency cepstral coefficients are listed
+in \tab{tab:mfcc_values}.
 An example waveform for the word ``happy'' and the relative spectrograms are
 shown in \fig{fig:happy_specs}.
 
 \begin{figure}[t!]
     \centering
     \includegraphics[width=0.8\linewidth]{happy_specs.pdf}
-    \caption{Waveform and spectrograms for the word happy. Note that the y axis of the spectrograms are labeled as Hz, but this is only to read more easily the plot and understand to which frequencies the important bins correspond to.}%
+    \caption{
+    Waveform and spectrograms for the word happy. Note that the y axis of the
+spectrograms are labeled as Hz, but this is only to read more easily the plot
+and understand to which frequencies the important bins correspond to. }%
     \label{fig:happy_specs}
 \end{figure}
 
-TODO: con che libreria sono implementati
+\begin{table}[t!]
+    \centering
+    \caption{
+    Values used to generate the mel spectrograms. The dataset ``mela1'' also
+has the parameter \texttt{fmin}$=40$.}
+    \label{tab:mel_values}
+    \begin{tabular}{|c|cccc|}
+        \hline
+        % name & \texttt{n\_mel} & \texttt{n\_fft} & \texttt{hop\_length} & shape \\
+        name & n\_mel & n\_fft & hop\_length & shape \\
+        \hline
+        mel01 & 128 & 2048 & 512   & (128, 32) \\
+        mel02 & 64  & 4096 & 1024  & (64, 16) \\
+        mel03 & 64  & 2048 & 512   & (64, 32) \\
+        mel04 & 64  & 1024 & 256   & (64, 64) \\
+        mel05 & 128 & 1024 & 128   & (128, 128) \\
+        mel06 & 128 & 1024 & 256   & (128, 64) \\
+        mel07 & 128 & 2048 & 256   & (128, 64) \\
+        mel08 & 128 & 512  & 256   & (128, 64) \\
+        mel09 & 128 & 512  & 128   & (128, 128) \\
+        mel10 & 128 & 2048 & 128   & (128, 128) \\
+        mel11 & 128 & 256  & 128   & (128, 128) \\
+        mel12 & 128 & 4096 & 256   & (128, 64) \\
+        mel13 & 128 & 512  & 256   & (128, 64) \\
+        mel14 & 128 & 256  & 256   & (128, 64) \\
+        mel15 & 128 & 3072 & 256   & (128, 64) \\
+        mela1 & 80  & 1024 & 128   & (80, 128) \\
+        \hline
+    \end{tabular}
+\end{table}
 
-TODO: che valori usati per generare gli spettrogrammi
-
-TODO: che valori usati per generare l'augmentation
+\begin{table}[t!]
+    \centering
+    \caption{Values used to generate the MFCC spectrograms}
+    \label{tab:mfcc_values}
+    \begin{tabular}{|c|cccc|}
+        \hline
+        % name & \texttt{n\_mfcc} & \texttt{n\_fft} & \texttt{hop\_length} & shape \\
+        name & n\_mfcc & n\_fft & hop\_length & shape \\
+        \hline
+        mfcc01 & 20  & 2048 & 512  & (20, 32) \\
+        mfcc02 & 40  & 2048 & 512  & (40, 32) \\
+        mfcc03 & 40  & 2048 & 256  & (40, 64) \\
+        mfcc04 & 80  & 1024 & 128  & (80, 128) \\
+        mfcc05 & 10  & 4096 & 1024 & (10, 16) \\
+        mfcc06 & 128 & 1024 & 128  & (128, 128) \\
+        mfcc07 & 128 & 512  & 128  & (128, 128) \\
+        mfcc08 & 128 & 2048 & 128  & (128, 128) \\
+        \hline
+    \end{tabular}
+\end{table}
 
 \subsection{Data augmentation}
 
@@ -98,34 +152,75 @@ Data augmentation is a technique to increase the amount of data available by
 applying random, but meaningful, transformations to the data. This leads to a
 noisier dataset, that should make the trained model more robust and less prone
 to overfitting. The data was augmented both by modifying the waveform and the
-spectrograms.
+spectrograms. An option to include the originals in the augmente dataset is
+available.
 
 \subsubsection{Time shift}
 
 The waveform is shifted by a random amount of samples, controlled by the
-parameter \texttt{max_time_shift}.
+parameter \texttt{max\_time\_shift}.
 
 \subsubsection{Time stretch}
 
 The waveform is stretched, making the sound slower or faster, controlled by the
-parameter \texttt{stretch_rate}.
+parameter \texttt{stretch\_rate}.
 
 \subsubsection{Spectrogram warp}
 
-The spectrogram is warped using the \texttt{sparse_image_warp} function
+The spectrogram is warped using the \texttt{sparse\_image\_warp} function
 available as a tensorflow addon.
-A sequence of source points is randomly selected within the image, and the
+A sequence of source landmarks is randomly selected within the image, and the
 points are shifted by a random amount along both time and frequency axis. The
-warp is controlled by the parameters \texttt{num_landmarks},
-\texttt{max_warp_time} and \texttt{max_warp_freq}.
-An example is shown in \fig{fig:warp_grid}.
+warp is controlled by the parameters \texttt{num\_landmarks},
+\texttt{max\_warp\_time} and \texttt{max\_warp\_freq}.
+The effect of warping an image is shown in \fig{fig:warp_grid}.
+
+Several augmentations were performed, mostly focussing on the spectrogram
+warping, along one or both time and frequency axis.
+Values used to augment the dataset are listed in \tab{tab:aug_values}.
 
 \begin{figure}[t!]
     \centering
     \includegraphics[width=0.8\linewidth]{warp_grid.pdf}
-    \caption{Example of a \texttt{sparse_image_warp} with \texttt{num_landmarks} $=4$, \texttt{max_warp_time} $=2$ and \texttt{max_warp_freq} $=2$.}%
+    \caption{
+    The effects of \texttt{sparse\_image\_warp} on an image, with
+\texttt{num\_landmarks} $=4$, \texttt{max\_warp\_time} $=2$ and
+\texttt{max\_warp\_freq} $=2$. The diamonds show the source and destination
+landmarks.}%
     \label{fig:warp_grid}
 \end{figure}
+
+\begin{table*}[t!]
+    \centering
+    \caption{Values used to augment the dataset}
+    \label{tab:aug_values}
+    \begin{tabular}{|c|cccccc|}
+        \hline
+        & mel\_kwargs & n\_mel & n\_fft & hop\_length & fmin & fmax \\
+        \hline
+        & mel\_01 & 64 & 1024 & 256 & 40 & 8000  \\
+        & mel\_02 & 128 & 2046 & 512 & 40 & 8000  \\
+        & mel\_03 & 64 & 1024 & 256 & default & default  \\
+        \hline
+        \hline
+        aug name & max\_time\_shifts & stretch\_rate & mel\_kwargs & num\_landmarks & max\_warp\_time & max\_warp\_freq\\
+        \hline
+        aug01 &  [1600, 3200] & [0.8, 1.2] & mel\_01 & 3 & 5 & 6 \\
+        aug02 &  [] & [] & mel\_02 & 3 & 5 & 5 \\
+        aug03 &  [] & [] & mel\_02 & 3 & 5 & 0 \\
+        aug04 &  [] & [] & mel\_02 & 3 & 0 & 5 \\
+        aug05 &  [] & [] & mel\_02 & 3 & 0 & 0 \\
+        aug06 &  [] & [] & mel\_01 & 3 & 5 & 5 \\
+        aug07 &  [] & [] & mel\_01 & 3 & 5 & 0 \\
+        aug08 &  [] & [] & mel\_01 & 3 & 0 & 5 \\
+        aug09 &  [] & [] & mel\_01 & 3 & 0 & 0 \\
+        aug10 &  [] & [] & mel\_03 & 3 & 5 & 5 \\
+        aug11 &  [] & [] & mel\_03 & 3 & 5 & 0 \\
+        aug12 &  [] & [] & mel\_03 & 3 & 0 & 5 \\
+        aug13 &  [] & [] & mel\_03 & 3 & 0 & 0 \\
+        \hline
+    \end{tabular}
+\end{table*}
 
 \section{Learning Framework}
 \label{sec:learning_framework}

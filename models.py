@@ -2,7 +2,7 @@ import tensorflow as tf  # type: ignore
 from tensorflow.keras import models  # type: ignore
 from tensorflow.keras import layers as L  # type: ignore
 from tensorflow.keras import backend as K  # type: ignore
-from tensorflow.keras import utils  # type: ignore
+from tensorflow.keras import utils as U  # type: ignore
 from tensorflow.keras.applications import Xception  # type: ignore
 
 from pathlib import Path
@@ -257,7 +257,7 @@ def test_attention_model():
 
     model_folder = Path("plot_models")
     model_pic_name = model_folder / f"attention_model_{query_style}.png"
-    utils.plot_model(attention_model, model_pic_name, show_shapes=True, dpi=400)
+    U.plot_model(attention_model, model_pic_name, show_shapes=True, dpi=400)
 
 
 if __name__ == "__main__":

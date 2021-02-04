@@ -1,8 +1,10 @@
+from pathlib import Path
 import logging
 
-import tensorflow as tf  # type: ignore
 from tensorflow.keras import layers as L  # type: ignore
+from tensorflow.keras import utils as U  # type: ignore
 from tensorflow.keras.models import Model  # type: ignore
+import tensorflow as tf  # type: ignore
 
 
 class AreaNet:
@@ -81,6 +83,10 @@ def test_build_aa() -> None:
     num_classes = 4
     area_model = AreaNet.build(input_shape, num_classes)
     area_model.summary()
+
+    model_folder = Path("plot_models")
+    model_pic_name = model_folder / "area_model_01.png"
+    U.plot_model(area_model, model_pic_name, show_shapes=True, dpi=400)
 
 
 if __name__ == "__main__":
