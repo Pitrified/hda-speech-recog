@@ -233,6 +233,36 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "keep_originals": True,
         "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
     }
+
+    # mel_03, smaller max_warp_time / max_warp_freq, more landmarks
+    aug_dict["aug14"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_03,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 4, "max_warp_time": 2, "max_warp_freq": 2},
+    }
+    aug_dict["aug15"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_03,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 4, "max_warp_time": 2, "max_warp_freq": 0},
+    }
+    aug_dict["aug16"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_03,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 4, "max_warp_time": 0, "max_warp_freq": 2},
+    }
+    aug_dict["aug17"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_03,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
+    }
     return aug_dict
 
 
@@ -469,12 +499,14 @@ def do_augmentation(
             if keep_originals:
                 all_signals.extend(sig_original)
 
-            if len(max_time_shifts) > 0 and which_fold != "testing":
+            # if len(max_time_shifts) > 0 and which_fold != "testing":
+            if len(max_time_shifts) > 0 and which_fold == "training":
                 logg.info("Rolling")
                 sig_rolled = roll_signals(sig_original, max_time_shifts, rng)
                 all_signals.extend(sig_rolled)
 
-            if len(stretch_rates) > 0 and which_fold != "testing":
+            # if len(stretch_rates) > 0 and which_fold != "testing":
+            if len(stretch_rates) > 0 and which_fold == "training":
                 logg.info("Stretching")
                 sig_stretched = stretch_signals(sig_original, stretch_rates, rng)
                 all_signals.extend(sig_stretched)
@@ -488,7 +520,8 @@ def do_augmentation(
             )
 
             # warp the spectrograms
-            if num_landmarks > 0 and which_fold != "testing":
+            # if num_landmarks > 0 and which_fold != "testing":
+            if num_landmarks > 0 and which_fold == "training":
                 logg.info("Warping...")
                 data_warped: np.ndarray = warp_spectrograms(
                     data_specs, num_landmarks, max_warp_time, max_warp_freq, rng

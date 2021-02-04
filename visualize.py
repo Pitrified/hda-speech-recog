@@ -199,8 +199,8 @@ def visualize_augment() -> None:
     # build a sample image to warp
     grid_stride = 8
     grid_w = 8
-    # grid_h = 8
-    grid_h = 4
+    grid_h = 8
+    # grid_h = 4
     grid = np.zeros((grid_w * grid_stride, grid_h * grid_stride), dtype=np.float32)
     for x in range(grid_w):
         for y in range(grid_h):
@@ -288,12 +288,12 @@ def visualize_augment() -> None:
     ################################
 
     rng = np.random.default_rng()
-    # num_landmarks = 4
-    # max_warp_time = 2
-    # max_warp_freq = 2
-    num_landmarks = 3
-    max_warp_time = 5
-    max_warp_freq = 5
+    num_landmarks = 4
+    max_warp_time = 2
+    max_warp_freq = 2
+    # num_landmarks = 3
+    # max_warp_time = 5
+    # max_warp_freq = 5
     num_samples = 1
     spec_dim = grid.shape
 

@@ -143,17 +143,23 @@ def hyper_train_attention(
     logg.debug("Start hyper_train_attention")
 
     # TODO do them with more epochs (at least on those with early_stop)
+    # TODO augment on 422 @ 4,15 epochs
 
     hypa_grid: ty.Dict[str, ty.List[str]] = {}
 
-    # the words to train on
+    ###### the words to train on
     hypa_grid["words_type"] = [words_type]
 
-    # the dataset to train on
+    ###### the dataset to train on
     ds = []
+    # ds.extend(["mfcc01", "mfcc03", "mfcc04", "mfcc08"])
+    # ds.extend(["mfcc04"])
+    # ds.extend(["mel01", "mel04", "mel05", "mela1"])
     # ds.extend(["aug02", "aug03", "aug04", "aug05"])
-    ds.extend(["aug06", "aug07", "aug08", "aug09"])
-    # hypa_grid["dataset_name"] = ["mel01", "mel04", "mel05", "mela1"]
+    # ds.extend(["aug06", "aug07", "aug08", "aug09"])
+    # ds.extend(["aug10", "aug11", "aug12", "aug13"])
+    ds.extend(["aug14", "aug15", "aug16", "aug17"])
+    # ds.extend(["aug14"])
     # hypa_grid["dataset_name"] = ["mela1"]
     # hypa_grid["dataset_name"] = ["mel04"]
     # hypa_grid["dataset_name"] = ["aug01"]
@@ -161,66 +167,69 @@ def hyper_train_attention(
     # hypa_grid["dataset_name"] = ["mela1", "mel04"]
     hypa_grid["dataset_name"] = ds
 
-    # how big are the first conv layers
+    ###### how big are the first conv layers
     # hypa_grid["conv_size_type"] = ["01", "02"]
     hypa_grid["conv_size_type"] = ["02"]
 
-    # dropout after conv, 0 to skip it
+    ###### dropout after conv, 0 to skip it
     # hypa_grid["dropout_type"] = ["01", "02"]
     hypa_grid["dropout_type"] = ["01"]
 
-    # the shape of the kernels in the conv layers
+    ###### the shape of the kernels in the conv layers
     # hypa_grid["kernel_size_type"] = ["01", "02"]
     hypa_grid["kernel_size_type"] = ["01"]
 
-    # the dimension of the LSTM
+    ###### the dimension of the LSTM
     # hypa_grid["lstm_units_type"] = ["01", "02"]
     hypa_grid["lstm_units_type"] = ["01"]
 
-    # the query style type
+    ###### the query style type
     qs = []
     # hypa_grid["query_style_type"] = ["01", "02", "03", "04", "05"]
-    # qs.extend(["01"])
-    qs.extend(["04"])
-    # qs.extend(["05"])
+    qs.extend(["01"])  # dense01
+    qs.extend(["03"])  # conv02 (LSTM)
+    qs.extend(["04"])  # conv03 (inputs)
+    qs.extend(["05"])  # dense02
     hypa_grid["query_style_type"] = qs
 
-    # the width of the dense layers
+    ###### the width of the dense layers
     # hypa_grid["dense_width_type"] = ["01", "02"]
     hypa_grid["dense_width_type"] = ["01"]
 
-    # the learning rates for the optimizer
+    ###### the learning rates for the optimizer
     lr = []
     # lr.extend(["01", "02"])  # fixed
     lr.extend(["03"])  # exp_decay_step_01
     lr.extend(["04"])  # exp_decay_smooth_01
-    lr.extend(["07"])  # clr_triangular2_03
-    lr.extend(["09"])  # clr_triangular2_05
+    # lr.extend(["07"])  # clr_triangular2_03
+    # lr.extend(["09"])  # clr_triangular2_05
     lr.extend(["10"])  # exp_decay_smooth_02
     hypa_grid["learning_rate_type"] = lr
 
-    # which optimizer to use
+    ###### which optimizer to use
     # hypa_grid["optimizer_type"] = ["a1", "r1"]
     hypa_grid["optimizer_type"] = ["a1"]
 
-    # the batch size to use
+    ###### the batch size to use
     # hypa_grid["batch_size_type"] = ["01", "02"]
     hypa_grid["batch_size_type"] = ["02"]
 
-    # the number of epochs
+    ###### the number of epochs
     en = []
-    # en.extend(["01", "02"])
-    en.extend(["03", "04"])
+    en.extend(["01"])  # 15
+    # en.extend(["02"]) # 30
+    # en.extend(["03", "04"])
     hypa_grid["epoch_num_type"] = en
 
+    # the grid you are generating from (useful to recreate the training)
     logg.debug(f"hypa_grid: {hypa_grid}")
 
-    # create the grid
+    # create the list of combinations
     the_grid = list(ParameterGrid(hypa_grid))
-
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
 
+    # check which models need to be trained
     if dry_run:
         tra_info = {"already_trained": 0, "to_train": 0}
         for hypa in the_grid:
@@ -238,6 +247,7 @@ def hyper_train_attention(
             elif dn.startswith("aug"):
                 do_augmentation(dn, wt)
 
+    # useful to pick good values of lr
     if do_find_best_lr:
         hypa = the_grid[0]
         logg.debug(f"\nSTARTING find_best_lr with hypa: {hypa}")
