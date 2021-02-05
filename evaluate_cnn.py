@@ -158,6 +158,13 @@ def build_cnn_results_df() -> pd.DataFrame:
             if recap["version"] == "001":
                 pandito["lr"].append(recap["hypa"]["learning_rate_type"])
                 pandito["opt"].append(recap["hypa"]["optimizer_type"])
+            elif recap["version"] == "002":
+                if "learning_rate_type" in recap["hypa"]:
+                    pandito["lr"].append(recap["hypa"]["learning_rate_type"])
+                    pandito["opt"].append(recap["hypa"]["optimizer_type"])
+                else:
+                    pandito["lr"].append("default")
+                    pandito["opt"].append("adam")
         else:
             pandito["lr"].append("default")
             pandito["opt"].append("adam")
@@ -184,7 +191,7 @@ def evaluate_results_cnn(args):
     df_f = results_df
     # df_f = df_f.sort_values("fscore", ascending=False)
     df_f = df_f.sort_values("cat_acc", ascending=False)
-    logg.info("All results:")
+    logg.info("\nAll results:")
     logg.info(f"{df_f.head(30)}")
     logg.info(f"{df_f.tail()}")
 
@@ -194,12 +201,12 @@ def evaluate_results_cnn(args):
     df_f = df_f.query("words == 'f1'")
     # df_f = df_f.sort_values("fscore", ascending=False)
     df_f = df_f.sort_values("cat_acc", ascending=False)
-    logg.info("Only on f1")
+    logg.info("\nOnly on f1")
     logg.info(f"{df_f.head(30)}")
     logg.info(f"{df_f.tail()}")
 
     aug_list = [dn for dn in df_f.dataset.unique() if dn.startswith("aug")]
-    logg.info(f"Only on aug_list: {aug_list}")
+    logg.info(f"\nOnly on aug_list: {aug_list}")
     df_f = results_df
     df_f = df_f[df_f["dataset"].isin(aug_list)]
     # df_f = df_f.sort_values("fscore", ascending=False)

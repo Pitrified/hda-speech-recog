@@ -312,32 +312,99 @@ Transfer learning is a technique where a model developed and trained for a task
 is modified slightly and used as a starting point for a different task.
 A Convolutional Neural Network can be seen as a feature extractor composed with
 a classifier.
+The feature extractor is the largest part of the network, consisting in roughly
+90\% of the trainable weights.
 The idea behind transfer learning is to leverage the knowledge acquired
 regarding the first part, extracting meaningful features from an image, and
 modifying the latter, re-learning the classifier.
-The feature extractor is the largest part of the network, consisting in roughly
-90\% of the trainable weights.
 Training these big networks (10-100 millions of parameters) on ImageNet (14
 millions of images in 1000 classes) can take from days to over a month even on
 supercomputers with dozens of top of the line graphics cards.
 Adapting the networks for a new task, on the other hand, is a matter of roughly
 half an hour on a single GPU.
 
-% TODO cite image net
-% TODO cite Xception
-% TODO cite EfficientNet
-
 As spectrograms can be interpreted as images, starting from an image classifier
 makes perfect sense. The two architecture used are Xception 
-cite
-and EfficientNets
-cite.
+\cite{chollet2017xception}
+and EfficientNet
+\cite{tan2020efficientnet}.
 
 \subsubsection{Xception structure}
 
+A standard convolutional layer tries to learn 3D filters, with two spatial
+dimensions and one channel dimension.
+Such a filter has to simultaneously learn spatial correlations and
+cross-channel correlations.
+The Inception Hypothesis asserts that it would be easier to learn independently
+the cross-channel and spatial correlations.
+To do so an Inception module first learns cross-channel correlations with 1x1
+convolutions, then learns spatial correlations with standard 3x3 and 5x5
+convolutions.
+The Xception model pushed this hypothesis to the limit, completely decoupling
+the mapping of spatial and cross-channel correlations.
+
 \subsubsection{EfficientNet structure}
 
+Scaling a Convolutional Neural Network can lead to increased performance:
+adding more layers, more filters of more convolutional modules can make the
+model more accurate. On the other hand, a bigger model means slower training
+and higher memory consumption to the point of being infeasible to train.
+On top of that, often CNN can be over-parametrized: model compression
+techniques can trade little accuracy for a great reduction in model size
+\cite{han2016deep}.
+
+The EfficientNet authors carefully examine the scaling of a model to obtain the
+optimal parameters of width, depth and resolution, proposing a new compound
+scaling method, which uses a single compound coefficient to scale the three
+parameters in a coordinated way.
+% which use a compound coefficient φ to uniformly scales network width, depth,
+% and resolution in a principled way we have also developed a new mobile-size
+% baseline, called EfficientNet fix φ = 1, assuming twice more resources
+% available, and do a small grid search of α, β, we then fix α, β, γ as
+% constants and scale up baseline network with different φ
+
 \subsection{Transfer learning and fine tuning}
+
+The pipeline to train a model using transfer learning is as follows:
+\begin{enumerate}
+    \item Load a previously trained base model, without the final classifier.
+    \item Freeze the base model weights, to avoid destroying the information they
+        contain.
+    \item Add a classifier on top of the base model.
+    \item Train the classifier, using a reasonably high learning rate.
+    \item Un-freeze the base model weights.
+    \item Train the model again, with a very small learning rate, to fine tune
+        the feature extractor to the current dataset.
+\end{enumerate}
+
+The first four steps are the transfer learning part, followed by the fine
+tuning steps five and six.
+
+\subsection{Model building and hyper-parameters}
+
+The inputs to the pre-trained Xception and EfficientNet models have to be
+normalized, which can be easily done with a Normalization layer provided by
+tensorflow.
+It is to note that the inputs should be of shape $\left( 299, 299, 3 \right)$,
+whereas the spectrograms used were of size $\left( 128, 128, 3 \right)$, so
+some loss of performance can be expected.
+The classifier built is composed by a GlobalAveragePooling2D layer, which
+averages the values in each feature extracted, followed by some dense layers
+(according to the hyper-parameters selected) and finally a softmax layer to
+compute the predictions.
+
+When building the model, aside from the number of classes to predict and the
+input shape of the spectrograms, two parameters can be set:
+\begin{enumerate}
+    \item Dropout rate after the GlobalAveragePooling2D layer.
+    \item Dense width and number of the dense layers in the classifier.
+\end{enumerate}
+The possible values for the hyper-parameters are:
+\begin{itemize}
+    \item dense\_width\_types = [[4, 0], [16, 16], [0, 0], [64, 64]]
+    \item dropout\_types = [0.2, 0.1, 0]
+\end{itemize}
+Where a value of $0$ means that the layer is skipped.
 
 \section{Attention Model}
 \label{sec:attention_model}

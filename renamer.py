@@ -1,16 +1,32 @@
 from pathlib import Path
+from tensorflow.keras import models  # type: ignore
 import argparse
-import logging
 import json
-
+import logging
+import matplotlib.pyplot as plt  # type: ignore
 import typing as ty
 
+from preprocess_data import preprocess_spec
+from augment_data import do_augmentation
+from plot_utils import plot_confusion_matrix
+from preprocess_data import load_processed
+from utils import analyze_confusion
+from utils import pred_hot_2_cm
 from utils import setup_logger
 
 
 def parse_arguments() -> argparse.Namespace:
     """Setup CLI interface"""
     parser = argparse.ArgumentParser(description="")
+
+    parser.add_argument(
+        "-rt",
+        "--rename_type",
+        type=str,
+        default="rename_att_v1_to_v2",
+        # choices=aug_keys,
+        help="Which rename/fix to perform",
+    )
 
     # last line to parse the args
     args = parser.parse_args()
@@ -223,12 +239,96 @@ def rename_att_v1_to_v2() -> None:
         logg.debug(f"{sk}")
 
 
+def recompute_fscore_cnn() -> None:
+    """TODO: what is recompute_fscore_cnn doing?"""
+    logg = logging.getLogger(f"c.{__name__}.recompute_fscore_cnn")
+    # logg.setLevel("INFO")
+    logg.debug("Start recompute_fscore_cnn")
+
+    info_folder = Path("info")
+    trained_folder = Path("trained_models")
+
+    for model_folder in info_folder.iterdir():
+        # logg.debug(f"model_folder: {model_folder}")
+
+        # check that it is a CNN
+        model_name = model_folder.name
+        if not model_name.startswith("CNN"):
+            continue
+
+        # check that the model is trained and not a placeholder
+        model_path = trained_folder / f"{model_name}.h5"
+        found_model = False
+        if model_path.exists():
+            if model_path.stat().st_size > 100:
+                found_model = True
+        if not found_model:
+            continue
+
+        # load it
+        model = models.load_model(model_path)
+
+        res_recap_path = model_folder / "results_recap.json"
+        if not res_recap_path.exists():
+            continue
+        results_recap = json.loads(res_recap_path.read_text())
+        # logg.debug(f"results_recap['cm']: {results_recap['cm']}")
+
+        recap_path = model_folder / "recap.json"
+        recap = json.loads(recap_path.read_text())
+        # logg.debug(f"recap['words']: {recap['words']}")
+
+        words = recap["words"]
+        hypa = recap["hypa"]
+
+        # check that the data is available
+        dn = hypa["dataset"]
+        wt = hypa["words"]
+        if dn.startswith("mel") or dn.startswith("mfcc"):
+            preprocess_spec(dn, wt)
+        elif dn.startswith("aug"):
+            do_augmentation(dn, wt)
+
+        processed_path = Path("data_proc") / f"{hypa['dataset']}"
+        data, labels = load_processed(processed_path, words)
+
+        y_pred = model.predict(data["testing"])
+        cm = pred_hot_2_cm(labels["testing"], y_pred, words)
+        fscore = analyze_confusion(cm, words)
+        # logg.debug(f"fscore: {fscore}")
+
+        # overwrite the cm
+        results_recap["cm"] = cm.tolist()
+        # add the fscore
+        results_recap["fscore"] = fscore
+        # increase the version
+        results_recap["results_recap_version"] = "002"
+        # write the new results
+        res_recap_path.write_text(json.dumps(results_recap, indent=4))
+
+        # increase the recap version (shows that it is after this debacle)
+        recap["version"] = "002"
+        recap_path.write_text(json.dumps(recap, indent=4))
+
+        # save the new plots
+        fig, ax = plt.subplots(figsize=(12, 12))
+        plot_confusion_matrix(cm, ax, model_name, words, fscore)
+        plot_cm_path = info_folder / "test_confusion_matrix.png"
+        fig.savefig(plot_cm_path)
+        plt.close(fig)
+
+
 def run_renamer(args: argparse.Namespace) -> None:
     """TODO: What is renamer doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_renamer")
     logg.debug("Starting run_renamer")
 
-    rename_att_v1_to_v2()
+    rename_type = args.rename_type
+
+    if rename_type == "rename_att_v1_to_v2":
+        rename_att_v1_to_v2()
+    elif rename_type == "recompute_fscore_cnn":
+        recompute_fscore_cnn()
 
 
 if __name__ == "__main__":
