@@ -148,7 +148,7 @@ has the parameter \texttt{fmin}$=40$.}
     \end{tabular}
 \end{table}
 
-TODO: copmosing datasets, multichannel
+TODO: composing datasets, multichannel
 
 \subsection{Data augmentation}
 
@@ -411,9 +411,88 @@ Where a value of $0$ means that the layer is skipped.
 
 \subsection{Attention architecture}
 
+The key idea behind the Attention mechanism is the assumption that not all of
+the data carries the same amount of information.
+Indeed, when processing a large amount of information we focus on few relevant
+details.
+This approach was used effectively in the field of Neural Machine Translation by
+Bahdanau \cite{bahdanau2016neural}
+and
+Luong \cite{luong2015effective}, and to produce image captions with the 
+Show, Attend and Tell approach \cite{xu2016show}.
+
+In the paper by Douglas et al. \cite{2018arXiv180808929C}, the attention
+mechanism is used for speech command recognition.
+As a first step, the mel spectrogram is computed from the input audio.
+A 2D convolution is performed, only along the time axis to extract local
+correlations in the spectrogram.
+Two bidirectional \cite{Schuster1997BidirectionalRN} long short-term memory
+\cite{lstm} units are used to capture forward and backward long term
+dependencies in the spectrogram.
+A LSTM unit reads the input sequence from the first sample to the last. The
+bidirectional version reads the sequence both forward, producing the forward
+hidden states, and backward, resulting in the sequence of backward hidden
+states.
+Here the attention mechanism is applied: one of the LSTM output vector is
+selected (the choice is not crucial because the vectors should contain
+information about long term dependencies) and a dense layer is used to extract
+a query vector.
+The query vector is then used to compute the attention scores, that are
+converted with a softmax layer in attention weights. These weights are
+multiplied with the output of the LSTM to compute a weighted average, which is
+then fed into a dense classifier.
+
+% https://towardsdatascience.com/an-introduction-to-attention-transformers-and-bert-part-1-da0e838c7cda
+% In the proposed model, each generated output word is not just a function of
+% just the final hidden state but rather a function of ALL hidden states. And,
+% it’s not just a simple operation that combines all hidden state — if it was,
+% then we are still giving the same context to every output step, so it has to be
+% different! It is not a simple concatenation or dot product, but an “attention”
+% operation that, for every decoder output step, produces a distinct vector
+% representing all encoder hidden states but giving different weights to
+% different encoder hidden state.
+
+% https://arxiv.org/pdf/1409.0473.pdf
+% reads an input sequence x in order starting from the first symbol x1 to the
+% last one xTx . However, in the proposed scheme, we would like the annotation
+% of each word to summarize not only the preceding words, but also the
+% following words. Hence, we propose to use a bidirectional RNN The forward RNN
+% −→f reads the input sequence as it is ordered (from x1 to xTx) and calculates
+% a sequence of forward hidden states ( −→h 1, · · · , −→h Tx). The backward
+% RNN ←−f reads the sequence in the reverse order (from xTx to x1), resulting
+% in a sequence of backward hidden states
+
+% https://arxiv.org/pdf/1808.08929.pdf
+% After mel-scale spectrogram computation, a set of convolutions is applied to
+% the melscale spectrogram (2D output) only in the time dimension to extract
+% local relations in the audio file. A set of two bidirectional long short term
+% memory (LSTM - Hochreiter and Schmidhuber (1997)) units is used to capture
+% two-way (forward and backward) long term dependencies in the audio file. At
+% this point, one of the output vectors of the last LSTM layer is extracted,
+% projected using a dense layer and used as query vector to identify what part
+% of the audio is the most relevant. We choose to use the middle vector of the
+% LSTM output since the voice command is expected to be centered in the audio
+% files. This choice is arbitrary and any vector should work since the double
+% stacked LSTM layers should be able to carry enough “memory”. Finally, the
+% weighted average of the LSTM output is fed into 3 fully connected layers for
+% classification. 
+
 \subsection{Query style}
+
+Two additional methods to compute the query were developed and tested.
+In the first method, from the output of the second LSTM layer, a CNN was used
+to extract the query, using several convolutional modules.
+In the second method, the query was directly computed from the input
+spectrogram, using a CNN.
+A third query style tested is regarding the choice of LSTM output vector to
+pick to compute the query: instead of the last, the central vector was chosen.
 
 \subsection{AreaNet}
 
 Dream a dream
+
+\subsection{Model building and hyper-parameters}
+
+When building the model, aside from the number of classes to predict and the
+input shape of the spectrograms, SOME parameters can be set:
 

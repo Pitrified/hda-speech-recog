@@ -37,13 +37,7 @@ def parse_arguments() -> argparse.Namespace:
         "--evaluation_type",
         type=str,
         default="results",
-        choices=[
-            "results",
-            "model",
-            "audio",
-            "delete_bad_models",
-            "make_plots",
-        ],
+        choices=["results", "model", "audio", "delete_bad_models", "make_plots"],
         help="Which evaluation to perform",
     )
 
@@ -196,14 +190,15 @@ def evaluate_results_cnn(args):
     logg.info(f"{df_f.tail()}")
 
     # filter the dataframe to find the best hypas
-    df_f = results_df
-    # df_f = df_f.query("use_val == True")
-    df_f = df_f.query("words == 'f1'")
-    # df_f = df_f.sort_values("fscore", ascending=False)
-    df_f = df_f.sort_values("cat_acc", ascending=False)
-    logg.info("\nOnly on f1")
-    logg.info(f"{df_f.head(30)}")
-    logg.info(f"{df_f.tail()}")
+    for words_type in ["f1", "all"]:
+        df_f = results_df
+        # df_f = df_f.query("use_val == True")
+        df_f = df_f.query(f"words == '{words_type}'")
+        # df_f = df_f.sort_values("fscore", ascending=False)
+        df_f = df_f.sort_values("cat_acc", ascending=False)
+        logg.info(f"\nOnly on {words_type}")
+        logg.info(f"{df_f.head(30)}")
+        logg.info(f"{df_f.tail()}")
 
     aug_list = [dn for dn in df_f.dataset.unique() if dn.startswith("aug")]
     logg.info(f"\nOnly on aug_list: {aug_list}")
