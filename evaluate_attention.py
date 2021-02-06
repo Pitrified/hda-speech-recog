@@ -576,6 +576,7 @@ def delete_bad_models_att() -> None:
     deleted = 0
     recreated = 0
     bad_models = 0
+    good_models = 0
 
     for model_folder in info_folder.iterdir():
         # logg.debug(f"model_folder: {model_folder}")
@@ -591,8 +592,9 @@ def delete_bad_models_att() -> None:
         results_recap = json.loads(res_recap_path.read_text())
         # logg.debug(f"results_recap['cm']: {results_recap['cm']}")
 
-        # recap_path = model_folder / "recap.json"
-        # recap = json.loads(recap_path.read_text())
+        recap_path = model_folder / "recap.json"
+        recap = json.loads(recap_path.read_text())
+        words = recap["words"]
         # logg.debug(f"recap['words']: {recap['words']}")
 
         fscore = results_recap["fscore"]

@@ -304,9 +304,9 @@ def train_model_att_dry(hypa, use_validation: bool) -> str:
     model_folder = Path("trained_models") / "attention"
 
     model_name = build_attention_name(hypa, use_validation)
-    model_path = model_folder / f"{model_name}.h5"
+    placeholder_path = model_folder / f"{model_name}.txt"
 
-    if model_path.exists():
+    if placeholder_path.exists():
         return "already_trained"
 
     return "to_train"
@@ -329,9 +329,10 @@ def train_attention(
     if not model_folder.exists():
         model_folder.mkdir(parents=True, exist_ok=True)
     model_path = model_folder / f"{model_name}.h5"
+    placeholder_path = model_folder / f"{model_name}.txt"
 
     # check if this model has already been trained
-    if model_path.exists():
+    if placeholder_path.exists():
         if force_retrain:
             logg.warn("\nRETRAINING MODEL!!\n")
         else:
@@ -573,7 +574,7 @@ def train_attention(
     # save the trained model
     model.save(model_path)
 
-    logg.debug(f"results.history.keys(): {results.history.keys()}")
+    placeholder_path.write_text(f"Trained. F-score: {fscore}")
 
 
 def find_best_lr(hypa: ty.Dict[str, str]) -> None:

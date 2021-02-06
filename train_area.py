@@ -99,9 +99,9 @@ def train_model_area_dry(
     logg.debug("Start train_model_area_dry")
 
     model_name = build_area_name(hypa, use_validation)
-    model_path = trained_folder / f"{model_name}.h5"
+    placeholder_path = trained_folder / f"{model_name}.txt"
 
-    if model_path.exists():
+    if placeholder_path.exists():
         return "already_trained"
 
     return "to_train"

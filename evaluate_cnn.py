@@ -572,11 +572,10 @@ def delete_bad_models_cnn(args) -> None:
 
     info_folder = Path("info") / "cnn"
     trained_folder = Path("trained_models") / "cnn"
-    f_tresh = 0.87
-    ca_tresh = 0.95
     deleted = 0
     recreated = 0
     bad_models = 0
+    good_models = 0
 
     for model_folder in info_folder.iterdir():
         # logg.debug(f"model_folder: {model_folder}")
@@ -594,37 +593,47 @@ def delete_bad_models_cnn(args) -> None:
 
         recap_path = model_folder / "recap.json"
         recap = json.loads(recap_path.read_text())
+        words = recap["words"]
         # logg.debug(f"recap['words']: {recap['words']}")
 
         cm = np.array(results_recap["cm"])
-        fscore = analyze_confusion(cm, recap["words"])
+        fscore = analyze_confusion(cm, words)
         # logg.debug(f"fscore: {fscore}")
 
         categorical_accuracy = results_recap["categorical_accuracy"]
         # logg.debug(f"categorical_accuracy: {categorical_accuracy}")
 
+        if words == "all":
+            f_tresh = 0.89
+            ca_tresh = 0.89
+        else:
+            f_tresh = 0.97
+            ca_tresh = 0.97
+
         if fscore < f_tresh and categorical_accuracy < ca_tresh:
             model_name = model_folder.name
             model_path = trained_folder / f"{model_name}.h5"
+            placeholder_path = trained_folder / f"{model_name}.txt"
             bad_models += 1
 
             if model_path.exists():
-                # check for file size, if it is big remove the model
-                if model_path.stat().st_size > 10:
-                    model_path.unlink()
-                    deleted += 1
-                    logg.debug(f"Deleting model_path: {model_path}")
-                    logg.debug(f"\tfscore: {fscore}")
-                    logg.debug(f"\tcategorical_accuracy: {categorical_accuracy}")
-                    model_path.write_text("Deleted")
+                model_path.unlink()
+                deleted += 1
+                logg.debug(f"Deleting model_path: {model_path}")
+                logg.debug(f"\tfscore: {fscore}")
+                logg.debug(f"\tcategorical_accuracy: {categorical_accuracy}")
 
-            # you gone goofed and deleted a model you have info of, put the placeholder
+            # you gone goofed and deleted a placeholder you have info of, recreate it
             else:
-                model_path.write_text("Deleted")
-                logg.debug(f"Recreating model_path: {model_path}")
-                recreated += 1
+                if not placeholder_path.exists():
+                    placeholder_path.write_text("Deleted")
+                    logg.debug(f"Recreating model_path: {model_path}")
+                    recreated += 1
+        else:
+            good_models += 1
 
     logg.debug(f"bad_models: {bad_models}")
+    logg.debug(f"good_models: {good_models}")
     logg.debug(f"deleted: {deleted}")
     logg.debug(f"recreated: {recreated}")
 

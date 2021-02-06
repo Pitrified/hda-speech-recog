@@ -86,7 +86,7 @@ def setup_env():
 def build_tra_results_df() -> pd.DataFrame:
     """TODO: what is build_tra_results_df doing?"""
     logg = logging.getLogger(f"c.{__name__}.build_tra_results_df")
-    # logg.setLevel("INFO")
+    logg.setLevel("INFO")
     logg.debug("Start build_tra_results_df")
 
     pandito: ty.Dict[str, ty.List[str]] = {
@@ -111,8 +111,6 @@ def build_tra_results_df() -> pd.DataFrame:
     for model_folder in info_folder.iterdir():
         # logg.debug(f"model_folder: {model_folder}")
         model_name = model_folder.name
-        if not (model_name.startswith("TRA") or model_name.startswith("TB")):
-            continue
         logg.debug(f"model_name: {model_name}")
 
         # res_freeze_path = model_folder / "results_freeze_recap.json"
@@ -140,7 +138,7 @@ def build_tra_results_df() -> pd.DataFrame:
         pandito["words"].append(hypa["words_type"])
         if recap["version"] == "001":
             pandito["use_val"].append("True")
-        elif recap["version"] == "002":
+        else:
             pandito["use_val"].append(recap["use_validation"])
         pandito["loss"].append(res_full["loss"])
         pandito["cat_acc"].append(res_full["categorical_accuracy"])

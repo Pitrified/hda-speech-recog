@@ -11,6 +11,7 @@
 * Mode data augmentation, mask, only roll, only stratch...
 * All the documentation
 * More AreaNet
+* Multiple training of the same hypas to check consistency, build model name takes a param and finds the first `_00x` free
 
 ### Transfer learning
 

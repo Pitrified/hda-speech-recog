@@ -112,7 +112,7 @@ def build_transfer_name(hypa: ty.Dict[str, str], use_validation: bool) -> str:
     model_name += f"_dw{hypa['dense_width_type']}"
     model_name += f"_dr{hypa['dropout_type']}"
     model_name += f"_bs{hypa['batch_size_type']}"
-    model_name += f"_en{hypa['epoch_nums_type']}"
+    model_name += f"_en{hypa['epoch_num_type']}"
     model_name += f"_lr{hypa['learning_rate_type']}"
     model_name += f"_op{hypa['optimizer_type']}"
     model_name += f"_ds{hypa['datasets_type']}"
@@ -193,7 +193,7 @@ def hyper_train_transfer(
     en = []
     # en.extend(["01"])  # [20, 10]
     en.extend(["02"])  # [40, 20]
-    hypa_grid["epoch_nums_type"] = en
+    hypa_grid["epoch_num_type"] = en
 
     ###### the learning rates for the optimizer
     hypa_grid["learning_rate_type"] = ["01"]
@@ -264,10 +264,9 @@ def hyper_train_transfer(
 def train_model_tra_dry(hypa, use_validation: bool, trained_folder: Path) -> str:
     """TODO: what is train_model_tra_dry doing?"""
     model_name = build_transfer_name(hypa, use_validation)
-    # model_folder = Path("trained_models") / "transfer"
-    model_path = trained_folder / f"{model_name}.h5"
+    placeholder_path = trained_folder / f"{model_name}.txt"
 
-    if model_path.exists():
+    if placeholder_path.exists():
         return "already_trained"
 
     return "to_train"
@@ -310,9 +309,9 @@ def get_training_param_transfer(
     batch_sizes = batch_size_types[hypa["batch_size_type"]]
     training_param["batch_sizes"] = batch_sizes
 
-    epoch_nums_types = {"01": [20, 10], "02": [40, 20]}
-    epoch_nums = epoch_nums_types[hypa["epoch_nums_type"]]
-    training_param["epoch_nums"] = epoch_nums
+    epoch_num_types = {"01": [20, 10], "02": [40, 20]}
+    epoch_num = epoch_num_types[hypa["epoch_num_type"]]
+    training_param["epoch_num"] = epoch_num
 
     # translate from short key to long name
     learning_rate_types = {
@@ -477,7 +476,7 @@ def train_transfer(
     recap["use_validation"] = use_validation
     recap["model_name"] = model_name
     recap["batch_sizes"] = training_param["batch_sizes"]
-    recap["epoch_nums"] = training_param["epoch_nums"]
+    recap["epoch_num"] = training_param["epoch_num"]
     recap["version"] = "003"
 
     # logg.debug(f"recap: {recap}")
@@ -498,7 +497,7 @@ def train_transfer(
         x,
         y,
         validation_data=val_data,
-        epochs=training_param["epoch_nums"][0],
+        epochs=training_param["epoch_num"][0],
         batch_size=training_param["batch_sizes"][0],
         callbacks=training_param["callbacks"][0],
     )
@@ -548,7 +547,7 @@ def train_transfer(
         x,
         y,
         validation_data=val_data,
-        epochs=training_param["epoch_nums"][1],
+        epochs=training_param["epoch_num"][1],
         batch_size=training_param["batch_sizes"][1],
         callbacks=training_param["callbacks"][1],
     )

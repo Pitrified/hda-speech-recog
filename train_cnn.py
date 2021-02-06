@@ -238,8 +238,8 @@ def train_model_cnn_dry(hypa) -> str:
     model_folder = Path("trained_models") / "cnn"
 
     model_name = build_cnn_name(hypa)
-    model_path = model_folder / f"{model_name}.h5"
-    if model_path.exists():
+    placeholder_path = model_folder / f"{model_name}.txt"
+    if placeholder_path.exists():
         return "already_trained"
 
     # the model might have been trained before introducing lr and opt hypas
@@ -248,8 +248,8 @@ def train_model_cnn_dry(hypa) -> str:
         hypa["optimizer_type"] = "adam"
 
     model_name = build_cnn_name(hypa)
-    model_path = model_folder / f"{model_name}.h5"
-    if model_path.exists():
+    placeholder_path = model_folder / f"{model_name}.txt"
+    if placeholder_path.exists():
         return "already_trained"
 
     return "to_train"
@@ -274,8 +274,9 @@ def train_model(hypa, force_retrain):
     model_path = model_folder / f"{model_name}.h5"
     # logg.debug(f"model_path: {model_path}")
 
+    placeholder_path = model_folder / f"{model_name}.txt"
     # check if this model has already been trained
-    if model_path.exists():
+    if placeholder_path.exists():
         if force_retrain:
             logg.warn("\nRETRAINING MODEL!!\n")
         else:
@@ -485,6 +486,9 @@ def train_model(hypa, force_retrain):
     #     logg.debug(f"i: {i} pred_split: {pred_split} pred_dataset: {pred_dataset}")
 
     # plt.show()
+
+    placeholder_path.write_text(f"Trained. F-score: {fscore}")
+
     return "done_training"
 
 
