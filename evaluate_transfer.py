@@ -32,11 +32,7 @@ def parse_arguments() -> argparse.Namespace:
         "--evaluation_type",
         type=str,
         default="results",
-        choices=[
-            "results",
-            "audio",
-            "delete_bad_models",
-        ],
+        choices=["results", "audio", "delete_bad_models"],
         help="Which evaluation to perform",
     )
 
@@ -162,19 +158,27 @@ def evaluate_results_transfer(args: argparse.Namespace) -> None:
 
     results_df = build_tra_results_df()
 
+    # all the unique values of the hypa ever used
+    for col in results_df:
+        if col in ["model_name", "loss", "fscore", "recall", "precision", "cat_acc"]:
+            continue
+        logg.info(f"hypa_grid['{col}'] = {results_df[col].unique()}")
+
     df_f = results_df
     df_f = df_f.sort_values("fscore", ascending=False)
     logg.info("All results:")
     logg.info(f"{df_f.head(30)}")
     logg.info(f"{df_f.tail()}")
 
-    df_f = results_df
-    df_f = df_f.query("use_val == True")
-    df_f = df_f.query("words == 'f1'")
-    df_f = df_f.sort_values("fscore", ascending=False)
-    logg.info("Only with val on f1")
-    logg.info(f"{df_f.head(30)}")
-    logg.info(f"{df_f.tail()}")
+    # for words_type in ["f1", "k1", "all"]:
+    for words_type in results_df["words"].unique():
+        df_f = results_df
+        df_f = df_f.query("use_val == True")
+        df_f = df_f.query(f"words == '{words_type}'")
+        df_f = df_f.sort_values("fscore", ascending=False)
+        logg.info(f"\nOnly on {words_type}")
+        logg.info(f"{df_f.head(30)}")
+        logg.info(f"{df_f.tail()}")
 
 
 def delete_bad_models_transfer(args: argparse.Namespace) -> None:

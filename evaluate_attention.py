@@ -190,14 +190,13 @@ def evaluate_results_attention() -> None:
     logg.info(f"{df_f.tail()}")
 
     # filter the dataframe to find the best hypas
-    df_f = results_df
-    df_f = df_f.query("use_val == True")
-    df_f = df_f.query("words == 'k1'")
-    # df_f = df_f.query("query == '05'")
-    df_f = df_f.sort_values("fscore", ascending=False)
-    logg.info("Only with val on k1")
-    logg.info(f"{df_f.head(30)}")
-    logg.info(f"{df_f.tail()}")
+    for words_type in results_df["words"].unique():
+        df_f = results_df
+        df_f = df_f.query("use_val == True")
+        df_f = df_f.query(f"words == '{words_type}'")
+        df_f = df_f.sort_values("fscore", ascending=False)
+        logg.info(f"\nOnly on {words_type}")
+        logg.info(f"{df_f.head(30)}\n{df_f.tail()}")
 
     # produce a dict for recreating the training
     for index, row in df_f.iterrows():
@@ -224,8 +223,7 @@ def evaluate_results_attention() -> None:
     df_f = df_f.query("words == 'k1'")
     df_f = df_f[df_f["dataset"].isin(aug_list)]
     df_f = df_f.sort_values("fscore", ascending=False)
-    logg.info(f"{df_f.head(30)}")
-    logg.info(f"{df_f.tail()}")
+    logg.info(f"{df_f.head(30)}\n{df_f.tail()}")
 
 
 def evaluate_batch_epoch() -> None:
@@ -576,7 +574,7 @@ def delete_bad_models_att() -> None:
     deleted = 0
     recreated = 0
     bad_models = 0
-    good_models = 0
+    # good_models = 0
 
     for model_folder in info_folder.iterdir():
         # logg.debug(f"model_folder: {model_folder}")
@@ -592,9 +590,9 @@ def delete_bad_models_att() -> None:
         results_recap = json.loads(res_recap_path.read_text())
         # logg.debug(f"results_recap['cm']: {results_recap['cm']}")
 
-        recap_path = model_folder / "recap.json"
-        recap = json.loads(recap_path.read_text())
-        words = recap["words"]
+        # recap_path = model_folder / "recap.json"
+        # recap = json.loads(recap_path.read_text())
+        # words = recap["words"]
         # logg.debug(f"recap['words']: {recap['words']}")
 
         fscore = results_recap["fscore"]

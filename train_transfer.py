@@ -154,7 +154,8 @@ def hyper_train_transfer(
     ###### the architecture to train on
     arch = []
     # arch.append("TRA")  # Xception
-    arch.append("TD1")  # DenseNet121
+    # arch.append("TD1")  # DenseNet121
+    arch.append("TB0")  # EfficientNetB0
     # arch.append("TB4")  # EfficientNetB4
     # arch.append("TB7")  # EfficientNetB7
     hypa_grid["net_type"] = arch

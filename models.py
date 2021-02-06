@@ -182,6 +182,8 @@ def TRAmodel(num_labels, input_shape, net_type, dense_widths, dropout, data):
 
     if net_type == "TRA":
         pretrained_model = applications.Xception
+    elif net_type == "TB0":
+        pretrained_model = applications.EfficientNetB0
     elif net_type == "TB4":
         pretrained_model = applications.EfficientNetB4
     elif net_type == "TB7":
