@@ -33,10 +33,26 @@ The dataset ships with a function to split the data in train, validation and
 test folds, as well as two example lists of validation data ($9981$ utterances)
 and test data ($11005$ utterances).
 Throughout the experiments, those lists were used.
-% both for the practicality of having them ready, but also to keep with the
-% spirit of the dataset as a tool to enable meaningf
+% MAYBE both for the practicality of having them ready, but also to keep with
+% the spirit of the dataset as a tool to enable meaningf
 
-TODO: how the words are grouped
+% TODO: how the words are grouped, tell the keys
+
+Smaller tasks were used to evaluate the performance of the various
+architectures, and to perform the hyper-parameter search.
+Two 4 words task are composed by the words
+[\texttt{happy}, \texttt{learn}, \texttt{wow}, \texttt{visual}],
+[\texttt{backward}, \texttt{eight}, \texttt{go}, \texttt{yes}].
+A 6 words task contains the direction words:
+[\texttt{up}, \texttt{down}, \texttt{forward}, \texttt{backward},
+\texttt{left}, \texttt{right}]
+Two 10 words task contains the number utterances:
+[\texttt{zero}, \texttt{one}, \texttt{two}, \texttt{three}, \texttt{four},
+\texttt{five}, \texttt{six}, \texttt{seven}, \texttt{eight}, \texttt{nine}]
+and the words from a Kaggle competition aimed at solving this task:
+[\texttt{yes}, \texttt{no}, \texttt{up}, \texttt{down}, \texttt{left},
+\texttt{right}, \texttt{on}, \texttt{off}, \texttt{stop}, \texttt{go}]
+and a 20 words task is composed by the numbers and the Kaggle list.
 
 \subsection{Mel spectrogram and Mel-frequency Cepstral Coefficients}
 
@@ -68,7 +84,7 @@ timestep.
 
 \begin{figure}[t!]
     \centering
-    \includegraphics[width=0.8\linewidth]{mel10_filterbank.pdf}
+    \includegraphics[width=0.9\linewidth]{mel10_filterbank.pdf}
     \caption{An example of a 10 filters Mel filterbank}
     \label{fig:mel10_filterbank}
 \end{figure}
@@ -86,14 +102,31 @@ in \tab{tab:mfcc_values}.
 An example waveform for the word ``happy'' and the relative spectrograms are
 shown in \fig{fig:happy_specs}.
 
+% TODO: composing datasets, multichannel
+Some of the architecture used require a square image as input, with three color channels.
+To obtain them, some spectrogams were purposefully generated with parameters that created a square result,
+others, shaped like a half square, were concatenated.
+Three square spectrogams are then stacked depthwise to obtain a valid three channel image.
+The values used to compose the spectrogams are listed in \tab{tab:compose_values}.
+The values used to stack the spectrogams are listed in \tab{tab:ch3_values}.
+
+% TODO: show different datasets
+
 \begin{figure}[t!]
     \centering
-    \includegraphics[width=0.8\linewidth]{happy_specs.pdf}
+    \includegraphics[width=0.9\linewidth]{happy_specs.pdf}
     \caption{
     Waveform and spectrograms for the word happy. Note that the y axis of the
 spectrograms are labeled as Hz, but this is only to read more easily the plot
 and understand to which frequencies the important bins correspond to. }%
     \label{fig:happy_specs}
+\end{figure}
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{happy_mel01_mel04_mel06_melc1_specs.pdf}
+    \caption{Different spectrograms for the same word}%
+    \label{fig:happy_mel01_mel04_mel06_melc1_specs}
 \end{figure}
 
 \begin{table}[t!]
@@ -148,7 +181,39 @@ has the parameter \texttt{fmin}$=40$.}
     \end{tabular}
 \end{table}
 
-TODO: composing datasets, multichannel
+\begin{table}[t!]
+    \centering
+    \caption{Values used to compose the spectrogams}
+    \label{tab:compose_values}
+    \begin{tabular}{|c|cc|}
+        \hline
+        name & left spectrogam & right spectrogam \\
+        \hline
+        melc1 & mel06 & mel08 \\
+        melc2 & mel07 & mel12 \\
+        melc3 & mel13 & mel14 \\
+        melc4 & mel13 & mel15 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[t!]
+    \centering
+    \caption{Dataset stacked to obtain a 3-channel image}
+    \label{tab:ch3_values}
+    \begin{tabular}{|c|ccc|}
+        \hline
+        tag & spec1 & spec2 & spec3 \\
+        \hline
+        01 & mel05  & mel09  & mel10 \\
+        02 & mel05  & mel10  & mfcc07 \\
+        03 & mfcc06 & mfcc07 & mfcc08 \\
+        04 & mel05  & mfcc06 & melc1 \\
+        05 & melc1  & melc2  & melc4 \\
+        \hline
+    \end{tabular}
+\end{table}
+
 
 \subsection{Data augmentation}
 
@@ -185,7 +250,7 @@ Values used to augment the dataset are listed in \tab{tab:aug_values}.
 
 \begin{figure}[t!]
     \centering
-    \includegraphics[width=0.8\linewidth]{warp_grid.pdf}
+    \includegraphics[width=0.9\linewidth]{warp_grid.pdf}
     \caption{
     The effects of \texttt{sparse\_image\_warp} on an image, with
 \texttt{num\_landmarks} $=4$, \texttt{max\_warp\_time} $=2$ and
@@ -384,11 +449,17 @@ tuning steps five and six.
 \subsection{Model building and hyper-parameters}
 
 The inputs to the pre-trained Xception and EfficientNet models have to be
-normalized, which can be easily done with a Normalization layer provided by
-tensorflow.
-It is to note that the inputs should be of shape $\left( 299, 299, 3 \right)$,
-whereas the spectrograms used were of size $\left( 128, 128, 3 \right)$, so
-some loss of performance can be expected.
+square images with three channels.
+To appropriatley shape the input data, three square spectrograms were stacked
+along the depth dimension.
+On top of that, to obtain square inputs, two rectangular spectrograms were
+concatenated horizontally (e.g. two $\left( 128, 64 \right)$ spectrogams are
+composed into one $\left( 128, 128 \right)$), before being stacked.
+The inputs also need to be normalized, which can be easily done with a
+Normalization layer provided by tensorflow.
+It is to note that the inputs should be of higher resolution (e.g. $\left( 299,
+299, 3 \right)$ for Xception), whereas the spectrograms used were of size
+$\left( 128, 128, 3 \right)$, so some loss of performance can be expected.
 The classifier built is composed by a GlobalAveragePooling2D layer, which
 averages the values in each feature extracted, followed by some dense layers
 (according to the hyper-parameters selected) and finally a softmax layer to

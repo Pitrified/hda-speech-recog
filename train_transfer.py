@@ -164,9 +164,12 @@ def hyper_train_transfer(
     hypa_grid["datasets_type"] = ["01"]
 
     ###### the words to train on
-    hypa_grid["words_type"] = [words_type]
-    # hypa_grid["words_type"] = ["k1", "w2", "all"]
-    # hypa_grid["words_type"] = ["f2", "f1", "dir", "num"]
+    # wtl = []
+    wtl: ty.List[str] = []
+    # wtl.extend(["f2", "f1", "dir", "num"])
+    # wtl.extend(["k1", "w2", "all"])
+    wtl.extend([words_type])
+    hypa_grid["words_type"] = wtl
 
     ###### the dense width of the classifier
     dw = []
@@ -196,7 +199,11 @@ def hyper_train_transfer(
     hypa_grid["epoch_num_type"] = en
 
     ###### the learning rates for the optimizer
-    hypa_grid["learning_rate_type"] = ["01"]
+    lr = []
+    lr.extend(["01", "02"])  # fixed
+    lr.extend(["03"])  # exp_decay_step_01
+    lr.extend(["04"])  # exp_decay_smooth_01
+    hypa_grid["learning_rate_type"] = lr
 
     ###### which optimizer to use
     # hypa_grid["optimizer_type"] = ["a1", "r1"]

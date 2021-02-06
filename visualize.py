@@ -10,6 +10,7 @@ import numpy as np  # type: ignore
 from augment_data import warp_spectrograms
 from plot_utils import plot_spec
 from plot_utils import plot_waveform
+from utils import find_rowcol
 from utils import setup_logger
 from utils import words_types
 
@@ -156,6 +157,12 @@ def visualize_datasets():
         "melc4",
         "mela1",
     ]
+    datasets = [
+        "mel01",
+        "mel04",
+        "mel06",
+        "melc1",
+    ]
 
     words = words_types["f1"]
     a_word = words[0]
@@ -164,17 +171,26 @@ def visualize_datasets():
 
     processed_folder = Path("data_proc")
 
-    fig, axes = plt.subplots(4, 5, figsize=(12, 15))
-    fig.suptitle(f"{a_word}")
+    # fig, axes = plt.subplots(4, 5, figsize=(12, 15))
+    nrows, ncols = find_rowcol(len(datasets))
+    base_figsize = 5
+    figsize = (ncols * base_figsize * 1.5, nrows * base_figsize)
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
+
+    fig.suptitle(f"Various spectrograms for {a_word}", fontsize=20)
     for i, ax in enumerate(axes.flat[: len(datasets)]):
         dataset_name = datasets[i]
         processed_path = processed_folder / f"{dataset_name}"
         word_path = processed_path / f"{a_word}_validation.npy"
         word_data = np.load(word_path, allow_pickle=True)
         logg.debug(f"{dataset_name} word shape: {word_data[iw].shape}")
-        title = f"{dataset_name} shape {word_data[iw].shape}"
+        title = f"{dataset_name}: shape {word_data[iw].shape}"
         plot_spec(word_data[iw], ax, title=title)
     fig.tight_layout()
+
+    plot_folder = Path("plot_models")
+    dt_names = "_".join(datasets)
+    fig.savefig(plot_folder / f"{a_word}_{dt_names}_specs.pdf")
 
     # show different words
     # for dataset_name in datasets:
