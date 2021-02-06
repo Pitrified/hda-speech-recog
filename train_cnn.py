@@ -39,8 +39,8 @@ def parse_arguments():
         "-tt",
         "--training_type",
         type=str,
-        default="transfer",
-        choices=["smallCNN", "transfer", "attention"],
+        default="smallCNN",
+        choices=["smallCNN"],
         help="Which training to execute",
     )
 
@@ -235,7 +235,7 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
 
 def train_model_cnn_dry(hypa) -> str:
     """TODO: what is train_model_cnn_dry doing?"""
-    model_folder = Path("trained_models")
+    model_folder = Path("trained_models") / "cnn"
 
     model_name = build_cnn_name(hypa)
     model_path = model_folder / f"{model_name}.h5"
@@ -268,7 +268,7 @@ def train_model(hypa, force_retrain):
     logg.debug(f"model_name: {model_name}")
 
     # save the trained model here
-    model_folder = Path("trained_models")
+    model_folder = Path("trained_models") / "cnn"
     if not model_folder.exists():
         model_folder.mkdir(parents=True, exist_ok=True)
     model_path = model_folder / f"{model_name}.h5"

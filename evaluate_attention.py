@@ -119,7 +119,7 @@ def build_att_results_df() -> pd.DataFrame:
         "model_name": [],
     }
 
-    info_folder = Path("info")
+    info_folder = Path("info") / "attention"
 
     for model_folder in info_folder.iterdir():
         # logg.debug(f"model_folder: {model_folder}")
@@ -286,7 +286,7 @@ def evaluate_attention_weights(
     logg.debug(f"model_name: {model_name}")
 
     # load the model
-    model_folder = Path("trained_models")
+    model_folder = Path("trained_models") / "attention"
     model_path = model_folder / f"{model_name}.h5"
 
     # model = tf.keras.models.load_model(model_path)
@@ -521,7 +521,7 @@ def make_plots_clr() -> None:
     if not plot_fol.exists():
         plot_fol.mkdir(parents=True, exist_ok=True)
 
-    info_folder = Path("info")
+    info_folder = Path("info") / "attention"
 
     for model_folder in info_folder.iterdir():
         model_name = model_folder.name
@@ -570,8 +570,8 @@ def delete_bad_models_att() -> None:
     # logg.setLevel("INFO")
     logg.debug("Start delete_bad_models_att")
 
-    info_folder = Path("info")
-    trained_folder = Path("trained_models")
+    info_folder = Path("info") / "attention"
+    trained_folder = Path("trained_models") / "attention"
     f_tresh = 0.96
     deleted = 0
     recreated = 0

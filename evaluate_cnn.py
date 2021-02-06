@@ -90,7 +90,7 @@ def build_cnn_results_df() -> pd.DataFrame:
     logg.setLevel("INFO")
     logg.debug("Start build_cnn_results_df")
 
-    info_folder = Path("info")
+    info_folder = Path("info") / "cnn"
 
     pandito: ty.Dict[str, ty.List[str]] = {
         "dense_width": [],
@@ -413,7 +413,7 @@ def evaluate_model_cnn(args):
     model_name = build_cnn_name(hypa)
     logg.debug(f"model_name: {model_name}")
 
-    model_folder = Path("trained_models")
+    model_folder = Path("trained_models") / "cnn"
     model_path = model_folder / f"{model_name}.h5"
     if not model_path.exists():
         logg.error(f"Model not found at: {model_path}")
@@ -520,7 +520,7 @@ def evaluate_audio_cnn(args):
     model_name = build_cnn_name(hypa)
     logg.debug(f"model_name: {model_name}")
 
-    # model_folder = Path("trained_models")
+    # model_folder = Path("trained_models") / "cnn"
     model_folder = Path("saved_models")
     model_path = model_folder / f"{model_name}.h5"
     if not model_path.exists():
@@ -570,8 +570,8 @@ def delete_bad_models_cnn(args) -> None:
     # logg.setLevel("INFO")
     logg.debug("Start delete_bad_models_cnn")
 
-    info_folder = Path("info")
-    trained_folder = Path("trained_models")
+    info_folder = Path("info") / "cnn"
+    trained_folder = Path("trained_models") / "cnn"
     f_tresh = 0.87
     ca_tresh = 0.95
     deleted = 0

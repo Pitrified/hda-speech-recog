@@ -39,8 +39,8 @@ def parse_arguments():
         "-tt",
         "--training_type",
         type=str,
-        default="transfer",
-        choices=["smallCNN", "transfer", "attention"],
+        default="attention",
+        choices=["attention"],
         help="Which training to execute",
     )
 
@@ -79,10 +79,7 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "-dr",
-        "--dry_run",
-        action="store_true",
-        help="Do a dry run for the hypa grid",
+        "-dr", "--dry_run", action="store_true", help="Do a dry run for the hypa grid",
     )
 
     # last line to parse the args
@@ -304,7 +301,7 @@ def get_model_param_attention(
 
 def train_model_att_dry(hypa, use_validation: bool) -> str:
     """TODO: what is train_model_att_dry doing?"""
-    model_folder = Path("trained_models")
+    model_folder = Path("trained_models") / "attention"
 
     model_name = build_attention_name(hypa, use_validation)
     model_path = model_folder / f"{model_name}.h5"
@@ -328,7 +325,7 @@ def train_attention(
     logg.debug(f"model_name: {model_name}")
 
     # save the trained model here
-    model_folder = Path("trained_models")
+    model_folder = Path("trained_models") / "attention"
     if not model_folder.exists():
         model_folder.mkdir(parents=True, exist_ok=True)
     model_path = model_folder / f"{model_name}.h5"
@@ -419,9 +416,7 @@ def train_attention(
     opt = optimizer_types[hypa["optimizer_type"]]
 
     model.compile(
-        optimizer=opt,
-        loss=tf.keras.losses.CategoricalCrossentropy(),
-        metrics=metrics,
+        optimizer=opt, loss=tf.keras.losses.CategoricalCrossentropy(), metrics=metrics,
     )
 
     # setup callbacks
@@ -493,10 +488,7 @@ def train_attention(
     if learning_rate_type in ["01", "02", "03", "04"]:
         metric_to_monitor = "val_loss" if use_validation else "loss"
         early_stop = EarlyStopping(
-            monitor=metric_to_monitor,
-            patience=4,
-            restore_best_weights=True,
-            verbose=1,
+            monitor=metric_to_monitor, patience=4, restore_best_weights=True, verbose=1,
         )
         callbacks.append(early_stop)
 
@@ -634,9 +626,7 @@ def find_best_lr(hypa: ty.Dict[str, str]) -> None:
     ]
 
     model.compile(
-        optimizer=opt,
-        loss=tf.keras.losses.CategoricalCrossentropy(),
-        metrics=metrics,
+        optimizer=opt, loss=tf.keras.losses.CategoricalCrossentropy(), metrics=metrics,
     )
 
     # find the best values

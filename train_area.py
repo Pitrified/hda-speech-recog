@@ -140,7 +140,7 @@ def hyper_train_area(
     # hypa_grid["optimizer_type"] = ["a1", "r1"]
     hypa_grid["optimizer_type"] = ["a1"]
 
-    ###### the batch size (the key is converted to int)
+    ###### the batch size (the key is converted to int, use 04 to keep the names consistent)
     bs = []
     bs.extend(["32"])
     hypa_grid["batch_size_type"] = bs
@@ -160,15 +160,15 @@ def hyper_train_area(
     #   Setup pre train
     ##########################################################
 
-    model_tag = "area"
+    train_type_tag = "area"
 
     # where to save the trained models
-    trained_folder = Path("trained_models") / model_tag
+    trained_folder = Path("trained_models") / train_type_tag
     if not trained_folder.exists():
         trained_folder.mkdir(parents=True, exist_ok=True)
 
     # where to put the info folders
-    root_info_folder = Path("info") / model_tag
+    root_info_folder = Path("info") / train_type_tag
     if not root_info_folder.exists():
         root_info_folder.mkdir(parents=True, exist_ok=True)
 
@@ -309,7 +309,11 @@ def get_training_param_area(
 
 
 def train_area(
-    hypa, force_retrain, use_validation, trained_folder, root_info_folder
+    hypa: ty.Dict[str, str],
+    force_retrain: bool,
+    use_validation: bool,
+    trained_folder: Path,
+    root_info_folder: Path,
 ) -> None:
     """TODO: what is train_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.train_area")
