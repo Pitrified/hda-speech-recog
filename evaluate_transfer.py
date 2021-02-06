@@ -189,44 +189,70 @@ def delete_bad_models_transfer(args: argparse.Namespace) -> None:
 
     info_folder = Path("info") / "transfer"
     trained_folder = Path("trained_models") / "transfer"
-    f_tresh = 0.95
     deleted = 0
     recreated = 0
     bad_models = 0
+    good_models = 0
 
     for model_folder in info_folder.iterdir():
 
         model_name = model_folder.name
-        if not model_name.startswith("TRA"):
-            continue
+
+        model_name = model_folder.name
+        model_path = trained_folder / f"{model_name}.h5"
+        placeholder_path = trained_folder / f"{model_name}.txt"
 
         res_full_path = model_folder / "results_full_recap.json"
         if not res_full_path.exists():
             logg.info(f"Skipping res_full_path: {res_full_path}")
             continue
         res_full = json.loads(res_full_path.read_text())
+
+        recap_path = model_folder / "recap.json"
+        recap = json.loads(recap_path.read_text())
+
+        words_type = recap["hypa"]["words_type"]
         fscore = res_full["fscore"]
 
+        if words_type == "all":
+            f_tresh = 0.5
+        elif words_type == "f1":
+            f_tresh = 0.97
+        elif words_type == "f2":
+            f_tresh = 0.975
+        elif words_type == "dir":
+            f_tresh = 0.96
+        elif words_type == "num":
+            f_tresh = 0.95
+        elif words_type == "k1":
+            f_tresh = 0.94
+        else:
+            logg.warn(f"Not specified f_tresh for words_type: {words_type}")
+            f_tresh = 0.5
+
         if fscore < f_tresh:
-            model_path = trained_folder / f"{model_name}.h5"
             bad_models += 1
 
             if model_path.exists():
-                # check for file size, if it is big remove the model
-                if model_path.stat().st_size > 10:
-                    model_path.unlink()
-                    deleted += 1
-                    logg.debug(f"Deleting model_path: {model_path}")
-                    logg.debug(f"\tfscore: {fscore}")
-                    model_path.write_text("Deleted")
+                model_path.unlink()
+                deleted += 1
+                logg.debug(f"Deleting model_path: {model_path}")
+                logg.debug(f"\tfscore: {fscore}")
 
-            # you gone goofed and deleted a model
+            # check that a placeholder is there, you have info for this model
             else:
-                model_path.write_text("Deleted")
-                logg.debug(f"Recreating model_path: {model_path}")
-                recreated += 1
+                if not placeholder_path.exists():
+                    placeholder_path.write_text("Deleted")
+                    logg.debug(f"Recreating placeholder_path: {placeholder_path}")
+                    recreated += 1
 
-    logg.debug(f"bad_models: {bad_models}")
+        else:
+            logg.debug(f"Good model_path {model_path} {words_type}")
+            logg.debug(f"\tfscore: {fscore}")
+            good_models += 1
+
+    logg.info(f"bad_models: {bad_models}")
+    logg.info(f"good_models: {good_models}")
     logg.info(f"deleted: {deleted}")
     logg.info(f"recreated: {recreated}")
 

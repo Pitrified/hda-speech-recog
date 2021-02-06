@@ -582,17 +582,21 @@ def delete_bad_models_cnn(args) -> None:
         if not model_name.startswith("CNN"):
             continue
 
+        model_name = model_folder.name
+        model_path = trained_folder / f"{model_name}.h5"
+        placeholder_path = trained_folder / f"{model_name}.txt"
+
         res_recap_path = model_folder / "results_recap.json"
         if not res_recap_path.exists():
             continue
-
         results_recap = json.loads(res_recap_path.read_text())
-        # logg.debug(f"results_recap['cm']: {results_recap['cm']}")
 
         recap_path = model_folder / "recap.json"
         recap = json.loads(recap_path.read_text())
+
+        # load info
+        words_type = recap["hypa"]["words"]
         words = recap["words"]
-        # logg.debug(f"recap['words']: {recap['words']}")
 
         cm = np.array(results_recap["cm"])
         fscore = analyze_confusion(cm, words)
@@ -601,17 +605,33 @@ def delete_bad_models_cnn(args) -> None:
         categorical_accuracy = results_recap["categorical_accuracy"]
         # logg.debug(f"categorical_accuracy: {categorical_accuracy}")
 
-        if words == "all":
+        if words_type == "all":
             f_tresh = 0.89
             ca_tresh = 0.89
-        else:
+        elif words_type == "f1":
             f_tresh = 0.97
             ca_tresh = 0.97
+        elif words_type == "f2":
+            f_tresh = 0.97
+            ca_tresh = 0.97
+        elif words_type == "dir":
+            f_tresh = 0.96
+            ca_tresh = 0.96
+        elif words_type == "num":
+            f_tresh = 0.94
+            ca_tresh = 0.94
+        elif words_type == "k1":
+            f_tresh = 0.9
+            ca_tresh = 0.9
+        elif words_type == "w2":
+            f_tresh = 0.85
+            ca_tresh = 0.85
+        else:
+            logg.warn(f"Not specified f_tresh for words_type: {words_type}")
+            f_tresh = 0.8
+            ca_tresh = 0.8
 
         if fscore < f_tresh and categorical_accuracy < ca_tresh:
-            model_name = model_folder.name
-            model_path = trained_folder / f"{model_name}.h5"
-            placeholder_path = trained_folder / f"{model_name}.txt"
             bad_models += 1
 
             if model_path.exists():
@@ -621,13 +641,17 @@ def delete_bad_models_cnn(args) -> None:
                 logg.debug(f"\tfscore: {fscore}")
                 logg.debug(f"\tcategorical_accuracy: {categorical_accuracy}")
 
-            # you gone goofed and deleted a placeholder you have info of, recreate it
+            # check that a placeholder is there, you have info for this model
             else:
                 if not placeholder_path.exists():
                     placeholder_path.write_text("Deleted")
-                    logg.debug(f"Recreating model_path: {model_path}")
+                    logg.debug(f"Recreating placeholder_path: {placeholder_path}")
                     recreated += 1
+
         else:
+            logg.debug(f"Good model_path {model_path} {words_type}")
+            logg.debug(f"\tfscore: {fscore}")
+            logg.debug(f"\tcategorical_accuracy: {categorical_accuracy}")
             good_models += 1
 
     logg.debug(f"bad_models: {bad_models}")
