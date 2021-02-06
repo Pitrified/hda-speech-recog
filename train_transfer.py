@@ -1,3 +1,4 @@
+from functools import partial
 from multiprocessing import Pool
 from pathlib import Path
 from sklearn.model_selection import ParameterGrid  # type: ignore
@@ -11,6 +12,7 @@ import typing as ty
 
 # from tensorflow.keras.callbacks import ModelCheckpoint  # type: ignore
 from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
+from tensorflow.keras.callbacks import LearningRateScheduler  # type: ignore
 from tensorflow.keras.optimizers import Adam  # type: ignore
 from tensorflow.keras.optimizers import RMSprop  # type: ignore
 
@@ -19,6 +21,8 @@ from plot_utils import plot_confusion_matrix
 from preprocess_data import compose_spec
 from preprocess_data import load_triple
 from preprocess_data import preprocess_spec
+from schedules import exp_decay_smooth
+from schedules import exp_decay_step
 from utils import analyze_confusion
 from utils import pred_hot_2_cm
 from utils import setup_gpus
@@ -35,7 +39,7 @@ def parse_arguments():
         "--training_type",
         type=str,
         default="transfer",
-        choices=["smallCNN", "transfer", "attention"],
+        choices=["transfer"],
         help="Which training to execute",
     )
 
@@ -74,10 +78,7 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "-dr",
-        "--dry_run",
-        action="store_true",
-        help="Do a dry run for the hypa grid",
+        "-dr", "--dry_run", action="store_true", help="Do a dry run for the hypa grid",
     )
 
     # last line to parse the args
@@ -106,11 +107,12 @@ def build_transfer_name(hypa: ty.Dict[str, str], use_validation: bool) -> str:
     """TODO: what is build_transfer_name doing?"""
 
     # model_name = "TB4"
-    model_name = "TB7"
+    # model_name = "TB7"
+    model_name = hypa["net_type"]
     model_name += f"_dw{hypa['dense_width_type']}"
     model_name += f"_dr{hypa['dropout_type']}"
     model_name += f"_bs{hypa['batch_size_type']}"
-    model_name += f"_en{hypa['epoch_num_type']}"
+    model_name += f"_en{hypa['epoch_nums_type']}"
     model_name += f"_lr{hypa['learning_rate_type']}"
     model_name += f"_op{hypa['optimizer_type']}"
     model_name += f"_ds{hypa['datasets_type']}"
@@ -141,54 +143,97 @@ def hyper_train_transfer(
     # logg.setLevel("INFO")
     logg.debug("Start hyper_train_transfer")
 
+    ##########################################################
+    #   Hyper-parameters grid
+    ##########################################################
+
     hypa_grid: ty.Dict[str, ty.List[str]] = {}
 
     # TODO test again dense_width_type 1234 on f1
 
-    # hypa_grid["dense_width_type"] = ["01", "02", "03", "04"]
-    # hypa_grid["dense_width_type"] = ["01", "02"]
-    hypa_grid["dense_width_type"] = ["03"]
-    # hypa_grid["dense_width_type"] = ["02"]
+    ###### the architecture to train on
+    arch = []
+    # arch.append("TRA")  # Xception
+    arch.append("TD1")  # DenseNet121
+    # arch.append("TB4")  # EfficientNetB4
+    # arch.append("TB7")  # EfficientNetB7
+    hypa_grid["net_type"] = arch
 
-    # hypa_grid["dropout_type"] = ["01", "03"]
-    hypa_grid["dropout_type"] = ["01"]
-
-    # hypa_grid["batch_size_type"] = ["01", "02"]
-    # hypa_grid["batch_size_type"] = ["01"]
-    hypa_grid["batch_size_type"] = ["02"]
-
-    # hypa_grid["epoch_num_type"] = ["01", "02"]
-    # hypa_grid["epoch_num_type"] = ["01"]
-    hypa_grid["epoch_num_type"] = ["02"]
-
-    hypa_grid["learning_rate_type"] = ["01"]
-
-    # hypa_grid["optimizer_type"] = ["a1", "r1"]
-    hypa_grid["optimizer_type"] = ["a1"]
-
+    ###### the dataset to train on
     # hypa_grid["datasets_type"] = ["01", "02", "03", "04", "05"]
     hypa_grid["datasets_type"] = ["01"]
 
-    # hypa_grid["words_type"] = [words_type]
-    # hypa_grid["words_type"] = [words_type]
-    # hypa_grid["words_type"] = ["f2", "f1", "dir", "num", "k1", "w2", "all"]
+    ###### the words to train on
+    hypa_grid["words_type"] = [words_type]
+    # hypa_grid["words_type"] = ["k1", "w2", "all"]
     # hypa_grid["words_type"] = ["f2", "f1", "dir", "num"]
-    hypa_grid["words_type"] = ["f1"]
-    the_grid = list(ParameterGrid(hypa_grid))
 
+    ###### the dense width of the classifier
+    dw = []
+    # dw.extend(["01"])  # [4, 0]
+    # dw.extend(["02"])  # [16, 16]
+    dw.extend(["03"])  # [0, 0]
+    # dw.extend(["04"])  # [64, 64]
+    hypa_grid["dense_width_type"] = dw
+
+    ###### the dropout to use
+    dr = []
+    dr.extend(["01"])  # 0.2
+    # dr.extend(["02"])  # 0.1
+    # dr.extend(["03"])  # 0
+    hypa_grid["dropout_type"] = dr
+
+    ###### the batch sizes to use
+    bs = []
+    # bs.extend(["01"])  # [32, 32]
+    bs.extend(["02"])  # [16, 16]
+    hypa_grid["batch_size_type"] = bs
+
+    ###### the number of epochs
+    en = []
+    # en.extend(["01"])  # [20, 10]
+    en.extend(["02"])  # [40, 20]
+    hypa_grid["epoch_nums_type"] = en
+
+    ###### the learning rates for the optimizer
+    hypa_grid["learning_rate_type"] = ["01"]
+
+    ###### which optimizer to use
+    # hypa_grid["optimizer_type"] = ["a1", "r1"]
+    hypa_grid["optimizer_type"] = ["a1"]
+
+    ###### build the combinations
     logg.debug(f"hypa_grid: {hypa_grid}")
-
+    the_grid = list(ParameterGrid(hypa_grid))
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
 
+    ##########################################################
+    #   Setup pre train
+    ##########################################################
+
+    train_type_tag = "transfer"
+
+    # where to save the trained models
+    trained_folder = Path("trained_models") / train_type_tag
+    if not trained_folder.exists():
+        trained_folder.mkdir(parents=True, exist_ok=True)
+
+    # where to put the info folders
+    root_info_folder = Path("info") / train_type_tag
+    if not root_info_folder.exists():
+        root_info_folder.mkdir(parents=True, exist_ok=True)
+
+    # count how many models are left to train
     if dry_run:
         tra_info = {"already_trained": 0, "to_train": 0}
         for hypa in the_grid:
-            train_status = train_model_tra_dry(hypa, use_validation)
+            train_status = train_model_tra_dry(hypa, use_validation, trained_folder)
             tra_info[train_status] += 1
         logg.debug(f"tra_info: {tra_info}")
         return
 
+    # check that the data is available
     # for each type of dataset that will be used
     datasets_types = get_datasets_types()
     for dt in hypa_grid["datasets_type"]:
@@ -203,17 +248,24 @@ def hyper_train_transfer(
                 else:
                     preprocess_spec(dn, wt)
 
+    ##########################################################
+    #   Train all hypas
+    ##########################################################
+
     for i, hypa in enumerate(the_grid):
         logg.debug(f"\nSTARTING {i+1}/{num_hypa} with hypa: {hypa}")
         with Pool(1) as p:
-            p.apply(train_transfer, (hypa, force_retrain, use_validation))
+            p.apply(
+                train_transfer,
+                (hypa, force_retrain, use_validation, trained_folder, root_info_folder),
+            )
 
 
-def train_model_tra_dry(hypa, use_validation: bool) -> str:
+def train_model_tra_dry(hypa, use_validation: bool, trained_folder: Path) -> str:
     """TODO: what is train_model_tra_dry doing?"""
     model_name = build_transfer_name(hypa, use_validation)
-    model_folder = Path("trained_models")
-    model_path = model_folder / f"{model_name}.h5"
+    # model_folder = Path("trained_models") / "transfer"
+    model_path = trained_folder / f"{model_name}.h5"
 
     if model_path.exists():
         return "already_trained"
@@ -221,8 +273,119 @@ def train_model_tra_dry(hypa, use_validation: bool) -> str:
     return "to_train"
 
 
+def get_model_param_transfer(
+    hypa: ty.Dict[str, str], num_labels: int, input_shape: ty.Tuple[int, int, int]
+) -> ty.Dict[str, ty.Any]:
+    """TODO: what is get_model_param_transfer doing?"""
+    logg = logging.getLogger(f"c.{__name__}.get_model_param_transfer")
+    # logg.setLevel("INFO")
+    logg.debug("Start get_model_param_transfer")
+
+    model_param: ty.Dict[str, ty.Any] = {}
+    model_param["num_labels"] = num_labels
+    model_param["input_shape"] = input_shape
+
+    model_param["net_type"] = hypa["net_type"]
+
+    dense_width_types = {"01": [4, 0], "02": [16, 16], "03": [0, 0], "04": [64, 64]}
+    model_param["dense_widths"] = dense_width_types[hypa["dense_width_type"]]
+
+    dropout_types = {"01": 0.2, "02": 0.1, "03": 0}
+    model_param["dropout"] = dropout_types[hypa["dropout_type"]]
+
+    return model_param
+
+
+def get_training_param_transfer(
+    hypa: ty.Dict[str, str], use_validation: bool
+) -> ty.Dict[str, ty.Any]:
+    """TODO: what is get_training_param_transfer doing?"""
+    logg = logging.getLogger(f"c.{__name__}.get_training_param_transfer")
+    # logg.setLevel("INFO")
+    logg.debug("Start get_training_param_transfer")
+
+    training_param: ty.Dict[str, ty.Any] = {}
+
+    batch_size_types = {"01": [32, 32], "02": [16, 16]}
+    batch_sizes = batch_size_types[hypa["batch_size_type"]]
+    training_param["batch_sizes"] = batch_sizes
+
+    epoch_nums_types = {"01": [20, 10], "02": [40, 20]}
+    epoch_nums = epoch_nums_types[hypa["epoch_nums_type"]]
+    training_param["epoch_nums"] = epoch_nums
+
+    # translate from short key to long name
+    learning_rate_types = {
+        "01": "fixed01",
+        "02": "fixed02",
+        "03": "exp_decay_step_01",
+        "04": "exp_decay_smooth_01",
+    }
+    learning_rate_type = hypa["learning_rate_type"]
+    lr_name = learning_rate_types[learning_rate_type]
+    training_param["lr_name"] = lr_name
+
+    if lr_name.startswith("fixed"):
+        if lr_name == "fixed01":
+            lr = [1e-3, 1e-5]
+        elif lr_name == "fixed02":
+            lr = [5e-4, 5e-6]
+    else:
+        lr = [1e-3, 1e-5]
+
+    optimizer_types = {
+        "a1": [Adam(learning_rate=lr[0]), Adam(learning_rate=lr[1])],
+        "r1": [RMSprop(learning_rate=lr[0]), RMSprop(learning_rate=lr[1])],
+    }
+    training_param["opt"] = optimizer_types[hypa["optimizer_type"]]
+
+    ###### setup callbacks
+    callbacks: ty.List[ty.List[tf.keras.callbacks]] = [[], []]
+
+    if lr_name.startswith("exp_decay"):
+        if lr_name == "exp_decay_step_01":
+            exp_decay_part_frozen = partial(exp_decay_step, epochs_drop=5)
+            exp_decay_part_fine = partial(
+                exp_decay_step, epochs_drop=5, initial_lrate=1e-5, min_lrate=1e-6
+            )
+        elif lr_name == "exp_decay_smooth_01":
+            exp_decay_part_frozen = partial(exp_decay_smooth, epochs_drop=5)
+            exp_decay_part_fine = partial(
+                exp_decay_smooth, epochs_drop=5, initial_lrate=1e-5, min_lrate=1e-6
+            )
+        lrate = LearningRateScheduler(exp_decay_part_frozen)
+        callbacks.append(lrate)
+        lrate = LearningRateScheduler(exp_decay_part_fine)
+        callbacks.append(lrate)
+
+    # add early stop to learning_rate_types where it makes sense
+    if lr_name.startswith("fixed") or lr_name.startswith("exp_decay"):
+        metric_to_monitor = "val_loss" if use_validation else "loss"
+        early_stop = EarlyStopping(
+            monitor=metric_to_monitor, patience=6, restore_best_weights=True, verbose=1
+        )
+        callbacks[0].append(early_stop)
+        callbacks[1].append(early_stop)
+
+    training_param["callbacks"] = callbacks
+
+    ###### a few metrics to track
+    metrics = [
+        tf.keras.metrics.CategoricalAccuracy(),
+        tf.keras.metrics.Precision(),
+        tf.keras.metrics.Recall(),
+    ]
+    training_param["metrics"] = [metrics, metrics]
+
+    return training_param
+
+
 def train_transfer(
-    hypa: ty.Dict[str, str], force_retrain: bool, use_validation: bool
+    hypa: ty.Dict[str, str],
+    force_retrain: bool,
+    use_validation: bool,
+    trained_folder: Path,
+    root_info_folder: Path,
 ) -> None:
     """TODO: what is train_transfer doing?
 
@@ -232,27 +395,37 @@ def train_transfer(
     # logg.setLevel("INFO")
     logg.debug("Start train_transfer")
 
+    ##########################################################
+    #   Setup folders
+    ##########################################################
+
     # name the model
     model_name = build_transfer_name(hypa, use_validation)
     logg.debug(f"model_name: {model_name}")
 
     # save the trained model here
-    model_folder = Path("trained_models")
-    if not model_folder.exists():
-        model_folder.mkdir(parents=True, exist_ok=True)
-    model_path = model_folder / f"{model_name}.h5"
-    # logg.debug(f"model_path: {model_path}")
+    model_path = trained_folder / f"{model_name}.h5"
+    placeholder_path = trained_folder / f"{model_name}.txt"
 
     # check if this model has already been trained
-    if model_path.exists():
+    if placeholder_path.exists():
         if force_retrain:
             logg.warn("\nRETRAINING MODEL!!\n")
         else:
             logg.debug("Already trained")
             return
 
+    # save info regarding the model training in this folder
+    model_info_folder = root_info_folder / model_name
+    if not model_info_folder.exists():
+        model_info_folder.mkdir(parents=True, exist_ok=True)
+
     # magic to fix the GPUs
     setup_gpus()
+
+    ##########################################################
+    #   Load data
+    ##########################################################
 
     # get the word list
     words = words_types[hypa["words_type"]]
@@ -267,44 +440,34 @@ def train_transfer(
     data_paths = [processed_folder / f"{dn}" for dn in dataset_names]
     data, labels = load_triple(data_paths, words)
 
+    # concatenate train and val for final train
     val_data = None
     if use_validation:
         x = data["training"]
         y = labels["training"]
         val_data = (data["validation"], labels["validation"])
         logg.debug("Using validation data")
-        # logg.debug(f"val_data[0].shape: {val_data[0].shape}")
     else:
-        logg.debug("NOT using validation data")
-        # logg.debug(f"data['training'].shape: {data['training'].shape}")
-        # logg.debug(f"data['validation'].shape: {data['validation'].shape}")
-        # logg.debug(f"labels['training'].shape: {labels['training'].shape}")
-        # logg.debug(f"labels['validation'].shape: {labels['validation'].shape}")
         x = np.concatenate((data["training"], data["validation"]))
         y = np.concatenate((labels["training"], labels["validation"]))
-        # logg.debug(f"x.shape: {x.shape}")
-        # logg.debug(f"y.shape: {y.shape}")
+        logg.debug("NOT using validation data")
 
-    model_param: ty.Dict[str, ty.Union[ty.List[int], int, float]] = {}
-    model_param["num_labels"] = num_labels
-    model_param["input_shape"] = data["training"][0].shape
+    ##########################################################
+    #   Setup model
+    ##########################################################
 
-    dense_width_types = {"01": [4, 0], "02": [16, 16], "03": [0, 0], "04": [64, 64]}
-    model_param["dense_widths"] = dense_width_types[hypa["dense_width_type"]]
+    # the shape of each sample
+    input_shape = data["training"][0].shape
 
-    dropout_types = {"01": 0.2, "02": 0.1, "03": 0}
-    model_param["dropout"] = dropout_types[hypa["dropout_type"]]
+    # from hypa extract model param
+    model_param = get_model_param_transfer(hypa, num_labels, input_shape)
 
-    batch_size_types = {"01": [32, 32], "02": [16, 16]}
-    batch_sizes = batch_size_types[hypa["batch_size_type"]]
+    # get the model
+    model, base_model = TRAmodel(data=data, **model_param)
+    model.summary()
 
-    epoch_num_types = {"01": [20, 10], "02": [40, 20]}
-    epoch_nums = epoch_num_types[hypa["epoch_num_type"]]
-
-    # save info regarding the model training in this folder
-    info_folder = Path("info") / model_name
-    if not info_folder.exists():
-        info_folder.mkdir(parents=True, exist_ok=True)
+    # from hypa extract training param (epochs, batch, opt, ...)
+    training_param = get_training_param_transfer(hypa, use_validation)
 
     # a dict to recreate this training
     recap: ty.Dict[str, ty.Any] = {}
@@ -313,61 +476,43 @@ def train_transfer(
     recap["model_param"] = model_param
     recap["use_validation"] = use_validation
     recap["model_name"] = model_name
-    recap["version"] = "002"
+    recap["batch_sizes"] = training_param["batch_sizes"]
+    recap["epoch_nums"] = training_param["epoch_nums"]
+    recap["version"] = "003"
+
     # logg.debug(f"recap: {recap}")
-    recap_path = info_folder / "recap.json"
+    recap_path = model_info_folder / "recap.json"
     recap_path.write_text(json.dumps(recap, indent=4))
 
-    # get the model
-    model, base_model = TRAmodel(data=data, **model_param)
-    model.summary()
-
-    metrics = [
-        tf.keras.metrics.CategoricalAccuracy(),
-        tf.keras.metrics.Precision(),
-        tf.keras.metrics.Recall(),
-    ]
-
-    learning_rate_types = {"01": [1e-3, 1e-5]}
-    lr = learning_rate_types[hypa["learning_rate_type"]]
-
-    optimizer_types = {
-        "a1": [Adam(learning_rate=lr[0]), Adam(learning_rate=lr[1])],
-        "r1": [RMSprop(learning_rate=lr[0]), RMSprop(learning_rate=lr[1])],
-    }
-    opt = optimizer_types[hypa["optimizer_type"]]
+    ##########################################################
+    #   Compile and fit model the first time
+    ##########################################################
 
     model.compile(
-        optimizer=opt[0],
+        optimizer=training_param["opt"][0],
         loss=tf.keras.losses.CategoricalCrossentropy(),
-        metrics=metrics,
+        metrics=training_param["metrics"][0],
     )
-
-    # setup callbacks
-    callbacks = []
-
-    metric_to_monitor = "val_loss" if use_validation else "loss"
-    early_stop = EarlyStopping(
-        monitor=metric_to_monitor,
-        # patience=4,
-        patience=6,
-        restore_best_weights=True,
-        verbose=1,
-    )
-    callbacks.append(early_stop)
 
     results_freeze = model.fit(
         x,
         y,
         validation_data=val_data,
-        epochs=epoch_nums[0],
-        batch_size=batch_sizes[0],
-        callbacks=[early_stop],
+        epochs=training_param["epoch_nums"][0],
+        batch_size=training_param["batch_sizes"][0],
+        callbacks=training_param["callbacks"][0],
     )
 
+    ##########################################################
+    #   Save results, history, performance
+    ##########################################################
+
+    # results_freeze_recap
     results_freeze_recap: ty.Dict[str, ty.Any] = {}
     results_freeze_recap["model_name"] = model_name
     results_freeze_recap["results_recap_version"] = "001"
+
+    # save the histories
     results_freeze_recap["history_train"] = {
         mn: results_freeze.history[mn] for mn in model.metrics_names
     }
@@ -378,8 +523,12 @@ def train_transfer(
         }
 
     # save the results
-    res_recap_path = info_folder / "results_freeze_recap.json"
+    res_recap_path = model_info_folder / "results_freeze_recap.json"
     res_recap_path.write_text(json.dumps(results_freeze_recap, indent=4))
+
+    ##########################################################
+    #   Compile and fit model the second time
+    ##########################################################
 
     # Unfreeze the base_model. Note that it keeps running in inference mode
     # since we passed `training=False` when calling it. This means that
@@ -390,24 +539,29 @@ def train_transfer(
     model.summary()
 
     model.compile(
-        optimizer=opt[1],  # Low learning rate
+        optimizer=training_param["opt"][1],  # Low learning rate
         loss=tf.keras.losses.CategoricalCrossentropy(),
-        metrics=metrics,
+        metrics=training_param["metrics"][1],
     )
 
     results_full = model.fit(
         x,
         y,
         validation_data=val_data,
-        epochs=epoch_nums[1],
-        batch_size=batch_sizes[1],
-        callbacks=[early_stop],
+        epochs=training_param["epoch_nums"][1],
+        batch_size=training_param["batch_sizes"][1],
+        callbacks=training_param["callbacks"][1],
     )
+
+    ##########################################################
+    #   Save results, history, performance
+    ##########################################################
 
     results_full_recap: ty.Dict[str, ty.Any] = {}
     results_full_recap["model_name"] = model_name
     results_full_recap["results_recap_version"] = "001"
 
+    # evaluate performance
     eval_testing = model.evaluate(data["testing"], labels["testing"])
     for metrics_name, value in zip(model.metrics_names, eval_testing):
         logg.debug(f"{metrics_name}: {value}")
@@ -416,7 +570,6 @@ def train_transfer(
     # compute the confusion matrix
     y_pred = model.predict(data["testing"])
     cm = pred_hot_2_cm(labels["testing"], y_pred, words)
-    # logg.debug(f"cm: {cm}")
     results_full_recap["cm"] = cm.tolist()
 
     # compute the fscore
@@ -427,10 +580,11 @@ def train_transfer(
     # plot the cm
     fig, ax = plt.subplots(figsize=(12, 12))
     plot_confusion_matrix(cm, ax, model_name, words, fscore)
-    plot_cm_path = info_folder / "test_confusion_matrix.png"
+    plot_cm_path = model_info_folder / "test_confusion_matrix.png"
     fig.savefig(plot_cm_path)
     plt.close(fig)
 
+    # save the histories
     results_full_recap["history_train"] = {
         mn: results_full.history[mn] for mn in model.metrics_names
     }
@@ -440,11 +594,14 @@ def train_transfer(
         }
 
     # save the results
-    res_recap_path = info_folder / "results_full_recap.json"
+    res_recap_path = model_info_folder / "results_full_recap.json"
     res_recap_path.write_text(json.dumps(results_full_recap, indent=4))
 
     # save the trained model
     model.save(model_path)
+
+    # save the placeholder
+    placeholder_path.write_text(f"Trained. F-score: {fscore}")
 
 
 def run_train_transfer(args: argparse.Namespace) -> None:

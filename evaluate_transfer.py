@@ -106,7 +106,7 @@ def build_tra_results_df() -> pd.DataFrame:
         "fscore": [],
         "model_name": [],
     }
-    info_folder = Path("info")
+    info_folder = Path("info") / "transfer"
 
     for model_folder in info_folder.iterdir():
         # logg.debug(f"model_folder: {model_folder}")
@@ -185,8 +185,8 @@ def delete_bad_models_transfer(args: argparse.Namespace) -> None:
     logg.setLevel("INFO")
     logg.debug("Start delete_bad_models_transfer")
 
-    info_folder = Path("info")
-    trained_folder = Path("trained_models")
+    info_folder = Path("info") / "transfer"
+    trained_folder = Path("trained_models") / "transfer"
     f_tresh = 0.95
     deleted = 0
     recreated = 0
@@ -325,7 +325,7 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
     model_name = build_transfer_name(hypa, use_validation)
 
     # load the model
-    # model_folder = Path("trained_models")
+    # model_folder = Path("trained_models") / "transfer"
     model_folder = Path("saved_models")
     model_path = model_folder / f"{model_name}.h5"
     model = tf.keras.models.load_model(model_path)

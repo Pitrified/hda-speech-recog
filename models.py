@@ -177,20 +177,21 @@ def AttentionModel(
     return model
 
 
-def TRAmodel(num_labels, input_shape, dense_widths, dropout, data):
+def TRAmodel(num_labels, input_shape, net_type, dense_widths, dropout, data):
     """"""
+
+    if net_type == "TRA":
+        pretrained_model = applications.Xception
+    elif net_type == "TB4":
+        pretrained_model = applications.EfficientNetB4
+    elif net_type == "TB7":
+        pretrained_model = applications.EfficientNetB7
+    elif net_type == "TD1":
+        pretrained_model = applications.DenseNet121
 
     # load weights pre-trained on ImageNet
     # do not include the ImageNet classifier at the top
-    # base_model = applications.Xception(
-    #     weights="imagenet",
-    #     input_shape=input_shape,
-    #     include_top=False,
-    # )
-    # base_model = models.load_model("/home/pietro/.keras/models/efficientnetb4_notop.h5")
-    # base_model = # .keras/models/efficientnetb4_notop.h5
-    # base_model = applications.EfficientNetB4(
-    base_model = applications.EfficientNetB7(
+    base_model = pretrained_model(
         weights="imagenet",
         input_shape=input_shape,
         include_top=False,

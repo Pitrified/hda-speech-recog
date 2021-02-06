@@ -29,7 +29,7 @@ def parse_arguments():
         type=str,
         default="preprocess_spec",
         choices=["preprocess_spec", "compose_spec"],
-        help="Which evaluation to perform",
+        help="Which preprocess to perform",
     )
 
     parser.add_argument(

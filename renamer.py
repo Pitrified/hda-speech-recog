@@ -318,6 +318,23 @@ def recompute_fscore_cnn() -> None:
         plt.close(fig)
 
 
+def create_placeholders() -> None:
+    """TODO: what is create_placeholders doing?"""
+    logg = logging.getLogger(f"c.{__name__}.create_placeholders")
+    # logg.setLevel("INFO")
+    logg.debug("Start create_placeholders")
+
+    train_type_tag = "cnn"
+    trained_folder = Path("trained_models") / train_type_tag
+
+    for model_path in trained_folder.iterdir():
+        model_name = model_path.stem
+        placeholder_path = trained_folder / f"{model_name}.txt"
+        if not placeholder_path.exists():
+            logg.debug(f"Creating placeholder_path: {placeholder_path}")
+            placeholder_path.write_text("Trained.")
+
+
 def run_renamer(args: argparse.Namespace) -> None:
     """TODO: What is renamer doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_renamer")
@@ -329,6 +346,8 @@ def run_renamer(args: argparse.Namespace) -> None:
         rename_att_v1_to_v2()
     elif rename_type == "recompute_fscore_cnn":
         recompute_fscore_cnn()
+    elif rename_type == "create_placeholders":
+        create_placeholders()
 
 
 if __name__ == "__main__":
