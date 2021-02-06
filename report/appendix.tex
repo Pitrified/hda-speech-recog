@@ -1,0 +1,120 @@
+\section{Appendix}
+\label{sec:appendix}
+
+% \begin{table}[h!]
+\begin{table}[H]
+    \centering
+    \caption{
+    Values used to generate the mel spectrograms. The dataset ``mela1'' also
+has the parameter \texttt{fmin}$=40$.}
+    \label{tab:mel_values}
+    \begin{tabular}{|c|cccc|}
+        \hline
+        % name & \texttt{n\_mel} & \texttt{n\_fft} & \texttt{hop\_length} & shape \\
+        name & n\_mel & n\_fft & hop\_length & shape \\
+        \hline
+        mel01 & 128 & 2048 & 512   & (128, 32) \\
+        mel02 & 64  & 4096 & 1024  & (64, 16) \\
+        mel03 & 64  & 2048 & 512   & (64, 32) \\
+        mel04 & 64  & 1024 & 256   & (64, 64) \\
+        mel05 & 128 & 1024 & 128   & (128, 128) \\
+        mel06 & 128 & 1024 & 256   & (128, 64) \\
+        mel07 & 128 & 2048 & 256   & (128, 64) \\
+        mel08 & 128 & 512  & 256   & (128, 64) \\
+        mel09 & 128 & 512  & 128   & (128, 128) \\
+        mel10 & 128 & 2048 & 128   & (128, 128) \\
+        mel11 & 128 & 256  & 128   & (128, 128) \\
+        mel12 & 128 & 4096 & 256   & (128, 64) \\
+        mel13 & 128 & 512  & 256   & (128, 64) \\
+        mel14 & 128 & 256  & 256   & (128, 64) \\
+        mel15 & 128 & 3072 & 256   & (128, 64) \\
+        mela1 & 80  & 1024 & 128   & (80, 128) \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \caption{Values used to generate the MFCC spectrograms}
+    \label{tab:mfcc_values}
+    \begin{tabular}{|c|cccc|}
+        \hline
+        % name & \texttt{n\_mfcc} & \texttt{n\_fft} & \texttt{hop\_length} & shape \\
+        name & n\_mfcc & n\_fft & hop\_length & shape \\
+        \hline
+        mfcc01 & 20  & 2048 & 512  & (20, 32) \\
+        mfcc02 & 40  & 2048 & 512  & (40, 32) \\
+        mfcc03 & 40  & 2048 & 256  & (40, 64) \\
+        mfcc04 & 80  & 1024 & 128  & (80, 128) \\
+        mfcc05 & 10  & 4096 & 1024 & (10, 16) \\
+        mfcc06 & 128 & 1024 & 128  & (128, 128) \\
+        mfcc07 & 128 & 512  & 128  & (128, 128) \\
+        mfcc08 & 128 & 2048 & 128  & (128, 128) \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \caption{Values used to compose the spectrogams}
+    \label{tab:compose_values}
+    \begin{tabular}{|c|cc|}
+        \hline
+        name & left spectrogam & right spectrogam \\
+        \hline
+        melc1 & mel06 & mel08 \\
+        melc2 & mel07 & mel12 \\
+        melc3 & mel13 & mel14 \\
+        melc4 & mel13 & mel15 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[H]
+    \centering
+    \caption{Dataset stacked to obtain a 3-channel image}
+    \label{tab:ch3_values}
+    \begin{tabular}{|c|ccc|}
+        \hline
+        tag & spec1 & spec2 & spec3 \\
+        \hline
+        01 & mel05  & mel09  & mel10 \\
+        02 & mel05  & mel10  & mfcc07 \\
+        03 & mfcc06 & mfcc07 & mfcc08 \\
+        04 & mel05  & mfcc06 & melc1 \\
+        05 & melc1  & melc2  & melc4 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table*}[h!]
+    \centering
+    \caption{Values used to augment the dataset. The first lines list the parameters used to compute the spectrograms.}
+    \label{tab:aug_values}
+    \begin{tabular}{|c|cccccc|}
+        \hline
+        & mel\_kwargs & n\_mel & n\_fft & hop\_length & fmin & fmax \\
+        \hline
+        & mel\_01 & 64 & 1024 & 256 & 40 & 8000  \\
+        & mel\_02 & 128 & 2046 & 512 & 40 & 8000  \\
+        & mel\_03 & 64 & 1024 & 256 & default & default  \\
+        \hline
+        \hline
+        aug name & max\_time\_shifts & stretch\_rate & mel\_kwargs & num\_landmarks & max\_warp\_time & max\_warp\_freq\\
+        \hline
+        aug01 &  [1600, 3200] & [0.8, 1.2] & mel\_01 & 3 & 5 & 6 \\
+        aug02 &  [] & [] & mel\_02 & 3 & 5 & 5 \\
+        aug03 &  [] & [] & mel\_02 & 3 & 5 & 0 \\
+        aug04 &  [] & [] & mel\_02 & 3 & 0 & 5 \\
+        aug05 &  [] & [] & mel\_02 & 3 & 0 & 0 \\
+        aug06 &  [] & [] & mel\_01 & 3 & 5 & 5 \\
+        aug07 &  [] & [] & mel\_01 & 3 & 5 & 0 \\
+        aug08 &  [] & [] & mel\_01 & 3 & 0 & 5 \\
+        aug09 &  [] & [] & mel\_01 & 3 & 0 & 0 \\
+        aug10 &  [] & [] & mel\_03 & 3 & 5 & 5 \\
+        aug11 &  [] & [] & mel\_03 & 3 & 5 & 0 \\
+        aug12 &  [] & [] & mel\_03 & 3 & 0 & 5 \\
+        aug13 &  [] & [] & mel\_03 & 3 & 0 & 0 \\
+        \hline
+    \end{tabular}
+\end{table*}

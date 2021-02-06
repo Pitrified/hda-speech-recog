@@ -94,7 +94,8 @@ can be applied to decorrelate the filter bank coefficients and obtain a
 compressed representation.
 The results are the Mel-frequency Cepstral Coefficients.
 
-The spectrograms were obtained using the \texttt{librosa} library \cite{brian_mcfee_2020_3955228}.
+The spectrograms were obtained using the \texttt{librosa} library
+\cite{brian_mcfee_2020_3955228}.
 The values used to generate the mel spectrograms are listed in
 \tab{tab:mel_values}.
 The values used to generate the mel frequency cepstral coefficients are listed
@@ -102,15 +103,15 @@ in \tab{tab:mfcc_values}.
 An example waveform for the word ``happy'' and the relative spectrograms are
 shown in \fig{fig:happy_specs}.
 
-% TODO: composing datasets, multichannel
-Some of the architecture used require a square image as input, with three color channels.
-To obtain them, some spectrogams were purposefully generated with parameters that created a square result,
-others, shaped like a half square, were concatenated.
-Three square spectrogams are then stacked depthwise to obtain a valid three channel image.
+Some of the architectures that were tested require a square image as input,
+with three color channels.
+To obtain them, some spectrogams were purposefully generated with parameters
+that created a square result, others, shaped like a half square, were
+concatenated.
+Three square spectrogams are then stacked depthwise to obtain a valid three
+channel image.
 The values used to compose the spectrogams are listed in \tab{tab:compose_values}.
 The values used to stack the spectrogams are listed in \tab{tab:ch3_values}.
-
-% TODO: show different datasets
 
 \begin{figure}[t!]
     \centering
@@ -128,92 +129,6 @@ and understand to which frequencies the important bins correspond to. }%
     \caption{Different spectrograms for the same word}%
     \label{fig:happy_mel01_mel04_mel06_melc1_specs}
 \end{figure}
-
-\begin{table}[t!]
-    \centering
-    \caption{
-    Values used to generate the mel spectrograms. The dataset ``mela1'' also
-has the parameter \texttt{fmin}$=40$.}
-    \label{tab:mel_values}
-    \begin{tabular}{|c|cccc|}
-        \hline
-        % name & \texttt{n\_mel} & \texttt{n\_fft} & \texttt{hop\_length} & shape \\
-        name & n\_mel & n\_fft & hop\_length & shape \\
-        \hline
-        mel01 & 128 & 2048 & 512   & (128, 32) \\
-        mel02 & 64  & 4096 & 1024  & (64, 16) \\
-        mel03 & 64  & 2048 & 512   & (64, 32) \\
-        mel04 & 64  & 1024 & 256   & (64, 64) \\
-        mel05 & 128 & 1024 & 128   & (128, 128) \\
-        mel06 & 128 & 1024 & 256   & (128, 64) \\
-        mel07 & 128 & 2048 & 256   & (128, 64) \\
-        mel08 & 128 & 512  & 256   & (128, 64) \\
-        mel09 & 128 & 512  & 128   & (128, 128) \\
-        mel10 & 128 & 2048 & 128   & (128, 128) \\
-        mel11 & 128 & 256  & 128   & (128, 128) \\
-        mel12 & 128 & 4096 & 256   & (128, 64) \\
-        mel13 & 128 & 512  & 256   & (128, 64) \\
-        mel14 & 128 & 256  & 256   & (128, 64) \\
-        mel15 & 128 & 3072 & 256   & (128, 64) \\
-        mela1 & 80  & 1024 & 128   & (80, 128) \\
-        \hline
-    \end{tabular}
-\end{table}
-
-\begin{table}[t!]
-    \centering
-    \caption{Values used to generate the MFCC spectrograms}
-    \label{tab:mfcc_values}
-    \begin{tabular}{|c|cccc|}
-        \hline
-        % name & \texttt{n\_mfcc} & \texttt{n\_fft} & \texttt{hop\_length} & shape \\
-        name & n\_mfcc & n\_fft & hop\_length & shape \\
-        \hline
-        mfcc01 & 20  & 2048 & 512  & (20, 32) \\
-        mfcc02 & 40  & 2048 & 512  & (40, 32) \\
-        mfcc03 & 40  & 2048 & 256  & (40, 64) \\
-        mfcc04 & 80  & 1024 & 128  & (80, 128) \\
-        mfcc05 & 10  & 4096 & 1024 & (10, 16) \\
-        mfcc06 & 128 & 1024 & 128  & (128, 128) \\
-        mfcc07 & 128 & 512  & 128  & (128, 128) \\
-        mfcc08 & 128 & 2048 & 128  & (128, 128) \\
-        \hline
-    \end{tabular}
-\end{table}
-
-\begin{table}[t!]
-    \centering
-    \caption{Values used to compose the spectrogams}
-    \label{tab:compose_values}
-    \begin{tabular}{|c|cc|}
-        \hline
-        name & left spectrogam & right spectrogam \\
-        \hline
-        melc1 & mel06 & mel08 \\
-        melc2 & mel07 & mel12 \\
-        melc3 & mel13 & mel14 \\
-        melc4 & mel13 & mel15 \\
-        \hline
-    \end{tabular}
-\end{table}
-
-\begin{table}[t!]
-    \centering
-    \caption{Dataset stacked to obtain a 3-channel image}
-    \label{tab:ch3_values}
-    \begin{tabular}{|c|ccc|}
-        \hline
-        tag & spec1 & spec2 & spec3 \\
-        \hline
-        01 & mel05  & mel09  & mel10 \\
-        02 & mel05  & mel10  & mfcc07 \\
-        03 & mfcc06 & mfcc07 & mfcc08 \\
-        04 & mel05  & mfcc06 & melc1 \\
-        05 & melc1  & melc2  & melc4 \\
-        \hline
-    \end{tabular}
-\end{table}
-
 
 \subsection{Data augmentation}
 
@@ -258,38 +173,6 @@ Values used to augment the dataset are listed in \tab{tab:aug_values}.
 landmarks.}%
     \label{fig:warp_grid}
 \end{figure}
-
-\begin{table*}[t!]
-    \centering
-    \caption{Values used to augment the dataset. The first lines list the parameters used to compute the spectrograms.}
-    \label{tab:aug_values}
-    \begin{tabular}{|c|cccccc|}
-        \hline
-        & mel\_kwargs & n\_mel & n\_fft & hop\_length & fmin & fmax \\
-        \hline
-        & mel\_01 & 64 & 1024 & 256 & 40 & 8000  \\
-        & mel\_02 & 128 & 2046 & 512 & 40 & 8000  \\
-        & mel\_03 & 64 & 1024 & 256 & default & default  \\
-        \hline
-        \hline
-        aug name & max\_time\_shifts & stretch\_rate & mel\_kwargs & num\_landmarks & max\_warp\_time & max\_warp\_freq\\
-        \hline
-        aug01 &  [1600, 3200] & [0.8, 1.2] & mel\_01 & 3 & 5 & 6 \\
-        aug02 &  [] & [] & mel\_02 & 3 & 5 & 5 \\
-        aug03 &  [] & [] & mel\_02 & 3 & 5 & 0 \\
-        aug04 &  [] & [] & mel\_02 & 3 & 0 & 5 \\
-        aug05 &  [] & [] & mel\_02 & 3 & 0 & 0 \\
-        aug06 &  [] & [] & mel\_01 & 3 & 5 & 5 \\
-        aug07 &  [] & [] & mel\_01 & 3 & 5 & 0 \\
-        aug08 &  [] & [] & mel\_01 & 3 & 0 & 5 \\
-        aug09 &  [] & [] & mel\_01 & 3 & 0 & 0 \\
-        aug10 &  [] & [] & mel\_03 & 3 & 5 & 5 \\
-        aug11 &  [] & [] & mel\_03 & 3 & 5 & 0 \\
-        aug12 &  [] & [] & mel\_03 & 3 & 0 & 5 \\
-        aug13 &  [] & [] & mel\_03 & 3 & 0 & 0 \\
-        \hline
-    \end{tabular}
-\end{table*}
 
 \section{Learning Framework}
 \label{sec:learning_framework}
@@ -484,70 +367,57 @@ Where a value of $0$ means that the layer is skipped.
 \subsection{Attention architecture}
 
 The key idea behind the Attention mechanism is the assumption that not all of
-the data carries the same amount of information.
-Indeed, when processing a large amount of information we focus on few relevant
-details.
-This approach was used effectively in the field of Neural Machine Translation by
-Bahdanau \cite{bahdanau2016neural}
-and
-Luong \cite{luong2015effective}, and to produce image captions with the 
-Show, Attend and Tell approach \cite{xu2016show}.
+the data that is available carries the same amount of information.
+% Indeed, when processing a large amount of information we focus on few relevant details.
+The attention mechanism allows to focus on few relevant details when presented
+with large amount of data.
+This approach was used effectively in the field of Neural Machine Translation
+by Bahdanau \cite{bahdanau2016neural} and Luong \cite{luong2015effective}, and
+to produce image captions with the Show, Attend and Tell approach
+\cite{xu2016show}.
 
 In the paper by Douglas et al. \cite{2018arXiv180808929C}, the attention
 mechanism is used for speech command recognition.
-As a first step, the mel spectrogram is computed from the input audio.
+The ouput shapes of each layers are reported to track along which axis the dot
+multiplications are done.
+As a first step, the mel spectrogram
+(shape [spec\_len, nMel])
+is computed from the input audio
+(shape [raw\_len]).
 A 2D convolution is performed, only along the time axis to extract local
-correlations in the spectrogram.
+correlations in the spectrogram
+(shape [spec\_len, nMel, n\_filters]).
+A final 2D convolution, with just one filter, condenses the information back to a 2D image
+(shape [spec\_len, nMel, 1])
+and the last dimension is squeezed away
+(shape [spec\_len, nMel]).
 Two bidirectional \cite{Schuster1997BidirectionalRN} long short-term memory
 \cite{lstm} units are used to capture forward and backward long term
-dependencies in the spectrogram.
-A LSTM unit reads the input sequence from the first sample to the last. The
+dependencies in the spectrogram
+(shape [spec\_len, LSTM\_units*2]).
+A LSTM layer reads the input sequence from the first sample to the last. The
 bidirectional version reads the sequence both forward, producing the forward
 hidden states, and backward, resulting in the sequence of backward hidden
 states.
-Here the attention mechanism is applied: one of the LSTM output vector is
+Now the attention mechanism is applied: one of the LSTM output vector is
 selected (the choice is not crucial because the vectors should contain
 information about long term dependencies) and a dense layer is used to extract
-a query vector.
-The query vector is then used to compute the attention scores, that are
-converted with a softmax layer in attention weights. These weights are
-multiplied with the output of the LSTM to compute a weighted average, which is
-then fed into a dense classifier.
-
-% https://towardsdatascience.com/an-introduction-to-attention-transformers-and-bert-part-1-da0e838c7cda
-% In the proposed model, each generated output word is not just a function of
-% just the final hidden state but rather a function of ALL hidden states. And,
-% it’s not just a simple operation that combines all hidden state — if it was,
-% then we are still giving the same context to every output step, so it has to be
-% different! It is not a simple concatenation or dot product, but an “attention”
-% operation that, for every decoder output step, produces a distinct vector
-% representing all encoder hidden states but giving different weights to
-% different encoder hidden state.
-
-% https://arxiv.org/pdf/1409.0473.pdf
-% reads an input sequence x in order starting from the first symbol x1 to the
-% last one xTx . However, in the proposed scheme, we would like the annotation
-% of each word to summarize not only the preceding words, but also the
-% following words. Hence, we propose to use a bidirectional RNN The forward RNN
-% −→f reads the input sequence as it is ordered (from x1 to xTx) and calculates
-% a sequence of forward hidden states ( −→h 1, · · · , −→h Tx). The backward
-% RNN ←−f reads the sequence in the reverse order (from xTx to x1), resulting
-% in a sequence of backward hidden states
-
-% https://arxiv.org/pdf/1808.08929.pdf
-% After mel-scale spectrogram computation, a set of convolutions is applied to
-% the melscale spectrogram (2D output) only in the time dimension to extract
-% local relations in the audio file. A set of two bidirectional long short term
-% memory (LSTM - Hochreiter and Schmidhuber (1997)) units is used to capture
-% two-way (forward and backward) long term dependencies in the audio file. At
-% this point, one of the output vectors of the last LSTM layer is extracted,
-% projected using a dense layer and used as query vector to identify what part
-% of the audio is the most relevant. We choose to use the middle vector of the
-% LSTM output since the voice command is expected to be centered in the audio
-% files. This choice is arbitrary and any vector should work since the double
-% stacked LSTM layers should be able to carry enough “memory”. Finally, the
-% weighted average of the LSTM output is fed into 3 fully connected layers for
-% classification. 
+a query vector
+(shape [LSTM\_units*2]).
+The query vector is used to compute the attention scores, by computing the dot
+product between all the LSTM outputs and the query vector along the
+\textit{second} axis of the LSTM outputs, that are converted with a softmax
+layer in attention weights
+(shape [spec\_len]).
+These weights are multiplied with the output of the LSTM along the
+\textit{first} axis of the LSTM outputs to compute a weighted average of the
+LSTM vectors
+(shape [LSTM\_units*2]),
+which is then fed into a dense classifier
+(shape [nClasses]).
+In this way, the output vector of the LSTM is not just the final hidden state,
+but it is a function of all the hidden states, where the most important states
+are given more relevance, according to the attention weights.
 
 \subsection{Query style}
 
@@ -589,6 +459,8 @@ The possible values for the hyper-parameters are:
     \item kernel\_size = [[(5,1), (5,1), (5,1)], [(3,3), (3,3), (3,3)]]
     \item lstm\_units = [[64, 64], [64, 0]]
     \item query\_style = ["dense01", "dense02", "conv01", "conv02", "conv03"]
+    % \item query\_style = [\texttt{dense01}, \texttt{dense02},
+    % \texttt{conv01}, \texttt{conv02}, \texttt{conv03}]
     \item dense\_width = [32, 64]
 \end{itemize}
 
