@@ -107,7 +107,8 @@ Some of the architectures that were tested require a square image as input,
 with three color channels.
 To obtain them, some spectrogams were purposefully generated with parameters
 that created a square result, others, shaped like a half square, were
-concatenated.
+concatenated, as shown in the ``melc1'' spectrogram in
+\fig{fig:happy_mel01_mel04_mel06_melc1_specs}.
 Three square spectrogams are then stacked depthwise to obtain a valid three
 channel image.
 The values used to compose the spectrogams are listed in \tab{tab:compose_values}.
@@ -129,6 +130,8 @@ and understand to which frequencies the important bins correspond to. }%
     \caption{Different spectrograms for the same word}%
     \label{fig:happy_mel01_mel04_mel06_melc1_specs}
 \end{figure}
+
+TODO: decision of preprocessing the data separately.
 
 \subsection{Data augmentation}
 
@@ -177,19 +180,63 @@ landmarks.}%
 \section{Learning Framework}
 \label{sec:learning_framework}
 
-How did it learn anything at all?
+The training was done using the tensorflow library \cite{tensorflow2015-whitepaper}.
+
+Several training parameters were tweaked during the experiments to maximize the models' performance.
+A brief overview of each parameter follows.
 
 \subsection{Learning rate schedule}
+
+\subsubsection{Finding optimal LR values}
+
+% \begin{figure}[t!]
+%     \centering
+%     \includegraphics[width=0.9\linewidth]{LR_sweep_bs16_en15.pdf}
+%     \caption{LR_sweep_bs16_en15}%
+%     \label{fig:LR_sweep_bs16_en15}
+% \end{figure}
+
+% https://latexdraw.com/how-to-annotate-an-image-in-latex/
+\begin{figure}[t!]
+    \centering
+
+    \begin{tikzpicture}
+
+        % \node (image) at (0,0) {
+        % \node[anchor=south west] (image) at (0,0) {
+        \node[above right] (image) at (0,0) {
+            \includegraphics[width=0.9\linewidth]{LR_sweep_bs16_en15.pdf}
+        };
+
+        \draw[latex-, very thick,red] (4.3,6.4) -- ++(-1,-1.2)
+            % node[left,black,fill=white]{\small Voltage source};
+            % node[below left, black, fill=white, text width=2.5cm]{\small The loss starts to drop at $1e-5$};
+            node[below, black, fill=white, text width=2.5cm]{\small The loss starts to drop at $1e-5$};
+
+    \end{tikzpicture}
+
+    \caption{LR_sweep_bs16_en15}%
+    \label{fig:LR_sweep_bs16_en15}
+\end{figure}
+
 
 \subsubsection{Fixed LR}
 \subsubsection{Exp decay LR}
 \subsubsection{Cyclic LR}
+
+\subsection{Optimizer}
+
+\subsection{Regularization and Batch Normalization}
 
 \subsection{Early stopping}
 
 Loss, validation, overfitting
 
 Show a plot
+
+Model checkpointing
+
+TensorBoard
 
 \subsection{Hyper-parameter tuning}
 

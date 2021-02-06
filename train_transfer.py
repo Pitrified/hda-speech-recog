@@ -3,6 +3,7 @@ from multiprocessing import Pool
 from pathlib import Path
 from sklearn.model_selection import ParameterGrid  # type: ignore
 import argparse
+import datetime
 import json
 import logging
 import matplotlib.pyplot as plt  # type: ignore
@@ -10,7 +11,7 @@ import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
 import typing as ty
 
-# from tensorflow.keras.callbacks import ModelCheckpoint  # type: ignore
+from tensorflow.keras.callbacks import ModelCheckpoint  # type: ignore
 from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
 from tensorflow.keras.callbacks import LearningRateScheduler  # type: ignore
 from tensorflow.keras.optimizers import Adam  # type: ignore
@@ -149,13 +150,11 @@ def hyper_train_transfer(
 
     hypa_grid: ty.Dict[str, ty.List[str]] = {}
 
-    # TODO test again dense_width_type 1234 on f1
-
     ###### the architecture to train on
     arch = []
     # arch.append("TRA")  # Xception
-    # arch.append("TD1")  # DenseNet121
-    arch.append("TB0")  # EfficientNetB0
+    arch.append("TD1")  # DenseNet121
+    # arch.append("TB0")  # EfficientNetB0
     # arch.append("TB4")  # EfficientNetB4
     # arch.append("TB7")  # EfficientNetB7
     hypa_grid["net_type"] = arch
@@ -232,6 +231,11 @@ def hyper_train_transfer(
     if not root_info_folder.exists():
         root_info_folder.mkdir(parents=True, exist_ok=True)
 
+    # where to put the tensorboard logs
+    tensorboard_logs_folder = Path("tensorboard_logs") / train_type_tag
+    if not tensorboard_logs_folder.exists():
+        tensorboard_logs_folder.mkdir(parents=True, exist_ok=True)
+
     # count how many models are left to train
     if dry_run:
         tra_info = {"already_trained": 0, "to_train": 0}
@@ -265,7 +269,14 @@ def hyper_train_transfer(
         with Pool(1) as p:
             p.apply(
                 train_transfer,
-                (hypa, force_retrain, use_validation, trained_folder, root_info_folder),
+                (
+                    hypa,
+                    force_retrain,
+                    use_validation,
+                    trained_folder,
+                    root_info_folder,
+                    tensorboard_logs_folder,
+                ),
             )
 
 
@@ -304,7 +315,10 @@ def get_model_param_transfer(
 
 
 def get_training_param_transfer(
-    hypa: ty.Dict[str, str], use_validation: bool
+    hypa: ty.Dict[str, str],
+    use_validation: bool,
+    tensorboard_logs_folder: Path,
+    model_path: Path,
 ) -> ty.Dict[str, ty.Any]:
     """TODO: what is get_training_param_transfer doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_training_param_transfer")
@@ -365,14 +379,37 @@ def get_training_param_transfer(
         lrate = LearningRateScheduler(exp_decay_part_fine)
         callbacks.append(lrate)
 
+    # monitor this metric in early_stop/model_checkpoint
+    metric_to_monitor = "val_loss" if use_validation else "loss"
+
     # add early stop to learning_rate_types where it makes sense
     if lr_name.startswith("fixed") or lr_name.startswith("exp_decay"):
-        metric_to_monitor = "val_loss" if use_validation else "loss"
         early_stop = EarlyStopping(
             monitor=metric_to_monitor, patience=6, restore_best_weights=True, verbose=1
         )
         callbacks[0].append(early_stop)
         callbacks[1].append(early_stop)
+
+    # TODO: check if you need to reload the best one at the end of fit
+    # yes you should
+    # add model_checkpoint to keep the best weights
+    model_checkpoint = ModelCheckpoint(
+        str(model_path), monitor=metric_to_monitor, verbose=1, save_best_only=True
+    )
+    callbacks[0].append(model_checkpoint)
+    callbacks[1].append(model_checkpoint)
+
+    # add the TensorBoard callback for fancy logs
+    log_dir = (
+        tensorboard_logs_folder
+        / "fit"
+        / datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    )
+    tensorboard_callback = tf.keras.callbacks.TensorBoard(
+        log_dir=log_dir, histogram_freq=1
+    )
+    callbacks[0].append(tensorboard_callback)
+    callbacks[1].append(tensorboard_callback)
 
     training_param["callbacks"] = callbacks
 
@@ -393,6 +430,7 @@ def train_transfer(
     use_validation: bool,
     trained_folder: Path,
     root_info_folder: Path,
+    tensorboard_logs_folder: Path,
 ) -> None:
     """TODO: what is train_transfer doing?
 
@@ -474,7 +512,9 @@ def train_transfer(
     model.summary()
 
     # from hypa extract training param (epochs, batch, opt, ...)
-    training_param = get_training_param_transfer(hypa, use_validation)
+    training_param = get_training_param_transfer(
+        hypa, use_validation, tensorboard_logs_folder, model_path
+    )
 
     # a dict to recreate this training
     recap: ty.Dict[str, ty.Any] = {}
@@ -509,6 +549,9 @@ def train_transfer(
         batch_size=training_param["batch_sizes"][0],
         callbacks=training_param["callbacks"][0],
     )
+
+    # reload the best weights saved by the ModelCheckpoint
+    model.load_weights(str(model_path))
 
     ##########################################################
     #   Save results, history, performance
@@ -559,6 +602,9 @@ def train_transfer(
         batch_size=training_param["batch_sizes"][1],
         callbacks=training_param["callbacks"][1],
     )
+
+    # reload the best weights saved by the ModelCheckpoint
+    model.load_weights(str(model_path))
 
     ##########################################################
     #   Save results, history, performance

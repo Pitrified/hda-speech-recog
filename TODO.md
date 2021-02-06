@@ -2,6 +2,7 @@
 
 ### Misc
 
+* spoken\_digit dataset as final test, ljspeech, vctk.
 * Add silence and unknown labels to learn
 * DataGenerator https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
 * Nel paper di Xception ti dicono che parametri usare per gli optimizer

@@ -653,6 +653,8 @@ def find_best_lr(hypa: ty.Dict[str, str]) -> None:
     fig.savefig(plot_fol / fig_name.format("png"))
     fig.savefig(plot_fol / fig_name.format("pdf"))
 
+    # TODO: save the loss history
+
     plt.show()
 
 
