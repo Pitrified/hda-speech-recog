@@ -1,11 +1,12 @@
+from pathlib import Path
 from sklearn.preprocessing import LabelEncoder  # type: ignore
 from tensorflow.keras.utils import Sequence  # type: ignore
-from pathlib import Path
+from tqdm import tqdm  # type: ignore
 import argparse
 import logging
+import multiprocessing as mp
 import numpy as np  # type: ignore
 import typing as ty
-from tqdm import tqdm  # type: ignore
 
 from preprocess_data import get_spec_dict
 from preprocess_data import wav2mel
@@ -178,11 +179,35 @@ def setup_env() -> argparse.Namespace:
     return args
 
 
-def compute_folder_spec(word_in_path) -> None:
+def compute_folder_spec(
+    word_in_path,
+    word_out_folder,
+    dataset_name,
+    force_preprocess,
+    spec_kwargs,
+    p2d_kwargs,
+) -> None:
     """TODO: what is compute_folder_spec doing?"""
-    logg = logging.getLogger(f"c.{__name__}.compute_folder_spec")
-    # logg.setLevel("INFO")
-    logg.debug("Start compute_folder_spec")
+    # extract all the wavs
+    all_wavs = list(word_in_path.iterdir())
+
+    for wav_path in all_wavs:
+        wav_stem = wav_path.stem
+
+        spec_path = word_out_folder / f"{wav_stem}.npy"
+        if spec_path.exists():
+            if force_preprocess:
+                pass
+            else:
+                continue
+
+        if dataset_name.startswith("mfcc"):
+            log_spec = wav2mfcc(wav_path, spec_kwargs, p2d_kwargs)
+        elif dataset_name.startswith("mel"):
+            log_spec = wav2mel(wav_path, spec_kwargs, p2d_kwargs)
+        img_spec = log_spec.reshape((*log_spec.shape, 1))
+
+        np.save(spec_path, img_spec)
 
 
 def preprocess_split(
@@ -191,7 +216,7 @@ def preprocess_split(
     """TODO: what is preprocess_split doing?"""
     logg = logging.getLogger(f"c.{__name__}.preprocess_split")
     # logg.setLevel("INFO")
-    logg.debug("Start preprocess_split")
+    # logg.debug("Start preprocess_split")
 
     # original / processed dataset base locations
     data_raw_path = Path("data_raw")
@@ -206,9 +231,11 @@ def preprocess_split(
     spec_dict = get_spec_dict()
     spec_kwargs = spec_dict[dataset_name]
 
+    arguments = []
+
     words = words_types[words_type]
     for word in words:
-        logg.debug(f"Processing {word}")
+        # logg.debug(f"Processing {word}")
 
         # the output folder path
         word_out_folder = processed_folder / word
@@ -218,28 +245,23 @@ def preprocess_split(
         # the input folder path
         word_in_path = data_raw_path / word
 
-        # extract all the wavs
-        all_wavs = list(word_in_path.iterdir())
+        # build the arguments of the functions you will run
+        arguments.append(
+            (
+                word_in_path,
+                word_out_folder,
+                dataset_name,
+                force_preprocess,
+                spec_kwargs,
+                p2d_kwargs,
+            )
+        )
 
-        for wav_path in tqdm(all_wavs):
-            wav_stem = wav_path.stem
-
-            spec_path = processed_folder / word / f"{wav_stem}.npy"
-            # logg.debug(f"spec_path: {spec_path}")
-            if spec_path.exists():
-                if force_preprocess:
-                    # logg.debug("OVERWRITING the previous results")
-                    pass
-                else:
-                    continue
-
-            if dataset_name.startswith("mfcc"):
-                log_spec = wav2mfcc(wav_path, spec_kwargs, p2d_kwargs)
-            elif dataset_name.startswith("mel"):
-                log_spec = wav2mel(wav_path, spec_kwargs, p2d_kwargs)
-            img_spec = log_spec.reshape((*log_spec.shape, 1))
-
-            np.save(spec_path, img_spec)
+    logg.info(f"dataset_name: {dataset_name}")
+    pool = mp.Pool(processes=mp.cpu_count() * 2)
+    results = [pool.apply_async(compute_folder_spec, args=a) for a in arguments]
+    for p in tqdm(results):
+        p.get()
 
 
 def run_audio_generator(args: argparse.Namespace) -> None:
