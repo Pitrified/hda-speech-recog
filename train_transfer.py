@@ -1,31 +1,26 @@
 from functools import partial
 from multiprocessing import Pool
 from pathlib import Path
+from sklearn.metrics import confusion_matrix  # type: ignore
 from sklearn.model_selection import ParameterGrid  # type: ignore
 import argparse
-import datetime
 import json
 import logging
 import matplotlib.pyplot as plt  # type: ignore
-import numpy as np  # type: ignore
-import tensorflow as tf  # type: ignore
+import tensorflow.keras.callbacks as tf_callbacks  # type: ignore
+import tensorflow.keras.losses as tf_losses  # type: ignore
+import tensorflow.keras.metrics as tf_metrics  # type: ignore
+import tensorflow.keras.optimizers as tf_optimizers  # type: ignore
 import typing as ty
 
-from tensorflow.keras.callbacks import ModelCheckpoint  # type: ignore
-from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
-from tensorflow.keras.callbacks import LearningRateScheduler  # type: ignore
-from tensorflow.keras.optimizers import Adam  # type: ignore
-from tensorflow.keras.optimizers import RMSprop  # type: ignore
-
+from audio_generator import AudioGenerator
+from audio_generator import get_generator_mean_var
 from models import TRAmodel
 from plot_utils import plot_confusion_matrix
-from preprocess_data import compose_spec
-from preprocess_data import load_triple
-from preprocess_data import preprocess_spec
+from preprocess_data import prepare_partitions
 from schedules import exp_decay_smooth
 from schedules import exp_decay_step
 from utils import analyze_confusion
-from utils import pred_hot_2_cm
 from utils import setup_gpus
 from utils import setup_logger
 from utils import words_types
@@ -124,7 +119,9 @@ def build_transfer_name(hypa: ty.Dict[str, str], use_validation: bool) -> str:
     return model_name
 
 
-def get_datasets_types():
+def get_datasets_types() -> ty.Tuple[
+    ty.Dict[str, ty.List[str]], ty.Dict[str, ty.Tuple[int, int]]
+]:
     """"""
     datasets_types = {
         "01": ["mel05", "mel09", "mel10"],
@@ -133,7 +130,15 @@ def get_datasets_types():
         "04": ["mel05", "mfcc06", "melc1"],
         "05": ["melc1", "melc2", "melc4"],
     }
-    return datasets_types
+    # if you actually use them add the dims lol
+    datasets_shapes = {
+        "01": (128, 128),
+        "02": (-1, -1),
+        "03": (-1, -1),
+        "04": (-1, -1),
+        "05": (-1, -1),
+    }
+    return datasets_types, datasets_shapes
 
 
 def hyper_train_transfer(
@@ -195,13 +200,14 @@ def hyper_train_transfer(
     ###### the number of epochs
     en = []
     # en.extend(["01"])  # [20, 10]
-    en.extend(["02"])  # [40, 20]
+    # en.extend(["02"])  # [40, 20]
+    en.extend(["03"])  # [1, 1]
     hypa_grid["epoch_num_type"] = en
 
     ###### the learning rates for the optimizer
     lr = []
-    lr.extend(["01", "02"])  # fixed
-    lr.extend(["03"])  # exp_decay_step_01
+    # lr.extend(["01", "02"])  # fixed
+    # lr.extend(["03"])  # exp_decay_step_01
     lr.extend(["04"])  # exp_decay_smooth_01
     hypa_grid["learning_rate_type"] = lr
 
@@ -245,20 +251,21 @@ def hyper_train_transfer(
         logg.debug(f"tra_info: {tra_info}")
         return
 
+    # FIXME use the new split data
     # check that the data is available
     # for each type of dataset that will be used
-    datasets_types = get_datasets_types()
-    for dt in hypa_grid["datasets_type"]:
-        # get the dataset name list
-        dataset_names = datasets_types[dt]
-        for dn in dataset_names:
-            # and check that the data is available for each word type
-            for wt in hypa_grid["words_type"]:
-                logg.debug(f"\nwt: {wt} dn: {dn}\n")
-                if dn.startswith("melc"):
-                    compose_spec(dn, wt)
-                else:
-                    preprocess_spec(dn, wt)
+    # datasets_types, _ = get_datasets_types()
+    # for dt in hypa_grid["datasets_type"]:
+    #     # get the dataset name list
+    #     dataset_names = datasets_types[dt]
+    #     for dn in dataset_names:
+    #         # and check that the data is available for each word type
+    #         for wt in hypa_grid["words_type"]:
+    #             logg.debug(f"\nwt: {wt} dn: {dn}\n")
+    #             if dn.startswith("melc"):
+    #                 compose_spec(dn, wt)
+    #             else:
+    #                 preprocess_spec(dn, wt)
 
     ##########################################################
     #   Train all hypas
@@ -331,7 +338,7 @@ def get_training_param_transfer(
     batch_sizes = batch_size_types[hypa["batch_size_type"]]
     training_param["batch_sizes"] = batch_sizes
 
-    epoch_num_types = {"01": [20, 10], "02": [40, 20]}
+    epoch_num_types = {"01": [20, 10], "02": [40, 20], "03": [1, 1]}
     epoch_num = epoch_num_types[hypa["epoch_num_type"]]
     training_param["epoch_num"] = epoch_num
 
@@ -355,13 +362,19 @@ def get_training_param_transfer(
         lr = [1e-3, 1e-5]
 
     optimizer_types = {
-        "a1": [Adam(learning_rate=lr[0]), Adam(learning_rate=lr[1])],
-        "r1": [RMSprop(learning_rate=lr[0]), RMSprop(learning_rate=lr[1])],
+        "a1": [
+            tf_optimizers.Adam(learning_rate=lr[0]),
+            tf_optimizers.Adam(learning_rate=lr[1]),
+        ],
+        "r1": [
+            tf_optimizers.RMSprop(learning_rate=lr[0]),
+            tf_optimizers.RMSprop(learning_rate=lr[1]),
+        ],
     }
     training_param["opt"] = optimizer_types[hypa["optimizer_type"]]
 
     ###### setup callbacks
-    callbacks: ty.List[ty.List[tf.keras.callbacks]] = [[], []]
+    callbacks: ty.List[ty.List[tf_callbacks]] = [[], []]
 
     if lr_name.startswith("exp_decay"):
         if lr_name == "exp_decay_step_01":
@@ -374,9 +387,9 @@ def get_training_param_transfer(
             exp_decay_part_fine = partial(
                 exp_decay_smooth, epochs_drop=5, initial_lrate=1e-5, min_lrate=1e-6
             )
-        lrate = LearningRateScheduler(exp_decay_part_frozen)
+        lrate = tf_callbacks.LearningRateScheduler(exp_decay_part_frozen)
         callbacks.append(lrate)
-        lrate = LearningRateScheduler(exp_decay_part_fine)
+        lrate = tf_callbacks.LearningRateScheduler(exp_decay_part_fine)
         callbacks.append(lrate)
 
     # monitor this metric in early_stop/model_checkpoint
@@ -384,7 +397,7 @@ def get_training_param_transfer(
 
     # add early stop to learning_rate_types where it makes sense
     if lr_name.startswith("fixed") or lr_name.startswith("exp_decay"):
-        early_stop = EarlyStopping(
+        early_stop = tf_callbacks.EarlyStopping(
             monitor=metric_to_monitor, patience=6, restore_best_weights=True, verbose=1
         )
         callbacks[0].append(early_stop)
@@ -393,31 +406,29 @@ def get_training_param_transfer(
     # TODO: check if you need to reload the best one at the end of fit
     # yes you should
     # add model_checkpoint to keep the best weights
-    model_checkpoint = ModelCheckpoint(
+    model_checkpoint = tf_callbacks.ModelCheckpoint(
         str(model_path), monitor=metric_to_monitor, verbose=1, save_best_only=True
     )
     callbacks[0].append(model_checkpoint)
     callbacks[1].append(model_checkpoint)
 
     # add the TensorBoard callback for fancy logs
-    log_dir = (
-        tensorboard_logs_folder
-        / "fit"
-        / datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    )
-    tensorboard_callback = tf.keras.callbacks.TensorBoard(
-        log_dir=log_dir, histogram_freq=1
-    )
-    callbacks[0].append(tensorboard_callback)
-    callbacks[1].append(tensorboard_callback)
+    # log_dir = (
+    #     tensorboard_logs_folder
+    #     / "fit"
+    #     / datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    # )
+    # tensorboard_callback = tf_callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1)
+    # callbacks[0].append(tensorboard_callback)
+    # callbacks[1].append(tensorboard_callback)
 
     training_param["callbacks"] = callbacks
 
     ###### a few metrics to track
     metrics = [
-        tf.keras.metrics.CategoricalAccuracy(),
-        tf.keras.metrics.Precision(),
-        tf.keras.metrics.Recall(),
+        tf_metrics.CategoricalAccuracy(),
+        tf_metrics.Precision(),
+        tf_metrics.Recall(),
     ]
     training_param["metrics"] = [metrics, metrics]
 
@@ -472,49 +483,77 @@ def train_transfer(
     #   Load data
     ##########################################################
 
+    # grab a few hypas
+    words_type = hypa["words_type"]
+    datasets_type = hypa["datasets_type"]
+
+    # get the partition of the data
+    partition, ids2labels = prepare_partitions(words_type)
+
     # get the word list
-    words = words_types[hypa["words_type"]]
+    words = words_types[words_type]
     num_labels = len(words)
 
     # get the dataset name list
-    datasets_types = get_datasets_types()
-    dataset_names = datasets_types[hypa["datasets_type"]]
-
-    # load datasets
-    processed_folder = Path("data_proc")
-    data_paths = [processed_folder / f"{dn}" for dn in dataset_names]
-    data, labels = load_triple(data_paths, words)
-
-    # concatenate train and val for final train
-    val_data = None
-    if use_validation:
-        x = data["training"]
-        y = labels["training"]
-        val_data = (data["validation"], labels["validation"])
-        logg.debug("Using validation data")
-    else:
-        x = np.concatenate((data["training"], data["validation"]))
-        y = np.concatenate((labels["training"], labels["validation"]))
-        logg.debug("NOT using validation data")
-
-    ##########################################################
-    #   Setup model
-    ##########################################################
+    datasets_types, datasets_shapes = get_datasets_types()
+    dataset_names = datasets_types[datasets_type]
+    dataset_shape = datasets_shapes[datasets_type]
 
     # the shape of each sample
-    input_shape = data["training"][0].shape
-
-    # from hypa extract model param
-    model_param = get_model_param_transfer(hypa, num_labels, input_shape)
-
-    # get the model
-    model, base_model = TRAmodel(data=data, **model_param)
-    model.summary()
+    input_shape = (*dataset_shape, 3)
 
     # from hypa extract training param (epochs, batch, opt, ...)
     training_param = get_training_param_transfer(
         hypa, use_validation, tensorboard_logs_folder, model_path
     )
+
+    # load datasets
+    processed_folder = Path("data_split")
+    data_split_paths = [processed_folder / f"{dn}" for dn in dataset_names]
+    # data, labels = load_triple(data_paths, words)
+
+    # assemble the gen_param for the generators
+    gen_param = {
+        "dim": dataset_shape,
+        "batch_size": training_param["batch_sizes"][0],
+        "shuffle": True,
+        "label_names": words,
+        "data_split_paths": data_split_paths,
+    }
+
+    # maybe concatenate the valdation and training lists
+    val_generator: ty.Optional[AudioGenerator] = None
+    if use_validation:
+        val_generator = AudioGenerator(partition["validation"], ids2labels, **gen_param)
+        logg.debug("Using validation data")
+    else:
+        partition["training"].extend(partition["validation"])
+        logg.debug("NOT using validation data")
+
+    # create the training generator with the modified (maybe) list of IDs
+    training_generator = AudioGenerator(partition["training"], ids2labels, **gen_param)
+    logg.debug(f"len(training_generator): {len(training_generator)}")
+
+    ###### always create the test generator
+    # do not shuffle the test data
+    gen_param["shuffle"] = False
+    # do not batch it, no loss of stray data at the end
+    gen_param["batch_size"] = 1
+    testing_generator = AudioGenerator(partition["testing"], ids2labels, **gen_param)
+
+    ##########################################################
+    #   Setup model
+    ##########################################################
+
+    # from hypa extract model param
+    model_param = get_model_param_transfer(hypa, num_labels, input_shape)
+    data_mean, data_variance = get_generator_mean_var(training_generator)
+
+    # get the model
+    model, base_model = TRAmodel(
+        data_mean=data_mean, data_variance=data_variance, **model_param
+    )
+    model.summary()
 
     # a dict to recreate this training
     recap: ty.Dict[str, ty.Any] = {}
@@ -537,16 +576,14 @@ def train_transfer(
 
     model.compile(
         optimizer=training_param["opt"][0],
-        loss=tf.keras.losses.CategoricalCrossentropy(),
+        loss=tf_losses.CategoricalCrossentropy(),
         metrics=training_param["metrics"][0],
     )
 
     results_freeze = model.fit(
-        x,
-        y,
-        validation_data=val_data,
+        training_generator,
+        validation_data=val_generator,
         epochs=training_param["epoch_num"][0],
-        batch_size=training_param["batch_sizes"][0],
         callbacks=training_param["callbacks"][0],
     )
 
@@ -590,16 +627,14 @@ def train_transfer(
 
     model.compile(
         optimizer=training_param["opt"][1],  # Low learning rate
-        loss=tf.keras.losses.CategoricalCrossentropy(),
+        loss=tf_losses.CategoricalCrossentropy(),
         metrics=training_param["metrics"][1],
     )
 
     results_full = model.fit(
-        x,
-        y,
-        validation_data=val_data,
+        training_generator,
+        validation_data=val_generator,
         epochs=training_param["epoch_num"][1],
-        batch_size=training_param["batch_sizes"][1],
         callbacks=training_param["callbacks"][1],
     )
 
@@ -615,14 +650,17 @@ def train_transfer(
     results_full_recap["results_recap_version"] = "001"
 
     # evaluate performance
-    eval_testing = model.evaluate(data["testing"], labels["testing"])
+    eval_testing = model.evaluate(testing_generator)
     for metrics_name, value in zip(model.metrics_names, eval_testing):
         logg.debug(f"{metrics_name}: {value}")
         results_full_recap[metrics_name] = value
 
     # compute the confusion matrix
-    y_pred = model.predict(data["testing"])
-    cm = pred_hot_2_cm(labels["testing"], y_pred, words)
+    y_pred = model.predict(testing_generator)
+    y_pred_labels = testing_generator.pred2labelnames(y_pred)
+    y_true = testing_generator.get_true_labels()
+    # cm = pred_hot_2_cm(y_true, y_pred, words)
+    cm = confusion_matrix(y_true, y_pred_labels)
     results_full_recap["cm"] = cm.tolist()
 
     # compute the fscore

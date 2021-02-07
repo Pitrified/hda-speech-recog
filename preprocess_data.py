@@ -1,22 +1,17 @@
-import argparse
-import json
-import logging
 from pathlib import Path
-
-from tqdm import tqdm  # type: ignore
-import librosa  # type: ignore
-
 from sklearn.preprocessing import LabelEncoder  # type: ignore
 from tensorflow.keras.utils import to_categorical  # type: ignore
+from tqdm import tqdm  # type: ignore
+import argparse
+import json
+import librosa  # type: ignore
+import logging
+import multiprocessing as mp
 import numpy as np  # type: ignore
+import typing as ty
 
 from utils import setup_logger
 from utils import words_types
-
-from typing import Iterable
-from typing import Dict
-from typing import List
-from typing import Tuple
 
 
 def parse_arguments():
@@ -28,7 +23,7 @@ def parse_arguments():
         "--preprocess_type",
         type=str,
         default="preprocess_spec",
-        choices=["preprocess_spec", "compose_spec"],
+        choices=["preprocess_spec", "compose_spec", "preprocess_split"],
         help="Which preprocess to perform",
     )
 
@@ -79,6 +74,11 @@ def setup_env():
     return args
 
 
+##########################################################
+#   Utils
+##########################################################
+
+
 def wav2mfcc(wav_path, mfcc_kwargs, p2d_kwargs):
     """TODO: what is wav2mfcc doing?"""
     sig, sample_rate = librosa.load(wav_path, sr=None)
@@ -112,6 +112,11 @@ def wav2mel(wav_path, mel_kwargs, p2d_kwargs):
     return padded_log_mel
 
 
+##########################################################
+#   Spec by fold
+##########################################################
+
+
 def get_spec_dict():
     """TODO: what is get_spec_dict doing?"""
 
@@ -143,19 +148,6 @@ def get_spec_dict():
     }
 
     return spec_dict
-
-
-def get_compose_types():
-    """TODO: what is get_compose_types doing?"""
-
-    compose_types = {
-        "melc1": ["mel06", "mel08"],
-        "melc2": ["mel07", "mel12"],
-        "melc3": ["mel13", "mel14"],
-        "melc4": ["mel13", "mel15"],
-    }
-
-    return compose_types
 
 
 def preprocess_spec(
@@ -224,7 +216,7 @@ def preprocess_spec(
             word_in_path = dataset_path / word
             logg.debug(f"Processing folder: {word_in_path}")
 
-            word_spec: Dict[str, List[np.ndarray]] = {
+            word_spec: ty.Dict[str, ty.List[np.ndarray]] = {
                 "training": [],
                 "validation": [],
                 "testing": [],
@@ -313,6 +305,24 @@ def test_load_processed():
     load_processed(processed_path, words)
 
 
+##########################################################
+#   Composed spec by fold
+##########################################################
+
+
+def get_compose_types():
+    """TODO: what is get_compose_types doing?"""
+
+    compose_types = {
+        "melc1": ["mel06", "mel08"],
+        "melc2": ["mel07", "mel12"],
+        "melc3": ["mel13", "mel14"],
+        "melc4": ["mel13", "mel15"],
+    }
+
+    return compose_types
+
+
 def compose_spec(
     which_dataset: str, words_type: str, force_preprocess: bool = False
 ) -> None:
@@ -368,21 +378,21 @@ def compose_spec(
 
 
 def load_triple(
-    data_paths: Iterable[Path], words: Iterable[str]
-) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
+    data_paths: ty.Iterable[Path], words: ty.Iterable[str]
+) -> ty.Tuple[ty.Dict[str, np.ndarray], ty.Dict[str, np.ndarray]]:
     """TODO: what is load_triple doing?"""
     # logg = logging.getLogger(f"c.{__name__}.load_triple")
     # logg.setLevel("INFO")
     # logg.debug("Start load_triple")
 
-    all_loaded_words: Dict[str, np.ndarray] = {}
-    all_loaded_labels: Dict[str, np.ndarray] = {}
+    all_loaded_words: ty.Dict[str, np.ndarray] = {}
+    all_loaded_labels: ty.Dict[str, np.ndarray] = {}
 
     for which in ["training", "validation", "testing"]:
         # logg.debug(f"\nwhich: {which}")
 
-        data: List[np.ndarray] = []
-        labels: List[np.ndarray] = []
+        data: ty.List[np.ndarray] = []
+        labels: ty.List[np.ndarray] = []
 
         for this_path in data_paths:
             # this_name = this_path.name
@@ -445,6 +455,157 @@ def test_load_triple(args: argparse.Namespace) -> None:
     load_triple(data_paths, words)
 
 
+##########################################################
+#   Split spec
+##########################################################
+
+
+def compute_folder_spec(
+    word_in_folder,
+    word_out_folder,
+    dataset_name,
+    force_preprocess,
+    spec_kwargs,
+    p2d_kwargs,
+) -> None:
+    """TODO: what is compute_folder_spec doing?"""
+    # extract all the wavs
+    all_wavs = list(word_in_folder.iterdir())
+
+    for wav_path in all_wavs:
+        wav_stem = wav_path.stem
+
+        spec_path = word_out_folder / f"{wav_stem}.npy"
+        if spec_path.exists():
+            if force_preprocess:
+                pass
+            else:
+                continue
+
+        if dataset_name.startswith("mfcc"):
+            log_spec = wav2mfcc(wav_path, spec_kwargs, p2d_kwargs)
+        elif dataset_name.startswith("mel"):
+            log_spec = wav2mel(wav_path, spec_kwargs, p2d_kwargs)
+
+        # img_spec = log_spec.reshape((*log_spec.shape, 1))
+        # np.save(spec_path, img_spec)
+        np.save(spec_path, log_spec)
+
+
+def preprocess_split(
+    dataset_name: str, words_type: str, force_preprocess: bool = False
+) -> None:
+    """TODO: what is preprocess_split doing?"""
+    logg = logging.getLogger(f"c.{__name__}.preprocess_split")
+    # logg.setLevel("INFO")
+    # logg.debug("Start preprocess_split")
+
+    # original / processed dataset base locations
+    data_raw_path = Path("data_raw")
+    processed_folder = Path("data_split") / f"{dataset_name}"
+    if not processed_folder.exists():
+        processed_folder.mkdir(parents=True, exist_ok=True)
+
+    # args for the power_to_db function
+    p2d_kwargs = {"ref": np.max}
+
+    # args for the mfcc spec
+    spec_dict = get_spec_dict()
+    spec_kwargs = spec_dict[dataset_name]
+
+    arguments = []
+
+    words = words_types[words_type]
+    for word in words:
+        # logg.debug(f"Processing {word}")
+
+        # the output folder path
+        word_out_folder = processed_folder / word
+        if not word_out_folder.exists():
+            word_out_folder.mkdir(parents=True, exist_ok=True)
+
+        # the input folder path
+        word_in_folder = data_raw_path / word
+
+        # build the arguments of the functions you will run
+        arguments.append(
+            (
+                word_in_folder,
+                word_out_folder,
+                dataset_name,
+                force_preprocess,
+                spec_kwargs,
+                p2d_kwargs,
+            )
+        )
+
+    logg.info(f"dataset_name: {dataset_name}")
+    pool = mp.Pool(processes=mp.cpu_count() * 2)
+    results = [pool.apply_async(compute_folder_spec, args=a) for a in arguments]
+    for p in tqdm(results):
+        p.get()
+
+
+def prepare_partitions(
+    words_type: str,
+) -> ty.Tuple[ty.Dict[str, ty.List[str]], ty.Dict[str, ty.Tuple[str, str]]]:
+    """TODO: what is prepare_partitions doing?
+
+    TODO: add unknown, silence and things
+    """
+    logg = logging.getLogger(f"c.{__name__}.prepare_partitions")
+    # logg.setLevel("INFO")
+    logg.debug("Start prepare_partitions")
+
+    data_raw_path = Path("data_raw")
+
+    # list of file names for validation
+    validation_path = data_raw_path / "validation_list.txt"
+    validation_names = []
+    with validation_path.open() as fvp:
+        for line in fvp:
+            validation_names.append(line.strip())
+
+    # list of file names for testing
+    testing_path = data_raw_path / "testing_list.txt"
+    testing_names = []
+    with testing_path.open() as fvp:
+        for line in fvp:
+            testing_names.append(line.strip())
+
+    partition: ty.Dict[str, ty.List[str]] = {
+        "training": [],
+        "validation": [],
+        "testing": [],
+    }
+    ids2labels: ty.Dict[str, ty.Tuple[str, str]] = {}
+
+    words = words_types[words_type]
+    logg.debug(f"Partinioning words: {words}")
+    for word in tqdm(words):
+
+        # the input folder path
+        word_in_folder = data_raw_path / word
+
+        # go through all the words in this folder
+        for wav_path in word_in_folder.iterdir():
+            wav_stem = wav_path.stem
+            wav_name = f"{word}/{wav_path.name}"
+
+            if wav_name in validation_names:
+                which = "validation"
+            elif wav_name in testing_names:
+                which = "testing"
+            else:
+                which = "training"
+
+            ID = wav_name
+            partition[which].append(ID)
+            ids2labels[ID] = (word, wav_stem)
+
+    return partition, ids2labels
+
+
 def run_preprocess_data(args) -> None:
     """TODO: What is preprocess_data doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_preprocess_data")
@@ -459,6 +620,8 @@ def run_preprocess_data(args) -> None:
         preprocess_spec(which_dataset, words_type, force_preprocess)
     elif preprocess_type == "compose_spec":
         compose_spec(which_dataset, words_type, force_preprocess)
+    elif preprocess_type == "preprocess_split":
+        preprocess_split(which_dataset, words_type, force_preprocess)
     # test_load_processed()
     # test_load_triple(args)
 

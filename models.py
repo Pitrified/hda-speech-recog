@@ -3,6 +3,7 @@ from tensorflow.keras import models  # type: ignore
 from tensorflow.keras import layers as L  # type: ignore
 from tensorflow.keras import backend as K  # type: ignore
 from tensorflow.keras import utils as U  # type: ignore
+
 # from tensorflow.keras.applications import Xception  # type: ignore
 from tensorflow.keras import applications  # type: ignore
 
@@ -177,7 +178,9 @@ def AttentionModel(
     return model
 
 
-def TRAmodel(num_labels, input_shape, net_type, dense_widths, dropout, data):
+def TRAmodel(
+    num_labels, input_shape, net_type, dense_widths, dropout, data_mean, data_variance
+) -> tf.keras.models.Model:
     """"""
 
     if net_type == "TRA":
@@ -194,9 +197,7 @@ def TRAmodel(num_labels, input_shape, net_type, dense_widths, dropout, data):
     # load weights pre-trained on ImageNet
     # do not include the ImageNet classifier at the top
     base_model = pretrained_model(
-        weights="imagenet",
-        input_shape=input_shape,
-        include_top=False,
+        weights="imagenet", input_shape=input_shape, include_top=False,
     )
 
     # freeze the base_model
@@ -207,8 +208,10 @@ def TRAmodel(num_labels, input_shape, net_type, dense_widths, dropout, data):
 
     # normalize the data for xception
     # https://www.tensorflow.org/api_docs/python/tf/keras/layers/experimental/preprocessing/Normalization
-    norm_layer = L.experimental.preprocessing.Normalization()
-    norm_layer.adapt(data["training"])
+    norm_layer = L.experimental.preprocessing.Normalization(
+        mean=data_mean, variance=data_variance
+    )
+    # norm_layer.adapt(data)
 
     x = norm_layer(inputs)
 
