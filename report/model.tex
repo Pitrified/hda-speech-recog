@@ -27,7 +27,9 @@ extracted.
 Several background noise recording are included as well.
 The full dataset includes $105829$ utterances of $35$ words, saved in
 \textit{.wav} format at $16$ KHz rate.
-The dataset is released under the Creative Commons BY $4.0$ License \cite{ccby4}.
+The dataset is released under the Creative Commons 
+Attribution $4.0$ International (CC~BY~$4.0$)
+License \cite{ccby4}.
 
 The dataset ships with a function to split the data in train, validation and
 test folds, as well as two example lists of validation data ($9981$ utterances)
@@ -53,6 +55,20 @@ and the words from a Kaggle competition aimed at solving this task:
 [\texttt{yes}, \texttt{no}, \texttt{up}, \texttt{down}, \texttt{left},
 \texttt{right}, \texttt{on}, \texttt{off}, \texttt{stop}, \texttt{go}]
 and a 20 words task is composed by the numbers and the Kaggle list.
+
+\subsection{Free Spoken Digit Dataset}
+
+As a final test dataset, the Free Spoken Digit Dataset was used
+\cite{zohar_jackson_2018_1342401}.
+The current version of the dataset contains $3000$ recordings made by $6$
+speakers, $50$ utterances of each digit per speaker.
+Each utterance is saved in \textit{.wav} format at $8$ KHz rate.
+The dataset is released under the Creative Commons 
+Attribution-ShareAlike $4.0$ International (CC~BY-SA~$4.0$)
+License \cite{ccbysa4}.
+
+The dataset was only used after all hyper-parameters were tuned, to evaluate
+the performances on fresh data.
 
 \subsection{Mel spectrogram and Mel-frequency Cepstral Coefficients}
 
