@@ -1,8 +1,9 @@
 from pathlib import Path
-import argparse
-import logging
-import librosa  # type: ignore
 from scipy.io.wavfile import write as write_wav  # type: ignore
+from tqdm import tqdm  # type: ignore
+import argparse
+import librosa  # type: ignore
+import logging
 import numpy as np  # type: ignore
 
 from augment_data import pad_signal
@@ -36,7 +37,11 @@ def setup_env() -> argparse.Namespace:
 
 
 def preprocess_fsdd() -> None:
-    """TODO: what is preprocess_fsdd doing?"""
+    """TODO: what is preprocess_fsdd doing?
+
+    Get the dataset with:
+    git clone https://github.com/Jakobovski/free-spoken-digit-dataset.git ~/free_spoken_digit_dataset
+    """
     logg = logging.getLogger(f"c.{__name__}.preprocess_fsdd")
     # logg.setLevel("INFO")
     logg.debug("Start preprocess_fsdd")
@@ -56,6 +61,10 @@ def preprocess_fsdd() -> None:
     logg.debug(f"fsdd_proc_folder: {fsdd_proc_folder}")
     if not fsdd_proc_folder.exists():
         fsdd_proc_folder.mkdir(parents=True, exist_ok=True)
+
+    # the file to list the file names for the testing fold
+    test_list_path = fsdd_proc_folder / "testing_list_fsdd.txt"
+    word_test_list = []
 
     num2name = {
         0: "fsdd_zero",
@@ -81,10 +90,11 @@ def preprocess_fsdd() -> None:
     # the target sr
     new_sr = 16000
 
-    for wav_path in fsdd_rec_folder.iterdir():
-        logg.debug(f"wav_path: {wav_path}")
+    for wav_path in tqdm(fsdd_rec_folder.iterdir()):
+        # logg.debug(f"wav_path: {wav_path}")
 
         wav_name = wav_path.name
+        # logg.debug(f"wav_name: {wav_name}")
 
         orig_sig, orig_sr = librosa.load(wav_path, sr=None)
         # logg.debug(f"orig_sig.shape: {orig_sig.shape} orig_sr: {orig_sr}")
@@ -103,10 +113,21 @@ def preprocess_fsdd() -> None:
         else:
             rolled_sig = padded_sig
 
+        # the label of this word
+        word_label = num2name[int(wav_name[0])]
+
         # save the processed file
-        name_folder = fsdd_proc_folder / num2name[int(wav_name[0])]
+        name_folder = fsdd_proc_folder / word_label
         new_path = name_folder / wav_name
         write_wav(new_path, new_sr, rolled_sig)
+
+        # create the id for this word
+        word_id = f"{word_label}/{wav_name}"
+        word_test_list.append(word_id)
+
+    # save the IDs
+    word_test_str = "\n".join(word_test_list)
+    test_list_path.write_text(word_test_str)
 
 
 def run_fsdd_preprocess(args: argparse.Namespace) -> None:

@@ -62,6 +62,14 @@ def parse_arguments() -> argparse.Namespace:
         help="Words to record and test",
     )
 
+    parser.add_argument(
+        "-dn",
+        "--dataset_name",
+        type=str,
+        default="mel01",
+        help="Name of the dataset folder",
+    )
+
     # last line to parse the args
     args = parser.parse_args()
     return args
@@ -379,34 +387,67 @@ def make_plots_cnn() -> None:
     #     plt.close(fig)
 
 
-def evaluate_model_cnn(args):
+def evaluate_model_cnn(
+    which_dataset: str, train_words_type: str, test_words_type: str
+) -> None:
     """TODO: what is evaluate_model_cnn doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_model_cnn")
     # logg.setLevel("INFO")
     logg.debug("Start evaluate_model_cnn")
 
-    train_words_type = args.train_words_type
-    dataset = "mel01"
-
     # magic to fix the GPUs
     setup_gpus()
 
     # setup the parameters
-    hypa: ty.Dict[str, ty.Union[str, int]] = {}
-    hypa["base_dense_width"] = 32
-    hypa["base_filters"] = 20
-    hypa["batch_size"] = 32
-    hypa["dropout_type"] = "01"
-    hypa["epoch_num"] = 16
-    hypa["kernel_size_type"] = "02"
-    hypa["pool_size_type"] = "02"
-    hypa["learning_rate_type"] = "02"
-    hypa["optimizer_type"] = "a1"
-    hypa["dataset"] = dataset
+    # hypa: ty.Dict[str, ty.Union[str, int]] = {}
+    # hypa["base_dense_width"] = 32
+    # hypa["base_filters"] = 20
+    # hypa["batch_size"] = 32
+    # hypa["dropout_type"] = "01"
+    # # hypa["epoch_num"] = 16
+    # hypa["epoch_num"] = 15
+    # hypa["kernel_size_type"] = "02"
+    # # hypa["pool_size_type"] = "02"
+    # hypa["pool_size_type"] = "01"
+    # # hypa["learning_rate_type"] = "02"
+    # hypa["learning_rate_type"] = "04"
+    # hypa["optimizer_type"] = "a1"
+    # hypa["dataset"] = which_dataset
+    # hypa["words"] = train_words_type
+
+    # hypa: ty.Dict[str, ty.Union[str, int]] = {}
+    # hypa["base_dense_width"] = 32
+    # hypa["base_filters"] = 32
+    # hypa["batch_size"] = 32
+    # hypa["dropout_type"] = "02"
+    # hypa["epoch_num"] = 15
+    # hypa["kernel_size_type"] = "02"
+    # hypa["pool_size_type"] = "01"
+    # hypa["learning_rate_type"] = "04"
+    # hypa["optimizer_type"] = "a1"
+    # hypa["dataset"] = which_dataset
+    # hypa["words"] = train_words_type
+
+    hypa: ty.Dict[str, ty.Union[str, int]] = {
+        "base_dense_width": 32,
+        "base_filters": 32,
+        "batch_size": 32,
+        # "dataset": "aug07",
+        "dropout_type": "01",
+        "epoch_num": 15,
+        "kernel_size_type": "02",
+        "learning_rate_type": "04",
+        "optimizer_type": "a1",
+        "pool_size_type": "01",
+        # "words": "all",
+    }
+
+    hypa["dataset"] = which_dataset
     hypa["words"] = train_words_type
 
     # get the words
-    train_words = words_types[train_words_type]
+    # train_words = words_types[train_words_type]
+    test_words = words_types[test_words_type]
 
     model_name = build_cnn_name(hypa)
     logg.debug(f"model_name: {model_name}")
@@ -421,8 +462,8 @@ def evaluate_model_cnn(args):
     model.summary()
 
     # input data
-    processed_path = Path("data_proc") / f"{dataset}"
-    data, labels = load_processed(processed_path, train_words)
+    processed_path = Path("data_proc") / f"{which_dataset}"
+    data, labels = load_processed(processed_path, test_words)
     logg.debug(f"data['testing'].shape: {data['testing'].shape}")
 
     # evaluate on the words you trained on
@@ -432,14 +473,14 @@ def evaluate_model_cnn(args):
 
     # predict labels/cm/fscore
     y_pred = model.predict(data["testing"])
-    cm = pred_hot_2_cm(labels["testing"], y_pred, train_words)
+    cm = pred_hot_2_cm(labels["testing"], y_pred, test_words)
     # y_pred = model.predict(data["validation"])
-    # cm = pred_hot_2_cm(labels["validation"], y_pred, train_words)
-    fscore = analyze_confusion(cm, train_words)
+    # cm = pred_hot_2_cm(labels["validation"], y_pred, test_words)
+    fscore = analyze_confusion(cm, test_words)
     logg.debug(f"fscore: {fscore}")
 
     fig, ax = plt.subplots(figsize=(12, 12))
-    plot_confusion_matrix(cm, ax, model_name, train_words, fscore)
+    plot_confusion_matrix(cm, ax, model_name, test_words, fscore)
 
     plt.show()
 
@@ -666,8 +707,9 @@ def run_evaluate_cnn(args: argparse.Namespace) -> None:
     logg.debug("Starting run_evaluate_cnn")
 
     evaluation_type = args.evaluation_type
-    # train_words_type = args.train_words_type
-    # rec_words_type = args.rec_words_type
+    train_words_type = args.train_words_type
+    rec_words_type = args.rec_words_type
+    which_dataset = args.dataset_name
 
     pd.set_option("max_colwidth", 100)
 
@@ -676,7 +718,7 @@ def run_evaluate_cnn(args: argparse.Namespace) -> None:
     elif evaluation_type == "make_plots":
         make_plots_cnn()
     elif evaluation_type == "model":
-        evaluate_model_cnn(args)
+        evaluate_model_cnn(which_dataset, train_words_type, rec_words_type)
     elif evaluation_type == "audio":
         evaluate_audio_cnn(args)
     elif evaluation_type == "delete_bad_models":

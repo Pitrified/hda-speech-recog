@@ -365,3 +365,39 @@ def find_rowcol(n: int) -> ty.Tuple[int, int]:
         return sn_low, sn_high
     else:
         return sn_high, sn_high
+
+
+def get_val_test_list(dataset_path: Path) -> ty.Tuple[ty.List[str], ty.List[str]]:
+    """TODO: what is get_val_test_list doing?"""
+    logg = logging.getLogger(f"c.{__name__}.get_val_test_list")
+    # logg.setLevel("INFO")
+    logg.debug("Start get_val_test_list")
+
+    # list of file names for validation
+    validation_path = dataset_path / "validation_list.txt"
+    validation_names = []
+    with validation_path.open() as fvp:
+        for line in fvp:
+            validation_names.append(line.strip())
+    # logg.debug(f"validation_names: {validation_names[:10]}")
+
+    # list of file names for testing
+    testing_names = []
+
+    testing_paths = []
+    testing_paths.append(dataset_path / "testing_list.txt")
+    testing_paths.append(dataset_path / "testing_list_fsdd.txt")
+
+    for testing_path in testing_paths:
+
+        if not testing_path.exists():
+            logg.warn(f"Missing testing list file: {testing_path}")
+            continue
+
+        with testing_path.open() as fvp:
+            for line in fvp:
+                testing_names.append(line.strip())
+
+    # logg.debug(f"testing_names: {testing_names[:10]}")
+
+    return validation_names, testing_names

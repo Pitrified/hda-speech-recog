@@ -1,15 +1,15 @@
 from pathlib import Path
-import argparse
-import logging
-import math
-import typing as ty
-
 from tensorflow_addons.image import sparse_image_warp  # type: ignore
 from tqdm import tqdm  # type: ignore
+import argparse
 import librosa  # type: ignore
+import logging
+import math
 import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
+import typing as ty
 
+from utils import get_val_test_list
 from utils import setup_logger
 from utils import words_types
 
@@ -434,24 +434,13 @@ def do_augmentation(
     # root of the Google dataset
     raw_data_fol = Path("data_raw")
 
+    # the validation and testing lists
+    validation_names, testing_names = get_val_test_list(raw_data_fol)
+
     # output folder
     aug_fol = Path("data_proc") / f"{augmentation_type}"
     if not aug_fol.exists():
         aug_fol.mkdir(parents=True, exist_ok=True)
-
-    # list of file names for validation
-    validation_path = raw_data_fol / "validation_list.txt"
-    validation_names = set()
-    with validation_path.open() as fvp:
-        for line in fvp:
-            validation_names.add(line.strip())
-
-    # list of file names for testing
-    testing_path = raw_data_fol / "testing_list.txt"
-    testing_names = set()
-    with testing_path.open() as fvp:
-        for line in fvp:
-            testing_names.add(line.strip())
 
     # get the list of words
     words = words_types[words_type]
@@ -495,6 +484,9 @@ def do_augmentation(
             sig_original = load_wav(
                 all_wavs_path, word, which_fold, validation_names, testing_names
             )
+
+            if len(sig_original) == 0:
+                continue
 
             # the signals you are generating
             all_signals = []

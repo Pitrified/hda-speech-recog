@@ -2,28 +2,38 @@
 
 ### Misc
 
-* spoken\_digit dataset as final test, ljspeech, vctk.
-* Add silence and unknown labels to learn
-* DataGenerator https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
-* Nel paper di Xception ti dicono che parametri usare per gli optimizer
-* Check fscore in CNN: when doing evaluate precision/recall are at 95 then fscore is 87
-* https://www.pyimagesearch.com/faqs/single-faq/how-do-i-reference-or-cite-one-of-your-blog-posts-books-or-courses/
 * Top one error as metric (described in the Google dataset paper)
+* spoken\_digit dataset as final test, ljspeech, vctk.
+* Analyze fsdd and increase volume?
+* Add silence and unknown labels to learn
+* Nel paper di Xception ti dicono che parametri usare per gli optimizer
+* https://www.pyimagesearch.com/faqs/single-faq/how-do-i-reference-or-cite-one-of-your-blog-posts-books-or-courses/
 * Mode data augmentation, mask, only roll, only stratch...
 * All the documentation
 * More AreaNet
 * Multiple training of the same hypas to check consistency, build model name takes a param and finds the first `_00x` free
 
+##### Done
+
+* Check fscore in CNN: when doing evaluate precision/recall are at 95 then fscore is 87
+* DataGenerator https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
+
 ### Transfer learning
+
+##### Done
 
 * Use different base models in TRA
 
 ### Data augmentation
 
+##### Done
+
 * https://github.com/pyyush/SpecAugment/blob/master/augment.py
 * https://www.kaggle.com/CVxTz/audio-data-augmentation/notebook#Data-augmentation-definition-:
 
 ### Learning rate schedule
+
+##### Done
 
 Function callback:
 

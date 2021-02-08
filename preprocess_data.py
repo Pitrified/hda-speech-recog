@@ -10,6 +10,7 @@ import multiprocessing as mp
 import numpy as np  # type: ignore
 import typing as ty
 
+from utils import get_val_test_list
 from utils import setup_logger
 from utils import words_types
 
@@ -195,21 +196,7 @@ def preprocess_spec(
         recap_path = processed_path / "recap.json"
         recap_path.write_text(json.dumps(recap, indent=4))
 
-        # list of file names for validation
-        validation_path = dataset_path / "validation_list.txt"
-        validation_names = []
-        with validation_path.open() as fvp:
-            for line in fvp:
-                validation_names.append(line.strip())
-        # logg.debug(f"validation_names: {validation_names[:10]}")
-
-        # list of file names for testing
-        testing_path = dataset_path / "testing_list.txt"
-        testing_names = []
-        with testing_path.open() as fvp:
-            for line in fvp:
-                testing_names.append(line.strip())
-        # logg.debug(f"testing_names: {testing_names[:10]}")
+        validation_names, testing_names = get_val_test_list(dataset_path)
 
         words = words_types[words_type]
         for word in words:
@@ -251,6 +238,10 @@ def preprocess_spec(
                 word_spec[which].append(log_spec)
 
             for which in ["training", "validation", "testing"]:
+                if len(word_spec[which]) == 0:
+                    logg.debug(f"No specs for {which}")
+                    continue
+
                 # logg.debug(f"word_spec[{which}][0].shape: {word_spec[which][0].shape}")
                 np_spec = np.stack(word_spec[which])
                 # logg.debug(f"{which} np_spec.shape: {np_spec.shape}")
@@ -268,7 +259,11 @@ def load_processed(processed_path, words):
     for word in words:
         loaded_words[word] = {}
         for which in ["training", "validation", "testing"]:
+
             word_path = processed_path / f"{word}_{which}.npy"
+            if not word_path.exists():
+                continue
+
             word_data = np.load(word_path, allow_pickle=True)
             loaded_words[which].append(word_data)
             word_label = np.full(word_data.shape[0], fill_value=word)
@@ -277,6 +272,9 @@ def load_processed(processed_path, words):
     data = {}
     labels = {}
     for which in ["training", "validation", "testing"]:
+        if len(loaded_words[which]) == 0:
+            # FIXME this is ugly, put for which in folds as outermost cycle
+            continue
         # data have shape (*, 20, 32) so we use vstack
         data[which] = np.vstack(loaded_words[which])
         # labels have shape (*, ) so we use hstack
@@ -286,6 +284,8 @@ def load_processed(processed_path, words):
         # logg.debug(f"labels[{which}].shape: {labels[which].shape}")
 
     for which in ["training", "validation", "testing"]:
+        if len(loaded_words[which]) == 0:
+            continue
         data[which] = np.reshape(data[which], (*data[which].shape, 1))
         y = LabelEncoder().fit_transform(labels[which])
         labels[which] = to_categorical(y)
@@ -559,19 +559,7 @@ def prepare_partitions(
 
     data_raw_path = Path("data_raw")
 
-    # list of file names for validation
-    validation_path = data_raw_path / "validation_list.txt"
-    validation_names = []
-    with validation_path.open() as fvp:
-        for line in fvp:
-            validation_names.append(line.strip())
-
-    # list of file names for testing
-    testing_path = data_raw_path / "testing_list.txt"
-    testing_names = []
-    with testing_path.open() as fvp:
-        for line in fvp:
-            testing_names.append(line.strip())
+    validation_names, testing_names = get_val_test_list(data_raw_path)
 
     partition: ty.Dict[str, ty.List[str]] = {
         "training": [],

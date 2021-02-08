@@ -79,7 +79,10 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "-dr", "--dry_run", action="store_true", help="Do a dry run for the hypa grid",
+        "-dr",
+        "--dry_run",
+        action="store_true",
+        help="Do a dry run for the hypa grid",
     )
 
     # last line to parse the args
@@ -138,14 +141,14 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     # hypa_grid_big["base_dense_width"] = [16, 32, 64, 128]
     hypa_grid_big["base_dense_width"] = [32]
     # hypa_grid_big["base_filters"] = [10, 20, 30, 32, 64, 128]
-    hypa_grid_big["base_filters"] = [32]
+    hypa_grid_big["base_filters"] = [20, 32]
     # hypa_grid_big["batch_size"] = [16, 32, 64]
     hypa_grid_big["batch_size"] = [32]
     ds = []
     ds.extend(["mel01", "mel04", "mela1"])
     # ds.extend(["mel01", "mel02", "mel03", "mel04"])
     # ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
-    ds.extend(["aug02", "aug03", "aug04", "aug05"])
+    # ds.extend(["aug02", "aug03", "aug04", "aug05"])
     ds.extend(["aug06", "aug07", "aug08", "aug09"])
     # ds.extend(["aug10", "aug11", "aug12", "aug13"])
     ds.extend(["aug14", "aug15", "aug16", "aug17"])
@@ -164,8 +167,8 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     # lr.extend(["01", "02", "03"])  # fixed
     # lr.extend(["e1"])  # exp_decay_keras_01
     lr.extend(["04"])  # exp_decay_step_01
-    # lr.extend(["05"])  # exp_decay_smooth_01
-    # lr.extend(["06"])  # exp_decay_smooth_02
+    lr.extend(["05"])  # exp_decay_smooth_01
+    lr.extend(["06"])  # exp_decay_smooth_02
     hypa_grid_big["learning_rate_type"] = lr
     hypa_grid_big["optimizer_type"] = ["a1"]
     hypa_grid_big["words"] = [words_type]
@@ -284,7 +287,7 @@ def train_model(hypa, force_retrain):
             return
 
     # save info regarding the model training in this folder
-    info_folder = Path("info") / model_name
+    info_folder = Path("info") / "cnn" / model_name
     if not info_folder.exists():
         info_folder.mkdir(parents=True, exist_ok=True)
 
@@ -366,7 +369,9 @@ def train_model(hypa, force_retrain):
     ]
 
     model.compile(
-        optimizer=opt, loss=tf.keras.losses.CategoricalCrossentropy(), metrics=metrics,
+        optimizer=opt,
+        loss=tf.keras.losses.CategoricalCrossentropy(),
+        metrics=metrics,
     )
 
     # setup callbacks
