@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from sklearn.metrics import confusion_matrix  # type: ignore
 from sklearn.preprocessing import LabelEncoder  # type: ignore
@@ -291,6 +292,28 @@ def test_audio_generator(words_type: str) -> None:
     plot_confusion_matrix(cm, ax, "Test generator", words, fscore)
     fig.tight_layout()
     plt.show()
+
+
+def get_generator_mean_var_cached(
+    au_gen: AudioGenerator, words_type: str, datasets_type: str, processed_folder: Path
+) -> ty.Tuple[float, float]:
+    """TODO: what is get_generator_mean_var_cached doing?"""
+    logg = logging.getLogger(f"c.{__name__}.get_generator_mean_var_cached")
+    # logg.setLevel("INFO")
+    logg.debug("Start get_generator_mean_var_cached")
+
+    meanvar_name = f"meanvar_{words_type}_{datasets_type}.json"
+    meanvar_path = processed_folder / meanvar_name
+
+    if meanvar_path.exists():
+        meanvar = json.loads(meanvar_path.read_text())
+        return meanvar["mean"], meanvar["var"]
+
+    mean, var = get_generator_mean_var(au_gen)
+    meanvar = {"mean": mean, "var": var}
+    meanvar_path.write_text(json.dumps(meanvar, indent=4))
+
+    return mean, var
 
 
 def get_generator_mean_var(au_gen) -> ty.Tuple[float, float]:

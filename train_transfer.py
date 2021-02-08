@@ -14,10 +14,11 @@ import tensorflow.keras.optimizers as tf_optimizers  # type: ignore
 import typing as ty
 
 from audio_generator import AudioGenerator
-from audio_generator import get_generator_mean_var
+from audio_generator import get_generator_mean_var_cached
 from models import TRAmodel
 from plot_utils import plot_confusion_matrix
 from preprocess_data import prepare_partitions
+from preprocess_data import preprocess_split
 from schedules import exp_decay_smooth
 from schedules import exp_decay_step
 from utils import analyze_confusion
@@ -74,7 +75,10 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "-dr", "--dry_run", action="store_true", help="Do a dry run for the hypa grid",
+        "-dr",
+        "--dry_run",
+        action="store_true",
+        help="Do a dry run for the hypa grid",
     )
 
     # last line to parse the args
@@ -159,8 +163,8 @@ def hyper_train_transfer(
     arch = []
     # arch.append("TRA")  # Xception
     arch.append("TD1")  # DenseNet121
-    # arch.append("TB0")  # EfficientNetB0
-    # arch.append("TB4")  # EfficientNetB4
+    arch.append("TB0")  # EfficientNetB0
+    arch.append("TB4")  # EfficientNetB4
     # arch.append("TB7")  # EfficientNetB7
     hypa_grid["net_type"] = arch
 
@@ -200,14 +204,14 @@ def hyper_train_transfer(
     ###### the number of epochs
     en = []
     # en.extend(["01"])  # [20, 10]
-    # en.extend(["02"])  # [40, 20]
-    en.extend(["03"])  # [1, 1]
+    en.extend(["02"])  # [40, 20]
+    # en.extend(["03"])  # [1, 1]
     hypa_grid["epoch_num_type"] = en
 
     ###### the learning rates for the optimizer
     lr = []
     # lr.extend(["01", "02"])  # fixed
-    # lr.extend(["03"])  # exp_decay_step_01
+    lr.extend(["03"])  # exp_decay_step_01
     lr.extend(["04"])  # exp_decay_smooth_01
     hypa_grid["learning_rate_type"] = lr
 
@@ -251,21 +255,17 @@ def hyper_train_transfer(
         logg.debug(f"tra_info: {tra_info}")
         return
 
-    # FIXME use the new split data
     # check that the data is available
+    datasets_types, _ = get_datasets_types()
     # for each type of dataset that will be used
-    # datasets_types, _ = get_datasets_types()
-    # for dt in hypa_grid["datasets_type"]:
-    #     # get the dataset name list
-    #     dataset_names = datasets_types[dt]
-    #     for dn in dataset_names:
-    #         # and check that the data is available for each word type
-    #         for wt in hypa_grid["words_type"]:
-    #             logg.debug(f"\nwt: {wt} dn: {dn}\n")
-    #             if dn.startswith("melc"):
-    #                 compose_spec(dn, wt)
-    #             else:
-    #                 preprocess_spec(dn, wt)
+    for dt in hypa_grid["datasets_type"]:
+        # get the dataset name list
+        dataset_names = datasets_types[dt]
+        for dn in dataset_names:
+            # and check that the data is available for each word type
+            for wt in hypa_grid["words_type"]:
+                logg.debug(f"\nwt: {wt} dn: {dn}")
+                preprocess_split(dn, wt)
 
     ##########################################################
     #   Train all hypas
@@ -547,7 +547,11 @@ def train_transfer(
 
     # from hypa extract model param
     model_param = get_model_param_transfer(hypa, num_labels, input_shape)
-    data_mean, data_variance = get_generator_mean_var(training_generator)
+
+    # get mean and var to normalize the data
+    data_mean, data_variance = get_generator_mean_var_cached(
+        training_generator, words_type, datasets_type, processed_folder
+    )
 
     # get the model
     model, base_model = TRAmodel(
