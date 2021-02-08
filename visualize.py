@@ -65,6 +65,11 @@ def visualize_spec():
     word_folder = dataset_path / word
     # sample_path = word_folder / "0a2b400e_nohash_0.wav"
     sample_path = list(word_folder.iterdir())[2]
+
+    # sample_path = "/home/pmn/free_spoken_digit_dataset/recordings/3_theo_10.wav"
+    # sample_path = "/home/pmn/uni/human_data/progetto2020/src/data_fsdd_raw/five/5_yweweler_30.wav"
+    # sample_path = "/home/pmn/uni/human_data/progetto2020/src/data_fsdd_raw/fsdd_five/5_yweweler_30.wav"
+    # sample_path = "/home/pmn/uni/human_data/progetto2020/src/data_fsdd_raw/fsdd_five/5_yweweler_33.wav"
     logg.debug(f"sample_path: {sample_path}")
 
     # fig, ax = plt.subplots(3, 1, figsize=(12, 12))

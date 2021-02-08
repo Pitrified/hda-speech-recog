@@ -63,6 +63,19 @@ def define_words_types():
         "nine",
     ]
 
+    WORDS_NUMBERS_FSDD = [
+        "fsdd_zero",
+        "fsdd_one",
+        "fsdd_two",
+        "fsdd_three",
+        "fsdd_four",
+        "fsdd_five",
+        "fsdd_six",
+        "fsdd_seven",
+        "fsdd_eight",
+        "fsdd_nine",
+    ]
+
     WORDS_DIRECTION = ["up", "down", "forward", "backward", "left", "right"]
 
     WORDS_KAGGLE_1 = [
@@ -105,6 +118,7 @@ def define_words_types():
         "all": WORDS_ALL,
         "dir": WORDS_DIRECTION,
         "num": WORDS_NUMBERS,
+        "fsdd": WORDS_NUMBERS_FSDD,
         "k1": WORDS_KAGGLE_1,
         "w2": WORDS_TASK_20,
         "f1": ["happy", "learn", "wow", "visual"],
