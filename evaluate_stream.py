@@ -6,6 +6,7 @@ import logging
 import numpy as np  # type: ignore
 import re
 import typing as ty
+import matplotlib.pyplot as plt  # type: ignore
 
 from augment_data import augment_signals
 from train_cnn import build_cnn_name
@@ -80,7 +81,8 @@ def build_ltts_sentence_list(
     logg.debug(f"ltts_base_folder: {ltts_base_folder}")
 
     # get the words
-    train_words = words_types["all"]
+    # train_words = words_types["all"]
+    train_words = words_types[train_words_type]
 
     train_words_bound = [fr"\b{w}\b" for w in train_words]
     # logg.debug(f"train_words_bound: {train_words_bound}")
@@ -131,29 +133,27 @@ def build_ltts_sentence_list(
 
 
 def split_sentence(
-    sentence_wav_path: Path, spec_type: str, sentence_hop_length: int
+    sentence_sig: np.ndarray,
+    spec_type: str,
+    sentence_hop_length: int,
+    new_sr: int = 16000,
 ) -> ty.List[np.ndarray]:
     """MAKEDOC: what is split_sentence doing?"""
     logg = logging.getLogger(f"c.{__name__}.split_sentence")
     logg.setLevel("INFO")
     logg.debug("Start split_sentence")
 
-    # load the sentence and resample it
-    sentence_sig, sentence_sr = librosa.load(sentence_wav_path, sr=None)
-    new_sr = 16000
-    resampled_sig = librosa.resample(sentence_sig, sentence_sr, new_sr)
-
     # split the sentence here
     splits: ty.List[np.ndarray] = []
 
     # count the splits
-    num_split = (len(resampled_sig) - new_sr) // sentence_hop_length
+    num_split = (len(sentence_sig) - new_sr) // sentence_hop_length
     logg.debug(f"num_split: {num_split}")
 
     for split_index in range(num_split):
         start_index = split_index * sentence_hop_length
         end_index = start_index + new_sr
-        split = resampled_sig[start_index:end_index]
+        split = sentence_sig[start_index:end_index]
         logg.debug(f"split.shape: {split.shape}")
         splits.append(split)
 
@@ -214,6 +214,36 @@ def load_trained_model(
     return model
 
 
+def plot_sentence_pred(
+    sentence_sig: np.ndarray,
+    y_pred: np.ndarray,
+    norm_tra: str,
+    train_words: ty.List[str],
+) -> None:
+    """MAKEDOC: what is plot_sentence_pred doing?"""
+    logg = logging.getLogger(f"c.{__name__}.plot_sentence_pred")
+    # logg.setLevel("INFO")
+    logg.debug("Start plot_sentence_pred")
+
+    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(12, 12))
+
+    ax[0].plot(sentence_sig)
+    ax[1].imshow(y_pred.T, cmap=plt.cm.viridis, aspect="auto")
+
+    ax[0].set_title(norm_tra)
+    # norm_tra_list = norm_tra.split()
+    # len_sentence_words = len(norm_tra_list)
+    # x_tickpos = np.arange(len_sentence_words) * len(sentence_sig) / len_sentence_words
+    # ax[0].set_xticks(x_tickpos)
+    # ax[0].set_xticklabels(norm_tra_list, rotation=40)
+
+    y_tickpos = np.arange(len(train_words))
+    ax[1].set_yticks(y_tickpos)
+    ax[1].set_yticklabels(train_words)
+
+    fig.tight_layout()
+
+
 def evaluate_stream(
     evaluation_type: str, datasets_type: str, train_words_type: str
 ) -> None:
@@ -225,25 +255,35 @@ def evaluate_stream(
     # magic to fix the GPUs
     setup_gpus()
 
+    # a random number generator to use
+    rng = np.random.default_rng(12345)
+
+    model_type = "cnn"
+    model = load_trained_model(model_type, datasets_type, train_words_type)
+    # model.summary()
+
     if evaluation_type == "ltts":
         sentence_wav_paths, sentence_norm_tra = build_ltts_sentence_list(
             train_words_type
         )
 
-    # next(iter(mydict.values()))
-    # wav_ID = next(iter(sentence_wav_paths.keys()))
-    wav_ID = list(sentence_wav_paths.keys())[2]
+    # get info for one sentence
+    wav_ID = list(sentence_wav_paths.keys())[40]
     orig_wav_path = sentence_wav_paths[wav_ID]
     logg.debug(f"sentence_wav_paths[{wav_ID}]: {orig_wav_path}")
     norm_tra = sentence_norm_tra[wav_ID]
     logg.debug(f"sentence_norm_tra[{wav_ID}]: {norm_tra}")
 
-    # split the sentence in chunks every sentence_hop_length
-    sentence_hop_length = 16000 // 16
-    splits = split_sentence(orig_wav_path, datasets_type, sentence_hop_length)
+    # the sample rate to use
+    new_sr = 16000
 
-    # a random number generator to use
-    rng = np.random.default_rng(12345)
+    # load the sentence and resample it
+    sentence_sig, sentence_sr = librosa.load(orig_wav_path, sr=None)
+    sentence_sig = librosa.resample(sentence_sig, sentence_sr, new_sr)
+
+    # split the sentence in chunks every sentence_hop_length
+    sentence_hop_length = new_sr // 16
+    splits = split_sentence(sentence_sig, datasets_type, sentence_hop_length)
 
     # compute spectrograms / augment / compose
     if datasets_type.startswith("aug"):
@@ -251,10 +291,6 @@ def evaluate_stream(
         logg.debug(f"specs.shape: {specs.shape}")
         specs_img = np.expand_dims(specs, axis=-1)
         logg.debug(f"specs_img.shape: {specs_img.shape}")
-
-    model_type = "cnn"
-    model = load_trained_model(model_type, datasets_type, train_words_type)
-    # model.summary()
 
     words = sorted(words_types[train_words_type])
     logg.debug(f"words: {words}")
@@ -264,6 +300,9 @@ def evaluate_stream(
     # logg.debug(f"y_index: {y_index}")
     y_pred_labels = [words[i] for i in y_index]
     logg.debug(f"y_pred_labels: {y_pred_labels}")
+
+    plot_sentence_pred(sentence_sig, y_pred, norm_tra, words)
+    plt.show()
 
 
 def run_evaluate_stream(args: argparse.Namespace) -> None:
