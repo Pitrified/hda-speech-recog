@@ -1,11 +1,10 @@
 from pathlib import Path
 from scipy.io.wavfile import write as write_wav  # type: ignore
-import argparse
 import librosa  # type: ignore
-import logging
 import numpy as np  # type: ignore
-import pandas  # type: ignore
 import typing as ty
+import argparse
+import logging
 
 from utils import words_types
 
@@ -41,7 +40,7 @@ def setup_env() -> argparse.Namespace:
     args = parse_arguments()
     # build command string to repeat this run
     # FIXME if an option is a flag this does not work, sorry
-    recap = "python3 ljspeech_preprocess.py"
+    recap = "python3 ltts_preprocess.py"
     for a, v in args._get_kwargs():
         recap += f" --{a} {v}"
     logmain = logging.getLogger(f"c.{__name__}.setup_env")
@@ -49,43 +48,27 @@ def setup_env() -> argparse.Namespace:
     return args
 
 
-def split_ljspeech() -> None:
-    """MAKEDOC: what is split_ljspeech doing?"""
-    logg = logging.getLogger(f"c.{__name__}.split_ljspeech")
+def split_ltts() -> None:
+    """MAKEDOC: what is split_ltts doing?"""
+    logg = logging.getLogger(f"c.{__name__}.split_ltts")
     # logg.setLevel("INFO")
-    logg.debug("Start split_ljspeech")
+    logg.debug("Start split_ltts")
 
     # the location of this file
     this_file_folder = Path(__file__).parent.absolute()
     logg.debug(f"this_file_folder: {this_file_folder}")
 
     ####################################################################################
-    #   Find the list of sentences without training words inside                       #
+    #   Build the dict of sentences without training words inside                      #
     ####################################################################################
 
     # the location of the original dataset
-    ljs_base_folder = Path("~").expanduser() / "audiodatasets" / "LJSpeech-1.1"
-    logg.debug(f"ljs_base_folder: {ljs_base_folder}")
-    ljs_wav_folder = ljs_base_folder / "wavs"
-    logg.debug(f"ljs_wav_folder: {ljs_wav_folder}")
+    ltts_base_folder = Path.home() / "audiodatasets" / "LibriTTS" / "dev-clean"
+    logg.debug(f"ltts_base_folder: {ltts_base_folder}")
 
-    # column names in the metadata file
-    column_names = ["wav_ID", "tra", "norm_tra"]
-
-    # load the metadata file
-    metadata_path = ljs_base_folder / "metadata.csv"
-    meta_df = pandas.read_csv(
-        metadata_path, sep="|", header=0, names=column_names, index_col=False
-    )
-
-    # shuffle it
-    meta_df = meta_df.sample(frac=1)
-
-    # remove NaN
-    meta_df = meta_df.dropna()
-
-    # show some rows to be sure
-    logg.debug(f"meta_df.head():\n{meta_df.head()}")
+    # build good_IDs dict
+    # from wav_ID to orig_wav_path
+    good_IDs: ty.Dict[str, Path] = {}
 
     # get the words
     train_words = words_types["all"]
@@ -95,25 +78,43 @@ def split_ljspeech() -> None:
     good_sent = 0
     skip_sent = 0
 
-    # find good sentences
-    good_IDs: ty.List[str] = []
-    for index_row, row in meta_df.iterrows():
-        norm_tra = row["norm_tra"]
+    for reader_ID_path in ltts_base_folder.iterdir():
+        for chapter_ID_path in reader_ID_path.iterdir():
+            for file_path in chapter_ID_path.iterdir():
 
-        # skip this row if one of the training words is in the sentence
-        found_train_word = False
-        for word in train_words:
-            if word in norm_tra:
-                # logg.debug(f"Found '{word}' in {norm_tra}")
-                found_train_word = True
-                skip_sent += 1
-                break
-        if found_train_word:
-            continue
-        good_sent += 1
+                # extract the name of the file
+                file_name = file_path.name
 
-        # save the file ID
-        good_IDs.append(row["wav_ID"])
+                # only process normalized files
+                if "normalized" not in file_name:
+                    continue
+                # logg.debug(f"file_path: {file_path}")
+
+                # read the normalized transcription
+                norm_tra = file_path.read_text()
+
+                # skip this row if one of the training words is in the sentence
+                found_train_word = False
+                for word in train_words:
+                    if word in norm_tra:
+                        # logg.debug(f"Found '{word}' in {norm_tra}")
+                        found_train_word = True
+                        skip_sent += 1
+                        break
+                if found_train_word:
+                    continue
+                good_sent += 1
+
+                # build the wav path
+                #    file_path /path/to/file/wav_ID.normalized.txt
+                #    with stem extract wav_ID.normalized
+                #    then remove .normalized
+                wav_ID = file_path.stem[:-11]
+                # logg.debug(f"wav_ID: {wav_ID}")
+                orig_wav_path = chapter_ID_path / f"{wav_ID}.wav"
+
+                # save the file path
+                good_IDs[wav_ID] = orig_wav_path
 
     logg.debug(f"good_sent: {good_sent}")
     logg.debug(f"skip_sent: {skip_sent}")
@@ -123,20 +124,20 @@ def split_ljspeech() -> None:
     ####################################################################################
 
     # where to save the results
-    # ljs_proc_folder = this_file_folder / "data_ljs_raw"
-    ljs_proc_folder = this_file_folder / "data_raw"
+    # ltts_proc_folder = this_file_folder / "data_ltts_raw"
+    ltts_proc_folder = this_file_folder / "data_raw"
 
-    ljs_label = "_other_ljs"
-    ljs_label_folder = ljs_proc_folder / ljs_label
+    ltts_label = "_other_ltts"
+    ltts_label_folder = ltts_proc_folder / ltts_label
 
-    logg.debug(f"ljs_label_folder: {ljs_label_folder}")
-    if not ljs_label_folder.exists():
-        ljs_label_folder.mkdir(parents=True, exist_ok=True)
+    logg.debug(f"ltts_label_folder: {ltts_label_folder}")
+    if not ltts_label_folder.exists():
+        ltts_label_folder.mkdir(parents=True, exist_ok=True)
 
     # the file to list the file names for the testing fold
-    val_list_path = ljs_proc_folder / "validation_list_ljspeech.txt"
+    val_list_path = ltts_proc_folder / "validation_list_lttspeech.txt"
     word_val_list: ty.List[str] = []
-    test_list_path = ljs_proc_folder / "testing_list_ljspeech.txt"
+    test_list_path = ltts_proc_folder / "testing_list_lttspeech.txt"
     word_test_list: ty.List[str] = []
 
     # the sizes of the test and validation folds
@@ -153,23 +154,22 @@ def split_ljspeech() -> None:
     # a random number generator to use
     rng = np.random.default_rng(12345)
 
-    for wav_ID in good_IDs[:]:
-        wav_name = f"{wav_ID}.wav"
+    for wav_ID in good_IDs:
+        orig_wav_path = good_IDs[wav_ID]
+        logg.debug(f"good_IDs[{wav_ID}]: {good_IDs[wav_ID]}")
 
         # load the original signal
-        orig_wav_path = ljs_wav_folder / wav_name
         orig_sig, orig_sr = librosa.load(orig_wav_path, sr=None)
-        # logg.debug(f"orig_sig.shape: {orig_sig.shape} orig_sr: {orig_sr}")
 
         # resample it to 16000 Hz
         new_sig = librosa.resample(orig_sig, orig_sr, new_sr)
-        # logg.debug(f"new_sig.shape: {new_sig.shape}")
 
         # split it in 1 second samples
         len_new_sig = new_sig.shape[0]
         num_samples = len_new_sig // new_sr
 
-        sample_wav_template = f"ljs_{wav_ID}_{{:03d}}.wav"
+        sample_wav_template = f"ltts_{wav_ID}_{{:03d}}.wav"
+
         for i_sample in range(num_samples):
 
             # cut the sample
@@ -179,12 +179,12 @@ def split_ljspeech() -> None:
             sample_name = sample_wav_template.format(i_sample)
 
             # save the sample
-            sample_path = ljs_label_folder / sample_name
+            sample_path = ltts_label_folder / sample_name
             write_wav(sample_path, new_sr, sample_sig)
             saved_samples += 1
 
             # the ID of the sample
-            sample_id = f"{ljs_label}/{sample_name}"
+            sample_id = f"{ltts_label}/{sample_name}"
 
             # split in trainin/validation/testing
             x = rng.random()
@@ -203,14 +203,14 @@ def split_ljspeech() -> None:
     test_list_path.write_text(word_test_str)
 
 
-def run_ljspeech_preprocess(args: argparse.Namespace) -> None:
-    """TODO: What is ljspeech_preprocess doing?"""
-    logg = logging.getLogger(f"c.{__name__}.run_ljspeech_preprocess")
-    logg.debug("Starting run_ljspeech_preprocess")
+def run_ltts_preprocess(args: argparse.Namespace) -> None:
+    """TODO: What is ltts_preprocess doing?"""
+    logg = logging.getLogger(f"c.{__name__}.run_ltts_preprocess")
+    logg.debug("Starting run_ltts_preprocess")
 
-    split_ljspeech()
+    split_ltts()
 
 
 if __name__ == "__main__":
     args = setup_env()
-    run_ljspeech_preprocess(args)
+    run_ltts_preprocess(args)

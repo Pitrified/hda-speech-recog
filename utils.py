@@ -115,11 +115,17 @@ def define_words_types():
         "zero",
     ]
 
-    additional_fsj = ["_other"]
-    WORDS_FSJ_ALL = copy(WORDS_ALL)
-    WORDS_FSJ_ALL.extend(additional_fsj)
-    WORDS_FSJ_NUM = copy(WORDS_NUM)
-    WORDS_FSJ_NUM.extend(additional_fsj)
+    additional_ljs = ["_other_ljs"]
+    WORDS_LJS_ALL = copy(WORDS_ALL)
+    WORDS_LJS_ALL.extend(additional_ljs)
+    WORDS_LJS_NUM = copy(WORDS_NUM)
+    WORDS_LJS_NUM.extend(additional_ljs)
+
+    additional_ltts = ["_other_ltts"]
+    WORDS_LTTS_ALL = copy(WORDS_ALL)
+    WORDS_LTTS_ALL.extend(additional_ltts)
+    WORDS_LTTS_NUM = copy(WORDS_NUM)
+    WORDS_LTTS_NUM.extend(additional_ltts)
 
     words_types = {
         "all": WORDS_ALL,
@@ -130,8 +136,10 @@ def define_words_types():
         "w2": WORDS_TASK_20,
         "f1": ["happy", "learn", "wow", "visual"],
         "f2": ["backward", "eight", "go", "yes"],
-        "FJall": WORDS_FSJ_ALL,
-        "FJnum": WORDS_FSJ_NUM,
+        "LJall": WORDS_LJS_ALL,
+        "LJnum": WORDS_LJS_NUM,
+        "LTall": WORDS_LTTS_ALL,
+        "LTnum": WORDS_LTTS_NUM,
         "_backward": ["backward"],
         "_bed": ["bed"],
         "_bird": ["bird"],
@@ -388,6 +396,7 @@ def get_val_test_list(dataset_path: Path) -> ty.Tuple[ty.List[str], ty.List[str]
     validation_paths = []
     validation_paths.append(dataset_path / "validation_list.txt")
     validation_paths.append(dataset_path / "validation_list_ljspeech.txt")
+    validation_paths.append(dataset_path / "validation_list_lttspeech.txt")
 
     for validation_path in validation_paths:
 
@@ -408,6 +417,7 @@ def get_val_test_list(dataset_path: Path) -> ty.Tuple[ty.List[str], ty.List[str]
     testing_paths.append(dataset_path / "testing_list.txt")
     testing_paths.append(dataset_path / "testing_list_fsdd.txt")
     testing_paths.append(dataset_path / "testing_list_ljspeech.txt")
+    testing_paths.append(dataset_path / "testing_list_lttspeech.txt")
 
     for testing_path in testing_paths:
 
