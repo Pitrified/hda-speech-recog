@@ -79,7 +79,10 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "-dr", "--dry_run", action="store_true", help="Do a dry run for the hypa grid",
+        "-dr",
+        "--dry_run",
+        action="store_true",
+        help="Do a dry run for the hypa grid",
     )
 
     # last line to parse the args
@@ -155,8 +158,8 @@ def hyper_train_attention(
     # ds.extend(["aug02", "aug03", "aug04", "aug05"])
     # ds.extend(["aug06", "aug07", "aug08", "aug09"])
     # ds.extend(["aug10", "aug11", "aug12", "aug13"])
-    ds.extend(["aug14", "aug15", "aug16", "aug17"])
-    # ds.extend(["aug14"])
+    # ds.extend(["aug14", "aug15", "aug16", "aug17"])
+    ds.extend(["mela1"])
     # hypa_grid["dataset_name"] = ["mela1"]
     # hypa_grid["dataset_name"] = ["mel04"]
     # hypa_grid["dataset_name"] = ["aug01"]
@@ -198,8 +201,8 @@ def hyper_train_attention(
     # lr.extend(["01", "02"])  # fixed
     lr.extend(["03"])  # exp_decay_step_01
     lr.extend(["04"])  # exp_decay_smooth_01
-    # lr.extend(["07"])  # clr_triangular2_03
-    # lr.extend(["09"])  # clr_triangular2_05
+    lr.extend(["07"])  # clr_triangular2_03
+    lr.extend(["09"])  # clr_triangular2_05
     lr.extend(["10"])  # exp_decay_smooth_02
     hypa_grid["learning_rate_type"] = lr
 
@@ -213,8 +216,8 @@ def hyper_train_attention(
 
     ###### the number of epochs
     en = []
-    en.extend(["01"])  # 15
-    # en.extend(["02"]) # 30
+    # en.extend(["01"])  # 15
+    en.extend(["02"])  # 30
     # en.extend(["03", "04"])
     hypa_grid["epoch_num_type"] = en
 
@@ -340,7 +343,7 @@ def train_attention(
             return
 
     # save info regarding the model training in this folder
-    info_folder = Path("info") / model_name
+    info_folder = Path("info") / "attention" / model_name
     if not info_folder.exists():
         info_folder.mkdir(parents=True, exist_ok=True)
 
@@ -417,7 +420,9 @@ def train_attention(
     opt = optimizer_types[hypa["optimizer_type"]]
 
     model.compile(
-        optimizer=opt, loss=tf.keras.losses.CategoricalCrossentropy(), metrics=metrics,
+        optimizer=opt,
+        loss=tf.keras.losses.CategoricalCrossentropy(),
+        metrics=metrics,
     )
 
     # setup callbacks
@@ -489,7 +494,10 @@ def train_attention(
     if learning_rate_type in ["01", "02", "03", "04"]:
         metric_to_monitor = "val_loss" if use_validation else "loss"
         early_stop = EarlyStopping(
-            monitor=metric_to_monitor, patience=4, restore_best_weights=True, verbose=1,
+            monitor=metric_to_monitor,
+            patience=4,
+            restore_best_weights=True,
+            verbose=1,
         )
         callbacks.append(early_stop)
 
@@ -627,7 +635,9 @@ def find_best_lr(hypa: ty.Dict[str, str]) -> None:
     ]
 
     model.compile(
-        optimizer=opt, loss=tf.keras.losses.CategoricalCrossentropy(), metrics=metrics,
+        optimizer=opt,
+        loss=tf.keras.losses.CategoricalCrossentropy(),
+        metrics=metrics,
     )
 
     # find the best values

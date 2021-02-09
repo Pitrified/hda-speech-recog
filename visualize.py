@@ -70,7 +70,7 @@ def visualize_spec():
     # sample_path = "/home/pmn/uni/human_data/progetto2020/src/data_fsdd_raw/five/5_yweweler_30.wav"
     # sample_path = "/home/pmn/uni/human_data/progetto2020/src/data_fsdd_raw/fsdd_five/5_yweweler_30.wav"
     # sample_path = "/home/pmn/uni/human_data/progetto2020/src/data_fsdd_raw/fsdd_five/5_yweweler_33.wav"
-    # sample_path = "/home/pietro/uni/human_data/progetto2020/hda-speech-recog/data_raw/_other/ljs_LJ001-0130_001"
+    sample_path = "/home/pmn/uni/human_data/progetto2020/src/data_raw/_other/ljs_LJ001-0018_005.wav"
     logg.debug(f"sample_path: {sample_path}")
 
     # fig, ax = plt.subplots(3, 1, figsize=(12, 12))
