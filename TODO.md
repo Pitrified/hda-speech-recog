@@ -13,6 +13,35 @@
 * More AreaNet
 * Multiple training of the same hypas to check consistency, build model name takes a param and finds the first `_00x` free
 
+### More datasets
+
+For background noise
+
+* https://www.tensorflow.org/datasets/catalog/fuss
+
+##### Mozilla common voice
+
+* https://commonvoice.mozilla.org/en/datasets
+
+##### LibriSpeech
+
+LibriSpeech is a corpus of approximately 1000 hours of read English speech with sampling rate of 16 kHz
+
+* http://www.openslr.org/12
+
+##### LibriTTS
+
+LibriTTS is a multi-speaker English corpus of approximately 585 hours of read English speech at 24kHz sampling rate
+The audio files are at 24kHz sampling rate. The speech is split at sentence breaks.
+
+* http://www.openslr.org/60
+
+##### Ljspeech
+
+This is a public domain speech dataset consisting of 13,100 short audio clips of a single speaker reading passages from 7 non-fiction books.
+
+* https://keithito.com/LJ-Speech-Dataset/
+
 ##### Done
 
 * Check fscore in CNN: when doing evaluate precision/recall are at 95 then fscore is 87

@@ -2,6 +2,7 @@ from scipy.io import wavfile  # type: ignore
 from pathlib import Path
 from sklearn.metrics import confusion_matrix  # type: ignore
 from time import sleep
+from copy import copy
 import logging
 
 import numpy as np  # type: ignore
@@ -50,7 +51,7 @@ def define_words_types():
         "zero",
     ]
 
-    WORDS_NUMBERS = [
+    WORDS_NUM = [
         "zero",
         "one",
         "two",
@@ -114,15 +115,23 @@ def define_words_types():
         "zero",
     ]
 
+    additional_fsj = ["_other"]
+    WORDS_FSJ_ALL = copy(WORDS_ALL)
+    WORDS_FSJ_ALL.extend(additional_fsj)
+    WORDS_FSJ_NUM = copy(WORDS_NUM)
+    WORDS_FSJ_NUM.extend(additional_fsj)
+
     words_types = {
         "all": WORDS_ALL,
         "dir": WORDS_DIRECTION,
-        "num": WORDS_NUMBERS,
+        "num": WORDS_NUM,
         "fsdd": WORDS_NUMBERS_FSDD,
         "k1": WORDS_KAGGLE_1,
         "w2": WORDS_TASK_20,
         "f1": ["happy", "learn", "wow", "visual"],
         "f2": ["backward", "eight", "go", "yes"],
+        "FJall": WORDS_FSJ_ALL,
+        "FJnum": WORDS_FSJ_NUM,
         "_backward": ["backward"],
         "_bed": ["bed"],
         "_bird": ["bird"],
@@ -373,20 +382,32 @@ def get_val_test_list(dataset_path: Path) -> ty.Tuple[ty.List[str], ty.List[str]
     # logg.setLevel("INFO")
     logg.debug("Start get_val_test_list")
 
-    # list of file names for validation
-    validation_path = dataset_path / "validation_list.txt"
+    ###### list of file names for validation
     validation_names = []
-    with validation_path.open() as fvp:
-        for line in fvp:
-            validation_names.append(line.strip())
+
+    validation_paths = []
+    validation_paths.append(dataset_path / "validation_list.txt")
+    validation_paths.append(dataset_path / "validation_list_ljspeech.txt")
+
+    for validation_path in validation_paths:
+
+        if not validation_path.exists():
+            logg.warn(f"Missing validation list file: {validation_path}")
+            continue
+
+        with validation_path.open() as fvp:
+            for line in fvp:
+                validation_names.append(line.strip())
+
     # logg.debug(f"validation_names: {validation_names[:10]}")
 
-    # list of file names for testing
+    ###### list of file names for testing
     testing_names = []
 
     testing_paths = []
     testing_paths.append(dataset_path / "testing_list.txt")
     testing_paths.append(dataset_path / "testing_list_fsdd.txt")
+    testing_paths.append(dataset_path / "testing_list_ljspeech.txt")
 
     for testing_path in testing_paths:
 
