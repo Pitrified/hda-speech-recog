@@ -152,7 +152,8 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     # ds.extend(["aug06", "aug07", "aug08", "aug09"])
     # ds.extend(["aug10", "aug11", "aug12", "aug13"])
     # ds.extend(["aug14", "aug15", "aug16", "aug17"])
-    ds.extend(["aug07"])
+    # ds.extend(["aug07"])
+    ds.extend(["Lmel04"])
     hypa_grid_big["dataset"] = ds
     # hypa_grid_big["dropout_type"] = ["01", "02"]
     hypa_grid_big["dropout_type"] = ["01"]
@@ -226,6 +227,8 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
         for wt in hypa_grid["words"]:
             logg.debug(f"\nwt: {wt} dn: {dn}\n")
             if dn.startswith("mel"):
+                preprocess_spec(dn, wt)
+            elif dn.startswith("Lmel"):
                 preprocess_spec(dn, wt)
             elif dn.startswith("aug"):
                 do_augmentation(dn, wt)

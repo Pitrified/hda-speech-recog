@@ -60,7 +60,8 @@ def visualize_waveform() -> None:
     logg.debug(f"dataset_path: {dataset_path}")
 
     # words = words_types["num"]
-    words = words_types["all"]
+    # words = words_types["all"]
+    words = words_types["num_loud"]
     for word in words:
         word_folder = dataset_path / word
 
@@ -87,10 +88,11 @@ def visualize_spec():
     # word = "happy"
     # word = "wow"
     # word = "six"
-    word = "eight"  # 3
+    # word = "eight"  # 3
+    word = "loudest_eight"
     word_folder = dataset_path / word
     # sample_path = word_folder / "0a2b400e_nohash_0.wav"
-    sample_path = list(word_folder.iterdir())[3]
+    sample_path = list(word_folder.iterdir())[0]
 
     # sample_path = "/home/pmn/free_spoken_digit_dataset/recordings/3_theo_10.wav"
     # sample_path = "/home/pmn/uni/human_data/progetto2020/src/data_fsdd_raw/five/5_yweweler_30.wav"

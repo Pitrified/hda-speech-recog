@@ -127,7 +127,13 @@ def split_ltts() -> None:
     # ltts_proc_folder = this_file_folder / "data_ltts_raw"
     ltts_proc_folder = this_file_folder / "data_raw"
 
-    ltts_label = "_other_ltts"
+    do_loud = True
+    if do_loud:
+        loud_tag = "_loud"
+    else:
+        loud_tag = ""
+
+    ltts_label = f"_other_ltts{loud_tag}"
     ltts_label_folder = ltts_proc_folder / ltts_label
 
     logg.debug(f"ltts_label_folder: {ltts_label_folder}")
@@ -135,9 +141,9 @@ def split_ltts() -> None:
         ltts_label_folder.mkdir(parents=True, exist_ok=True)
 
     # the file to list the file names for the testing fold
-    val_list_path = ltts_proc_folder / "validation_list_lttspeech.txt"
+    val_list_path = ltts_proc_folder / f"validation_list_lttspeech{loud_tag}.txt"
     word_val_list: ty.List[str] = []
-    test_list_path = ltts_proc_folder / "testing_list_lttspeech.txt"
+    test_list_path = ltts_proc_folder / f"testing_list_lttspeech{loud_tag}.txt"
     word_test_list: ty.List[str] = []
 
     # the sizes of the test and validation folds
@@ -164,16 +170,22 @@ def split_ltts() -> None:
         # resample it to 16000 Hz
         new_sig = librosa.resample(orig_sig, orig_sr, new_sr)
 
+        # how long is the sample to extract
+        if do_loud:
+            sample_len = new_sr // 2
+        else:
+            sample_len = new_sr
+
         # split it in 1 second samples
         len_new_sig = new_sig.shape[0]
-        num_samples = len_new_sig // new_sr
+        num_samples = len_new_sig // sample_len
 
         sample_wav_template = f"ltts_{wav_ID}_{{:03d}}.wav"
 
         for i_sample in range(num_samples):
 
             # cut the sample
-            sample_sig = new_sig[i_sample * new_sr : (i_sample + 1) * new_sr]
+            sample_sig = new_sig[i_sample * sample_len : (i_sample + 1) * sample_len]
 
             # get the name of the wav file
             sample_name = sample_wav_template.format(i_sample)

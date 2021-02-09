@@ -13,7 +13,7 @@ import typing as ty
 
 def define_words_types():
 
-    WORDS_ALL = [
+    words_all = [
         "backward",
         "bed",
         "bird",
@@ -51,7 +51,7 @@ def define_words_types():
         "zero",
     ]
 
-    WORDS_NUM = [
+    words_num = [
         "zero",
         "one",
         "two",
@@ -64,22 +64,9 @@ def define_words_types():
         "nine",
     ]
 
-    WORDS_NUMBERS_FSDD = [
-        "fsdd_zero",
-        "fsdd_one",
-        "fsdd_two",
-        "fsdd_three",
-        "fsdd_four",
-        "fsdd_five",
-        "fsdd_six",
-        "fsdd_seven",
-        "fsdd_eight",
-        "fsdd_nine",
-    ]
+    words_direction = ["up", "down", "forward", "backward", "left", "right"]
 
-    WORDS_DIRECTION = ["up", "down", "forward", "backward", "left", "right"]
-
-    WORDS_KAGGLE_1 = [
+    words_kaggle_1 = [
         "yes",
         "no",
         "up",
@@ -92,7 +79,7 @@ def define_words_types():
         "go",
     ]
 
-    WORDS_TASK_20 = [
+    words_task_20 = [
         "down",
         "eight",
         "five",
@@ -114,68 +101,80 @@ def define_words_types():
         "yes",
         "zero",
     ]
+
+    # words from the free spoken digit dataset
+    words_num_fsdd = [f"fsdd_{w}" for w in words_num]
+
+    # words shortened to the loudest section
+    words_all_loud = [f"loudest_{w}" for w in words_all]
+    words_num_loud = [f"loudest_{w}" for w in words_num]
 
     additional_ljs = ["_other_ljs"]
-    WORDS_LJS_ALL = copy(WORDS_ALL)
-    WORDS_LJS_ALL.extend(additional_ljs)
-    WORDS_LJS_NUM = copy(WORDS_NUM)
-    WORDS_LJS_NUM.extend(additional_ljs)
+    words_ljs_all = copy(words_all)
+    words_ljs_all.extend(additional_ljs)
+    words_ljs_num = copy(words_num)
+    words_ljs_num.extend(additional_ljs)
+
+    additional_ljs_loud = ["_other_ljs_loud"]
+    words_ljs_all_loud = copy(words_all_loud)
+    words_ljs_all_loud.extend(additional_ljs_loud)
+    words_ljs_num_loud = copy(words_num_loud)
+    words_ljs_num_loud.extend(additional_ljs_loud)
 
     additional_ltts = ["_other_ltts"]
-    WORDS_LTTS_ALL = copy(WORDS_ALL)
-    WORDS_LTTS_ALL.extend(additional_ltts)
-    WORDS_LTTS_NUM = copy(WORDS_NUM)
-    WORDS_LTTS_NUM.extend(additional_ltts)
+    words_ltts_all = copy(words_all)
+    words_ltts_all.extend(additional_ltts)
+    words_ltts_num = copy(words_num)
+    words_ltts_num.extend(additional_ltts)
 
-    words_types = {
-        "all": WORDS_ALL,
-        "dir": WORDS_DIRECTION,
-        "num": WORDS_NUM,
-        "fsdd": WORDS_NUMBERS_FSDD,
-        "k1": WORDS_KAGGLE_1,
-        "w2": WORDS_TASK_20,
+    additional_ltts_loud = ["_other_ltts_loud"]
+    words_ltts_all_loud = copy(words_all_loud)
+    words_ltts_all_loud.extend(additional_ltts_loud)
+    words_ltts_num_loud = copy(words_num_loud)
+    words_ltts_num_loud.extend(additional_ltts_loud)
+
+    words_types = {}
+
+    words_gs_standard = {
+        "all": words_all,
+        "dir": words_direction,
+        "num": words_num,
+        "k1": words_kaggle_1,
+        "w2": words_task_20,
         "f1": ["happy", "learn", "wow", "visual"],
         "f2": ["backward", "eight", "go", "yes"],
-        "LJall": WORDS_LJS_ALL,
-        "LJnum": WORDS_LJS_NUM,
-        "LTall": WORDS_LTTS_ALL,
-        "LTnum": WORDS_LTTS_NUM,
-        "_backward": ["backward"],
-        "_bed": ["bed"],
-        "_bird": ["bird"],
-        "_cat": ["cat"],
-        "_dog": ["dog"],
-        "_down": ["down"],
-        "_eight": ["eight"],
-        "_five": ["five"],
-        "_follow": ["follow"],
-        "_forward": ["forward"],
-        "_four": ["four"],
-        "_go": ["go"],
-        "_happy": ["happy"],
-        "_house": ["house"],
-        "_learn": ["learn"],
-        "_left": ["left"],
-        "_marvin": ["marvin"],
-        "_nine": ["nine"],
-        "_no": ["no"],
-        "_off": ["off"],
-        "_on": ["on"],
-        "_one": ["one"],
-        "_right": ["right"],
-        "_seven": ["seven"],
-        "_sheila": ["sheila"],
-        "_six": ["six"],
-        "_stop": ["stop"],
-        "_three": ["three"],
-        "_tree": ["tree"],
-        "_two": ["two"],
-        "_up": ["up"],
-        "_visual": ["visual"],
-        "_wow": ["wow"],
-        "_yes": ["yes"],
-        "_zero": ["zero"],
     }
+    words_types.update(words_gs_standard)
+
+    words_loud = {
+        "allLS": words_all_loud,
+        "numLS": words_num_loud,
+        "LJallLS": words_ljs_all_loud,
+        "LJnumLS": words_ljs_num_loud,
+        "LTallLS": words_ltts_all_loud,
+        "LTnumLS": words_ltts_num_loud,
+    }
+    words_types.update(words_loud)
+
+    words_fsdd = {
+        "fsdd": words_num_fsdd,
+    }
+    words_types.update(words_fsdd)
+
+    words_ljs = {
+        "LJall": words_ljs_all,
+        "LJnum": words_ljs_num,
+    }
+    words_types.update(words_ljs)
+
+    words_ltts = {
+        "LTall": words_ltts_all,
+        "LTnum": words_ltts_num,
+    }
+    words_types.update(words_ltts)
+
+    words_single = {f"_{w}": [w] for w in words_all}
+    words_types.update(words_single)
 
     return words_types
 
@@ -390,45 +389,32 @@ def get_val_test_list(dataset_path: Path) -> ty.Tuple[ty.List[str], ty.List[str]
     logg.setLevel("INFO")
     logg.debug("Start get_val_test_list")
 
+    # find the txt files that contain the lists
+    validation_paths = []
+    testing_paths = []
+    for item in dataset_path.iterdir():
+        file_name = item.name
+
+        if file_name.startswith("validation_list"):
+            validation_paths.append(item)
+
+        elif file_name.startswith("testing_list"):
+            testing_paths.append(item)
+
     ###### list of file names for validation
     validation_names = []
-
-    validation_paths = []
-    validation_paths.append(dataset_path / "validation_list.txt")
-    validation_paths.append(dataset_path / "validation_list_ljspeech.txt")
-    validation_paths.append(dataset_path / "validation_list_lttspeech.txt")
-
     for validation_path in validation_paths:
-
-        if not validation_path.exists():
-            logg.warn(f"Missing validation list file: {validation_path}")
-            continue
-
         with validation_path.open() as fvp:
             for line in fvp:
                 validation_names.append(line.strip())
-
     # logg.debug(f"validation_names: {validation_names[:10]}")
 
     ###### list of file names for testing
     testing_names = []
-
-    testing_paths = []
-    testing_paths.append(dataset_path / "testing_list.txt")
-    testing_paths.append(dataset_path / "testing_list_fsdd.txt")
-    testing_paths.append(dataset_path / "testing_list_ljspeech.txt")
-    testing_paths.append(dataset_path / "testing_list_lttspeech.txt")
-
     for testing_path in testing_paths:
-
-        if not testing_path.exists():
-            logg.warn(f"Missing testing list file: {testing_path}")
-            continue
-
         with testing_path.open() as fvp:
             for line in fvp:
                 testing_names.append(line.strip())
-
     # logg.debug(f"testing_names: {testing_names[:10]}")
 
     return validation_names, testing_names
