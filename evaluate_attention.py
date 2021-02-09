@@ -182,6 +182,12 @@ def evaluate_results_attention() -> None:
 
     results_df = build_att_results_df()
 
+    # all the unique values of the hypa ever used
+    for col in results_df:
+        if col in ["model_name", "loss", "fscore", "recall", "precision", "cat_acc"]:
+            continue
+        logg.info(f"hypa_grid['{col}'] = {results_df[col].unique()}")
+
     # all the results so far
     df_f = results_df
     df_f = df_f.sort_values("fscore", ascending=False)

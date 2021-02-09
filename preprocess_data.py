@@ -161,7 +161,7 @@ def get_spec_dict():
         "mel14": {"n_mels": 128, "n_fft": 256, "hop_length": 256},  # (128, 64)
         "mel15": {"n_mels": 128, "n_fft": 3072, "hop_length": 256},  # (128, 64)
         "mela1": {"n_mels": 80, "n_fft": 1024, "hop_length": 128, "fmin": 40},
-        "Lmel04": {"n_mels": 64, "n_fft": 512, "hop_length": 128},  # (64, 64)
+        "meL04": {"n_mels": 64, "n_fft": 512, "hop_length": 128},  # (64, 64)
     }
 
     return spec_dict
@@ -241,9 +241,7 @@ def preprocess_spec(
 
                 if dataset_name.startswith("mfcc"):
                     log_spec = wav2mfcc(wav_path, spec_kwargs, p2d_kwargs)
-                elif dataset_name.startswith("mel"):
-                    log_spec = wav2mel(wav_path, spec_kwargs, p2d_kwargs)
-                elif dataset_name.startswith("Lmel"):
+                elif dataset_name.startswith("me"):  # mel or meL
                     log_spec = wav2mel(wav_path, spec_kwargs, p2d_kwargs)
 
                 if wav_name in validation_names:

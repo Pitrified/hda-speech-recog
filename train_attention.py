@@ -159,7 +159,10 @@ def hyper_train_attention(
     # ds.extend(["aug06", "aug07", "aug08", "aug09"])
     # ds.extend(["aug10", "aug11", "aug12", "aug13"])
     # ds.extend(["aug14", "aug15", "aug16", "aug17"])
-    ds.extend(["mela1"])
+    # ds.extend(["auL18", "auL19", "auL20", "auL21"])
+    # ds.extend(["auL18"])
+    # ds.extend(["mela1"])
+    ds.extend(["meL04"])
     # hypa_grid["dataset_name"] = ["mela1"]
     # hypa_grid["dataset_name"] = ["mel04"]
     # hypa_grid["dataset_name"] = ["aug01"]
@@ -201,8 +204,8 @@ def hyper_train_attention(
     # lr.extend(["01", "02"])  # fixed
     lr.extend(["03"])  # exp_decay_step_01
     lr.extend(["04"])  # exp_decay_smooth_01
-    lr.extend(["07"])  # clr_triangular2_03
-    lr.extend(["09"])  # clr_triangular2_05
+    # lr.extend(["07"])  # clr_triangular2_03
+    # lr.extend(["09"])  # clr_triangular2_05
     lr.extend(["10"])  # exp_decay_smooth_02
     hypa_grid["learning_rate_type"] = lr
 
@@ -242,9 +245,9 @@ def hyper_train_attention(
     for dn in hypa_grid["dataset_name"]:
         for wt in hypa_grid["words_type"]:
             logg.debug(f"\nwt: {wt} dn: {dn}\n")
-            if dn.startswith("mel"):
+            if "mel" in dn:
                 preprocess_spec(dn, wt)
-            elif dn.startswith("aug"):
+            elif "aug" in dn:
                 do_augmentation(dn, wt)
 
     # useful to pick good values of lr

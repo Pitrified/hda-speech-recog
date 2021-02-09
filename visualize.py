@@ -177,8 +177,8 @@ def visualize_datasets():
         # "mel01",
         # "mel02",
         # "mel03",
-        "mel04",
-        "mel05",
+        # "mel04",
+        # "mel05",
         # "mel06",
         # "mel07",
         # "mel08",
@@ -194,7 +194,9 @@ def visualize_datasets():
         # "melc3",
         # "melc4",
         "mela1",
-        "Lmel04",
+        "meL04",
+        "auL18",
+        # "aug18",
     ]
     # datasets = [
     #     "mel01",
@@ -225,7 +227,7 @@ def visualize_datasets():
         # the current dataset being plotted
         dataset_name = datasets[i]
         processed_path = processed_folder / f"{dataset_name}"
-        word_path = processed_path / f"{a_word}_validation.npy"
+        word_path = processed_path / f"{a_word}_training.npy"
 
         # FIXME this is shaky as hell
         if not word_path.exists():
