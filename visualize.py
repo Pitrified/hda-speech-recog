@@ -24,7 +24,7 @@ def parse_arguments():
         "--visualization_type",
         type=str,
         default="augment",
-        choices=["augment", "spec", "datasets"],
+        choices=["augment", "spec", "datasets", "waveform"],
         help="Which visualization to perform",
     )
 
@@ -50,6 +50,30 @@ def setup_env():
     return args
 
 
+def visualize_waveform() -> None:
+    """MAKEDOC: what is visualize_waveform doing?"""
+    logg = logging.getLogger(f"c.{__name__}.visualize_waveform")
+    # logg.setLevel("INFO")
+    logg.debug("Start visualize_waveform")
+
+    dataset_path = Path("data_raw")
+    logg.debug(f"dataset_path: {dataset_path}")
+
+    # words = words_types["num"]
+    words = words_types["all"]
+    for word in words:
+        word_folder = dataset_path / word
+
+        sample_path = list(word_folder.iterdir())[0]
+        sample_sig, sr = librosa.load(sample_path, sr=None)
+        # logg.debug(f"sample_sig.shape: {sample_sig.shape}")
+
+        fig, ax = plt.subplots(2, 1, figsize=(10, 12))
+        plot_waveform(sample_sig, ax[0], title=f"Waveform for {word}")
+        plot_waveform(sample_sig ** 2, ax[1], title=f"Waveform**2 for {word}")
+        fig.tight_layout()
+
+
 def visualize_spec():
     """TODO: what is visualize_spec doing?"""
     logg = logging.getLogger(f"c.{__name__}.visualize_spec")
@@ -62,10 +86,11 @@ def visualize_spec():
 
     # word = "happy"
     # word = "wow"
-    word = "six"
+    # word = "six"
+    word = "eight"  # 3
     word_folder = dataset_path / word
     # sample_path = word_folder / "0a2b400e_nohash_0.wav"
-    sample_path = list(word_folder.iterdir())[2]
+    sample_path = list(word_folder.iterdir())[3]
 
     # sample_path = "/home/pmn/free_spoken_digit_dataset/recordings/3_theo_10.wav"
     # sample_path = "/home/pmn/uni/human_data/progetto2020/src/data_fsdd_raw/five/5_yweweler_30.wav"
@@ -75,23 +100,26 @@ def visualize_spec():
     logg.debug(f"sample_path: {sample_path}")
 
     # fig, ax = plt.subplots(3, 1, figsize=(12, 12))
-    fig, ax = plt.subplots(3, 1, figsize=(10, 10))
+    fig, ax = plt.subplots(4, 1, figsize=(10, 15))
 
     sample_sig, sr = librosa.load(sample_path, sr=None)
     logg.debug(f"sample_sig.shape: {sample_sig.shape}")
     plot_waveform(sample_sig, ax[0], sample_rate=sr, title=f"Waveform for {word}")
+    plot_waveform(
+        sample_sig ** 2, ax[1], sample_rate=sr, title=f"Waveform**2 for {word}"
+    )
 
     sample_melspec = librosa.feature.melspectrogram(sample_sig, sr=sr)
     logg.debug(f"sample_melspec.shape: {sample_melspec.shape}")
     sample_log_melspec = librosa.power_to_db(sample_melspec, ref=np.max)
     logg.debug(f"sample_log_melspec.shape: {sample_log_melspec.shape}")
-    plot_spec(sample_log_melspec, ax[1], title=f"Mel spectrogram for {word}")
+    plot_spec(sample_log_melspec, ax[2], title=f"Mel spectrogram for {word}")
 
     sample_mfcc = librosa.feature.mfcc(sample_sig, sr=sr)
     logg.debug(f"sample_mfcc.shape: {sample_mfcc.shape}")
     sample_log_mfcc = librosa.power_to_db(sample_mfcc, ref=np.max)
     logg.debug(f"sample_log_mfcc.shape: {sample_log_mfcc.shape}")
-    plot_spec(sample_log_mfcc, ax[2], title=f"MFCCs for {word}")
+    plot_spec(sample_log_mfcc, ax[3], title=f"MFCCs for {word}")
 
     fig.tight_layout()
     fig.savefig(plot_folder / f"{word}_specs.pdf")
@@ -412,6 +440,8 @@ def run_visualize(args):
         visualize_spec()
     elif visualization_type == "datasets":
         visualize_datasets()
+    elif visualization_type == "waveform":
+        visualize_waveform()
 
     plt.show()
 
