@@ -211,6 +211,21 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     # hypa_grid = hypa_grid_tiny
     # hypa_grid = hypa_grid_best
     hypa_grid = hypa_grid_big
+
+    hypa_grid = {
+        "base_dense_width": [32],
+        "base_filters": [32],
+        "batch_size": [32],
+        "dataset": ["meL04"],
+        "dropout_type": ["01"],
+        "epoch_num": [15],
+        "kernel_size_type": ["02"],
+        "learning_rate_type": ["04"],
+        "optimizer_type": ["a1"],
+        "pool_size_type": ["01"],
+        "words": ["LTnumLS"],
+    }
+
     logg.debug(f"hypa_grid = {hypa_grid}")
 
     the_grid = list(ParameterGrid(hypa_grid))
@@ -231,6 +246,7 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
         for wt in hypa_grid["words"]:
             logg.debug(f"\nwt: {wt} dn: {dn}\n")
             if dn.startswith("me"):
+                logg.debug(f"Preprocess! {wt} {dn}")
                 preprocess_spec(dn, wt)
             elif dn.startswith("auL"):
                 do_augmentation(dn, wt)

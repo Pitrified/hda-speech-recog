@@ -100,10 +100,18 @@ def sig2mel(signal, mel_kwargs, p2d_kwargs, sample_rate=16000) -> np.ndarray:
 
     mel = librosa.feature.melspectrogram(signal, sr=sample_rate, **mel_kwargs)
     log_mel = librosa.power_to_db(mel, **p2d_kwargs)
+    # logg.debug(f"log_mel.shape: {log_mel.shape}")
 
     # the shape is not consistent, pad it
-    pad_needed = 16384 // mel_kwargs["hop_length"] - log_mel.shape[1]
+
+    # FIXME THE requested_length is fixed lol so bad
+
+    # pad_needed = 16384 // mel_kwargs["hop_length"] - log_mel.shape[1]
+    requested_length = 64
+    pad_needed = requested_length - log_mel.shape[1]
+    pad_needed = max(0, pad_needed)
     # print(f"pad_needed: {pad_needed}")
+
     # number of values padded to the edges of each axis.
     pad_width = ((0, 0), (0, pad_needed))
     padded_log_mel = np.pad(log_mel, pad_width=pad_width)

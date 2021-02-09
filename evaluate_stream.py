@@ -9,6 +9,8 @@ import typing as ty
 import matplotlib.pyplot as plt  # type: ignore
 
 from augment_data import augment_signals
+from preprocess_data import get_spec_dict
+from augment_data import compute_spectrograms
 from train_cnn import build_cnn_name
 from utils import setup_logger
 from utils import words_types
@@ -28,6 +30,15 @@ def parse_arguments() -> argparse.Namespace:
         help="Which evaluation to perform",
     )
 
+    parser.add_argument(
+        "-at",
+        "--architecture_type",
+        type=str,
+        default="cnn",
+        choices=["cnn", "attention"],
+        help="Which architecture to use",
+    )
+
     tra_types = [w for w in words_types.keys() if not w.startswith("_")]
     parser.add_argument(
         "-tw",
@@ -44,6 +55,14 @@ def parse_arguments() -> argparse.Namespace:
         type=str,
         default="mel01",
         help="Name of the dataset folder",
+    )
+
+    parser.add_argument(
+        "-sid",
+        "--sentence_index",
+        type=int,
+        default=0,
+        help="Which sentence to show",
     )
 
     # last line to parse the args
@@ -82,7 +101,8 @@ def build_ltts_sentence_list(
 
     # get the words
     # train_words = words_types["all"]
-    train_words = words_types[train_words_type]
+    if "num" in train_words_type:
+        train_words = words_types["num"]
 
     train_words_bound = [fr"\b{w}\b" for w in train_words]
     # logg.debug(f"train_words_bound: {train_words_bound}")
@@ -117,6 +137,10 @@ def build_ltts_sentence_list(
                 if match is None:
                     continue
 
+                # filter sentences that are too long or short
+                if not 4 < len(norm_tra.split()) < 15:
+                    continue
+
                 # build the wav path
                 #    file_path /path/to/file/wav_ID.normalized.txt
                 #    with stem extract wav_ID.normalized
@@ -136,6 +160,7 @@ def split_sentence(
     sentence_sig: np.ndarray,
     spec_type: str,
     sentence_hop_length: int,
+    split_length: int,
     new_sr: int = 16000,
 ) -> ty.List[np.ndarray]:
     """MAKEDOC: what is split_sentence doing?"""
@@ -152,7 +177,7 @@ def split_sentence(
 
     for split_index in range(num_split):
         start_index = split_index * sentence_hop_length
-        end_index = start_index + new_sr
+        end_index = start_index + split_length
         split = sentence_sig[start_index:end_index]
         logg.debug(f"split.shape: {split.shape}")
         splits.append(split)
@@ -192,6 +217,7 @@ def load_trained_model_cnn(override_hypa) -> models.Model:
     model_path = model_folder / f"{model_name}.h5"
     if not model_path.exists():
         logg.error(f"Model not found at: {model_path}")
+        logg.error(f"Train it with hypa_grid = {hypa}")
         raise FileNotFoundError
 
     model = models.load_model(model_path)
@@ -236,6 +262,7 @@ def plot_sentence_pred(
     # x_tickpos = np.arange(len_sentence_words) * len(sentence_sig) / len_sentence_words
     # ax[0].set_xticks(x_tickpos)
     # ax[0].set_xticklabels(norm_tra_list, rotation=40)
+    ax[0].set_xlim(0, len(sentence_sig))
 
     y_tickpos = np.arange(len(train_words))
     ax[1].set_yticks(y_tickpos)
@@ -245,9 +272,27 @@ def plot_sentence_pred(
 
 
 def evaluate_stream(
-    evaluation_type: str, datasets_type: str, train_words_type: str
+    evaluation_type: str,
+    datasets_type: str,
+    train_words_type: str,
+    architecture_type: str,
+    sentence_index: int,
 ) -> None:
-    """MAKEDOC: what is evaluate_stream doing?"""
+    """MAKEDOC: what is evaluate_stream doing?
+
+    if not 4 < len(norm_tra.split()) < 15:
+    sentence_index 10
+    sentence_wav_paths[6241_61943_000011_000003]: /home/pmn/audiodatasets/LibriTTS/dev-clean/6241/61943/6241_61943_000011_000003.wav
+    sentence_norm_tra[6241_61943_000011_000003]: As usual, the crew was small, five Danes doing the whole of the work.
+
+    sentence_index 16
+    sentence_wav_paths[2412_153947_000023_000000]: /home/pmn/audiodatasets/LibriTTS/dev-clean/2412/153947/2412_153947_000023_000000.wav
+    sentence_norm_tra[2412_153947_000023_000000]: june ninth eighteen seventy two
+
+    sentence_index 19
+    sentence_wav_paths[174_168635_000014_000000]: /home/pmn/audiodatasets/LibriTTS/dev-clean/174/168635/174_168635_000014_000000.wav
+    sentence_norm_tra[174_168635_000014_000000]: CHAPTER three-TWO MISFORTUNES MAKE ONE PIECE OF GOOD FORTUNE
+    """
     logg = logging.getLogger(f"c.{__name__}.evaluate_stream")
     # logg.setLevel("INFO")
     logg.debug("Start evaluate_stream")
@@ -258,8 +303,7 @@ def evaluate_stream(
     # a random number generator to use
     rng = np.random.default_rng(12345)
 
-    model_type = "cnn"
-    model = load_trained_model(model_type, datasets_type, train_words_type)
+    model = load_trained_model(architecture_type, datasets_type, train_words_type)
     # model.summary()
 
     if evaluation_type == "ltts":
@@ -267,8 +311,11 @@ def evaluate_stream(
             train_words_type
         )
 
+    wav_IDs = list(sentence_wav_paths.keys())
+    logg.debug(f"len(wav_IDs): {len(wav_IDs)}")
+
     # get info for one sentence
-    wav_ID = list(sentence_wav_paths.keys())[40]
+    wav_ID = wav_IDs[sentence_index]
     orig_wav_path = sentence_wav_paths[wav_ID]
     logg.debug(f"sentence_wav_paths[{wav_ID}]: {orig_wav_path}")
     norm_tra = sentence_norm_tra[wav_ID]
@@ -283,13 +330,25 @@ def evaluate_stream(
 
     # split the sentence in chunks every sentence_hop_length
     sentence_hop_length = new_sr // 16
-    splits = split_sentence(sentence_sig, datasets_type, sentence_hop_length)
+    split_length = new_sr // 2
+    splits = split_sentence(
+        sentence_sig, datasets_type, sentence_hop_length, split_length
+    )
+    logg.debug(f"len(splits): {len(splits)}")
 
     # compute spectrograms / augment / compose
     if datasets_type.startswith("aug"):
         specs = augment_signals(splits, datasets_type, rng, which_fold="testing")
         logg.debug(f"specs.shape: {specs.shape}")
         specs_img = np.expand_dims(specs, axis=-1)
+        logg.debug(f"specs_img.shape: {specs_img.shape}")
+
+    elif datasets_type.startswith("me"):
+        spec_dict = get_spec_dict()
+        mel_kwargs = spec_dict[datasets_type]
+        logg.debug(f"mel_kwargs: {mel_kwargs}")
+        p2d_kwargs = {"ref": np.max}
+        specs_img = compute_spectrograms(splits, mel_kwargs, p2d_kwargs)
         logg.debug(f"specs_img.shape: {specs_img.shape}")
 
     words = sorted(words_types[train_words_type])
@@ -299,7 +358,15 @@ def evaluate_stream(
     y_index = np.argmax(y_pred, axis=1)
     # logg.debug(f"y_index: {y_index}")
     y_pred_labels = [words[i] for i in y_index]
-    logg.debug(f"y_pred_labels: {y_pred_labels}")
+    # logg.debug(f"y_pred_labels: {y_pred_labels}")
+
+    clean_labels = []
+    for yl in y_pred_labels:
+        if yl.startswith("_other"):
+            clean_labels.append(".")
+        else:
+            clean_labels.append(yl)
+    logg.debug(f"Predictions {clean_labels}")
 
     plot_sentence_pred(sentence_sig, y_pred, norm_tra, words)
     plt.show()
@@ -313,8 +380,16 @@ def run_evaluate_stream(args: argparse.Namespace) -> None:
     evaluation_type = args.evaluation_type
     train_words_type = args.train_words_type
     which_dataset = args.dataset_name
+    architecture_type = args.architecture_type
+    sentence_index = args.sentence_index
 
-    evaluate_stream(evaluation_type, which_dataset, train_words_type)
+    evaluate_stream(
+        evaluation_type,
+        which_dataset,
+        train_words_type,
+        architecture_type,
+        sentence_index,
+    )
 
 
 if __name__ == "__main__":

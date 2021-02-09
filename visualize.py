@@ -195,7 +195,7 @@ def visualize_datasets():
         # "melc4",
         "mela1",
         "meL04",
-        "auL18",
+        # "auL18",
         # "aug18",
     ]
     # datasets = [
@@ -228,13 +228,14 @@ def visualize_datasets():
         dataset_name = datasets[i]
         processed_path = processed_folder / f"{dataset_name}"
         word_path = processed_path / f"{a_word}_training.npy"
+        logg.debug(f"word_path: {word_path}")
 
         # FIXME this is shaky as hell
         if not word_path.exists():
             preprocess_spec(dataset_name, f"_{a_word}")
 
         word_data = np.load(word_path, allow_pickle=True)
-        logg.debug(f"{dataset_name} word shape: {word_data[iw].shape}")
+        logg.debug(f"{dataset_name} {a_word} shape: {word_data[iw].shape}")
         title = f"{dataset_name}: shape {word_data[iw].shape}"
         plot_spec(word_data[iw], ax, title=title)
     fig.tight_layout()
