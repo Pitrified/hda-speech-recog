@@ -245,16 +245,23 @@ def plot_sentence_pred(
     y_pred: np.ndarray,
     norm_tra: str,
     train_words: ty.List[str],
+    sentence_hop_length: int,
+    split_length: int,
 ) -> None:
     """MAKEDOC: what is plot_sentence_pred doing?"""
     logg = logging.getLogger(f"c.{__name__}.plot_sentence_pred")
     # logg.setLevel("INFO")
     logg.debug("Start plot_sentence_pred")
 
-    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(12, 12))
+    fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(12, 12))
+
+    end_pad = split_length // sentence_hop_length
+    pad_width = ((0, end_pad + 1), (0, 0))
+    y_pred_padded = np.pad(y_pred, pad_width=pad_width)
 
     ax[0].plot(sentence_sig)
-    ax[1].imshow(y_pred.T, cmap=plt.cm.viridis, aspect="auto")
+    ax[1].imshow(y_pred_padded.T, cmap=plt.cm.viridis, aspect="auto")
+    ax[2].imshow(y_pred.T, cmap=plt.cm.viridis, aspect="auto")
 
     ax[0].set_title(norm_tra)
     # norm_tra_list = norm_tra.split()
@@ -267,6 +274,8 @@ def plot_sentence_pred(
     y_tickpos = np.arange(len(train_words))
     ax[1].set_yticks(y_tickpos)
     ax[1].set_yticklabels(train_words)
+    ax[2].set_yticks(y_tickpos)
+    ax[2].set_yticklabels(train_words)
 
     fig.tight_layout()
 
@@ -280,18 +289,56 @@ def evaluate_stream(
 ) -> None:
     """MAKEDOC: what is evaluate_stream doing?
 
+    CNN_nf32_ks02_ps01_dw32_dr01_lr04_opa1_dsmeL04_bs32_en15_wLTnumLS
     if not 4 < len(norm_tra.split()) < 15:
     sentence_index 10
-    sentence_wav_paths[6241_61943_000011_000003]: /home/pmn/audiodatasets/LibriTTS/dev-clean/6241/61943/6241_61943_000011_000003.wav
+    sentence_wav_paths[6241_61943_000011_000003]: 6241/61943/6241_61943_000011_000003.wav
     sentence_norm_tra[6241_61943_000011_000003]: As usual, the crew was small, five Danes doing the whole of the work.
 
     sentence_index 16
-    sentence_wav_paths[2412_153947_000023_000000]: /home/pmn/audiodatasets/LibriTTS/dev-clean/2412/153947/2412_153947_000023_000000.wav
+    sentence_wav_paths[2412_153947_000023_000000]: 2412/153947/2412_153947_000023_000000.wav
     sentence_norm_tra[2412_153947_000023_000000]: june ninth eighteen seventy two
 
     sentence_index 19
-    sentence_wav_paths[174_168635_000014_000000]: /home/pmn/audiodatasets/LibriTTS/dev-clean/174/168635/174_168635_000014_000000.wav
+    sentence_wav_paths[174_168635_000014_000000]: 174/168635/174_168635_000014_000000.wav
     sentence_norm_tra[174_168635_000014_000000]: CHAPTER three-TWO MISFORTUNES MAKE ONE PIECE OF GOOD FORTUNE
+
+    sentence_index 22
+    sentence_wav_paths[3000_15664_000017_000003]: 3000/15664/3000_15664_000017_000003.wav
+    sentence_norm_tra[3000_15664_000017_000003]: The full grown bucks weigh nearly three hundred and fifty pounds.
+
+    sentence_index 26
+    sentence_wav_paths[2277_149897_000035_000002]: 2277/149897/2277_149897_000035_000002.wav
+    sentence_norm_tra[2277_149897_000035_000002]: Three o'clock came, four, five, six, and no letter.
+
+    sentence_index 33
+    sentence_wav_paths[8297_275154_000019_000000]: 8297/275154/8297_275154_000019_000000.wav
+    sentence_norm_tra[8297_275154_000019_000000]: "I will do neither the one nor the other.
+
+    sentence_index 36
+    sentence_wav_paths[8297_275156_000017_000007]: 8297/275156/8297_275156_000017_000007.wav
+    sentence_norm_tra[8297_275156_000017_000007]: In any event, her second marriage would lead to one disastrous result.
+
+    sentence_index 42
+    sentence_wav_paths[7976_110124_000012_000000]: 7976/110124/7976_110124_000012_000000.wav
+    sentence_norm_tra[7976_110124_000012_000000]: "Be sure that you admit no one," commanded the merchant.
+
+    sentence_index 46
+    sentence_wav_paths[7976_105575_000008_000004]: 7976/105575/7976_105575_000008_000004.wav
+    sentence_norm_tra[7976_105575_000008_000004]: Five of my eight messmates of the day before were shot.
+
+    sentence_index 66
+    sentence_wav_paths[251_118436_000005_000000]: 251/118436/251_118436_000005_000000.wav
+    sentence_norm_tra[251_118436_000005_000000]: one Death Strikes a King
+
+    interesting because the two after the silence is identified, the four said quickly is missed
+    sentence_index 67
+    sentence_wav_paths[251_137823_000033_000000]: 251/137823/251_137823_000033_000000.wav
+    sentence_norm_tra[251_137823_000033_000000]: Of the four other company engineers, two were now stirring and partly conscious.
+
+    sentence_index 100
+    sentence_wav_paths[1993_147966_000015_000000]: 1993/147966/1993_147966_000015_000000.wav
+    sentence_norm_tra[1993_147966_000015_000000]: We had three weeks of this mild, open weather.
     """
     logg = logging.getLogger(f"c.{__name__}.evaluate_stream")
     # logg.setLevel("INFO")
@@ -316,6 +363,7 @@ def evaluate_stream(
 
     # get info for one sentence
     wav_ID = wav_IDs[sentence_index]
+    logg.debug(f"sentence_index {sentence_index}")
     orig_wav_path = sentence_wav_paths[wav_ID]
     logg.debug(f"sentence_wav_paths[{wav_ID}]: {orig_wav_path}")
     norm_tra = sentence_norm_tra[wav_ID]
@@ -368,7 +416,9 @@ def evaluate_stream(
             clean_labels.append(yl)
     logg.debug(f"Predictions {clean_labels}")
 
-    plot_sentence_pred(sentence_sig, y_pred, norm_tra, words)
+    plot_sentence_pred(
+        sentence_sig, y_pred, norm_tra, words, sentence_hop_length, split_length
+    )
     plt.show()
 
 
