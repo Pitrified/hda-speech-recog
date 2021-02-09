@@ -413,10 +413,76 @@ def warp_spectrograms(
     return data_warped
 
 
-def do_augmentation(
+def augment_signals(
+    sig_original: ty.List[np.ndarray],
     augmentation_type: str,
-    words_type: str,
-    force_augment: bool = False,
+    rng: np.random.Generator,
+    which_fold: str = "training",
+    log_level: str = "INFO",
+) -> np.ndarray:
+    """MAKEDOC: what is augment_signals doing?"""
+    logg = logging.getLogger(f"c.{__name__}.augment_signals")
+    logg.setLevel(log_level)
+    logg.debug("Start augment_signals")
+
+    # get the params for the augmentation
+    aug_dict = get_aug_dict()
+    aug_param = aug_dict[augmentation_type]
+    max_time_shifts = aug_param["max_time_shifts"]
+    stretch_rates = aug_param["stretch_rates"]
+    keep_originals = aug_param["keep_originals"]
+    mel_kwargs = aug_param["mel_kwargs"]
+    num_landmarks = aug_param["warp_params"]["num_landmarks"]
+    max_warp_time = aug_param["warp_params"]["max_warp_time"]
+    max_warp_freq = aug_param["warp_params"]["max_warp_freq"]
+
+    # args for the power_to_db function
+    p2d_kwargs = {"ref": np.max}
+
+    # the signals you are generating
+    all_signals = []
+    if keep_originals:
+        all_signals.extend(sig_original)
+
+    # if len(max_time_shifts) > 0 and which_fold != "testing":
+    if len(max_time_shifts) > 0 and which_fold == "training":
+        logg.info("Rolling")
+        sig_rolled = roll_signals(sig_original, max_time_shifts, rng)
+        all_signals.extend(sig_rolled)
+
+    # if len(stretch_rates) > 0 and which_fold != "testing":
+    if len(stretch_rates) > 0 and which_fold == "training":
+        logg.info("Stretching")
+        sig_stretched = stretch_signals(sig_original, stretch_rates, rng)
+        all_signals.extend(sig_stretched)
+
+    logg.debug(f"len(all_signals): {len(all_signals)}")
+
+    # compute the spectrograms
+    logg.info("Computing melspectrograms")
+    data_specs: np.ndarray = compute_spectrograms(all_signals, mel_kwargs, p2d_kwargs)
+
+    # warp the spectrograms
+    # if num_landmarks > 0 and which_fold != "testing":
+    if num_landmarks > 0 and which_fold == "training":
+        logg.info("Warping...")
+        data_warped: np.ndarray = warp_spectrograms(
+            data_specs, num_landmarks, max_warp_time, max_warp_freq, rng
+        )
+        all_data = np.concatenate((data_specs, data_warped), axis=0)
+    else:
+        all_data = data_specs
+    logg.debug(f"all_data.shape: {all_data.shape}")
+
+    # remove the last dimension, will be added again when loading (legacy load)
+    squoze_data = tf.squeeze(all_data, axis=[-1])
+    logg.debug(f"squoze_data.shape: {squoze_data.shape}")
+
+    return squoze_data
+
+
+def do_augmentation(
+    augmentation_type: str, words_type: str, force_augment: bool = False,
 ) -> None:
     """TODO: what is do_augmentation doing?
 
@@ -448,20 +514,6 @@ def do_augmentation(
     # a random number generator to use
     rng = np.random.default_rng(12345)
 
-    # get the params for the augmentation
-    aug_dict = get_aug_dict()
-    aug_param = aug_dict[augmentation_type]
-    max_time_shifts = aug_param["max_time_shifts"]
-    stretch_rates = aug_param["stretch_rates"]
-    keep_originals = aug_param["keep_originals"]
-    mel_kwargs = aug_param["mel_kwargs"]
-    num_landmarks = aug_param["warp_params"]["num_landmarks"]
-    max_warp_time = aug_param["warp_params"]["max_warp_time"]
-    max_warp_freq = aug_param["warp_params"]["max_warp_freq"]
-
-    # args for the power_to_db function
-    p2d_kwargs = {"ref": np.max}
-
     # do everything on the three folds
     # for which_fold in ["training"]:
     for which_fold in ["training", "validation", "testing"]:
@@ -488,46 +540,9 @@ def do_augmentation(
             if len(sig_original) == 0:
                 continue
 
-            # the signals you are generating
-            all_signals = []
-            if keep_originals:
-                all_signals.extend(sig_original)
-
-            # if len(max_time_shifts) > 0 and which_fold != "testing":
-            if len(max_time_shifts) > 0 and which_fold == "training":
-                logg.info("Rolling")
-                sig_rolled = roll_signals(sig_original, max_time_shifts, rng)
-                all_signals.extend(sig_rolled)
-
-            # if len(stretch_rates) > 0 and which_fold != "testing":
-            if len(stretch_rates) > 0 and which_fold == "training":
-                logg.info("Stretching")
-                sig_stretched = stretch_signals(sig_original, stretch_rates, rng)
-                all_signals.extend(sig_stretched)
-
-            logg.debug(f"len(all_signals): {len(all_signals)}")
-
-            # compute the spectrograms
-            logg.info("Computing melspectrograms")
-            data_specs: np.ndarray = compute_spectrograms(
-                all_signals, mel_kwargs, p2d_kwargs
+            squoze_data = augment_signals(
+                sig_original, augmentation_type, rng, which_fold
             )
-
-            # warp the spectrograms
-            # if num_landmarks > 0 and which_fold != "testing":
-            if num_landmarks > 0 and which_fold == "training":
-                logg.info("Warping...")
-                data_warped: np.ndarray = warp_spectrograms(
-                    data_specs, num_landmarks, max_warp_time, max_warp_freq, rng
-                )
-                all_data = np.concatenate((data_specs, data_warped), axis=0)
-            else:
-                all_data = data_specs
-            logg.debug(f"all_data.shape: {all_data.shape}")
-
-            # remove the last dimension, will be added again when loading (legacy load)
-            squoze_data = tf.squeeze(all_data, axis=[-1])
-            logg.debug(f"squoze_data.shape: {squoze_data.shape}")
 
             # save the thingy
             np.save(word_aug_path, squoze_data)
