@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 
 from augment_data import warp_spectrograms
+from preprocess_data import preprocess_spec
 from plot_utils import plot_spec
 from plot_utils import plot_waveform
 from utils import find_rowcol
@@ -173,36 +174,40 @@ def visualize_datasets():
         "mfcc08",
     ]
     datasets = [
-        "mel01",
-        "mel02",
-        "mel03",
+        # "mel01",
+        # "mel02",
+        # "mel03",
         "mel04",
         "mel05",
-        "mel06",
-        "mel07",
-        "mel08",
-        "mel09",
-        "mel10",
-        "mel11",
-        "mel12",
-        "mel13",
-        "mel14",
-        "mel15",
-        "melc1",
-        "melc2",
-        "melc3",
-        "melc4",
+        # "mel06",
+        # "mel07",
+        # "mel08",
+        # "mel09",
+        # "mel10",
+        # "mel11",
+        # "mel12",
+        # "mel13",
+        # "mel14",
+        # "mel15",
+        # "melc1",
+        # "melc2",
+        # "melc3",
+        # "melc4",
         "mela1",
+        "Lmel04",
     ]
-    datasets = [
-        "mel01",
-        "mel04",
-        "mel06",
-        "melc1",
-    ]
+    # datasets = [
+    #     "mel01",
+    #     "mel04",
+    #     "mel06",
+    #     "melc1",
+    # ]
 
-    words = words_types["f1"]
-    a_word = words[0]
+    # words = words_types["f1"]
+    # a_word = words[0]
+    a_word = "loudest_one"
+    # a_word = "_other_ltts_loud"
+
     # which word in the dataset to plot
     iw = 3
 
@@ -216,9 +221,16 @@ def visualize_datasets():
 
     fig.suptitle(f"Various spectrograms for {a_word}", fontsize=20)
     for i, ax in enumerate(axes.flat[: len(datasets)]):
+
+        # the current dataset being plotted
         dataset_name = datasets[i]
         processed_path = processed_folder / f"{dataset_name}"
         word_path = processed_path / f"{a_word}_validation.npy"
+
+        # FIXME this is shaky as hell
+        if not word_path.exists():
+            preprocess_spec(dataset_name, f"_{a_word}")
+
         word_data = np.load(word_path, allow_pickle=True)
         logg.debug(f"{dataset_name} word shape: {word_data[iw].shape}")
         title = f"{dataset_name}: shape {word_data[iw].shape}"

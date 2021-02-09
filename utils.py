@@ -173,8 +173,22 @@ def define_words_types():
     }
     words_types.update(words_ltts)
 
-    words_single = {f"_{w}": [w] for w in words_all}
+    words_universe = set(
+        [
+            *words_all,
+            *words_all_loud,
+            *words_ljs_all,
+            *words_ljs_all_loud,
+            *words_ltts_all,
+            *words_ltts_all_loud,
+        ]
+    )
+    words_single = {f"_{w}": [w] for w in words_universe}
     words_types.update(words_single)
+    # words_single = {f"_{w}": [w] for w in words_all}
+    # words_types.update(words_single)
+    # words_single = {f"_{w}": [w] for w in words_all_loud}
+    # words_types.update(words_single)
 
     return words_types
 

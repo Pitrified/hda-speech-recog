@@ -98,18 +98,33 @@ def wav2mfcc(wav_path, mfcc_kwargs, p2d_kwargs):
     return padded_log_mfcc
 
 
-def wav2mel(wav_path, mel_kwargs, p2d_kwargs):
+def wav2mel(wav_path: Path, mel_kwargs, p2d_kwargs):
     """TODO: what is wav2mel doing?"""
     sig, sample_rate = librosa.load(wav_path, sr=None)
     mel = librosa.feature.melspectrogram(sig, sr=sample_rate, **mel_kwargs)
     log_mel = librosa.power_to_db(mel, **p2d_kwargs)
 
     # the shape is not consistent, pad it
-    pad_needed = 16384 // mel_kwargs["hop_length"] - log_mel.shape[1]
-    # print(f"pad_needed: {pad_needed}")
+
+    word_name = wav_path.parent.name
+
+    # the bodgiest bodge that ever bodged
+    if word_name.startswith("loudest") or word_name.endswith("loud"):
+        pad_needed = 16384 // 2 // mel_kwargs["hop_length"] - log_mel.shape[1]
+    else:
+        pad_needed = 16384 // mel_kwargs["hop_length"] - log_mel.shape[1]
+
+    pad_needed = max(0, pad_needed)
+
     # number of values padded to the edges of each axis.
     pad_width = ((0, 0), (0, pad_needed))
     padded_log_mel = np.pad(log_mel, pad_width=pad_width)
+
+    # recap = f"len(sig) {len(sig)}"
+    # recap += f" pad_needed {pad_needed}"
+    # recap += f" padded_log_mel.shape {padded_log_mel.shape}"
+    # print(recap)
+
     return padded_log_mel
 
 
@@ -146,7 +161,7 @@ def get_spec_dict():
         "mel14": {"n_mels": 128, "n_fft": 256, "hop_length": 256},  # (128, 64)
         "mel15": {"n_mels": 128, "n_fft": 3072, "hop_length": 256},  # (128, 64)
         "mela1": {"n_mels": 80, "n_fft": 1024, "hop_length": 128, "fmin": 40},
-        "Lmel04": {"n_mels": 64, "n_fft": 1024, "hop_length": 128},  # (64, 64)
+        "Lmel04": {"n_mels": 64, "n_fft": 512, "hop_length": 128},  # (64, 64)
     }
 
     return spec_dict

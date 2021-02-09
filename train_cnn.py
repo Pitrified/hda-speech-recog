@@ -154,6 +154,10 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     # ds.extend(["aug14", "aug15", "aug16", "aug17"])
     # ds.extend(["aug07"])
     ds.extend(["Lmel04"])
+    ds.extend(["mel05"])
+    ds.extend(["Laug06", "Laug07", "Laug08", "Laug09"])
+    ds.extend(["Laug18", "Laug19", "Laug20", "Laug21"])
+    ds.extend(["aug18", "aug19", "aug20", "aug21"])
     hypa_grid_big["dataset"] = ds
     # hypa_grid_big["dropout_type"] = ["01", "02"]
     hypa_grid_big["dropout_type"] = ["01"]
@@ -168,7 +172,7 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     # lr.extend(["01", "02", "03"])  # fixed
     # lr.extend(["e1"])  # exp_decay_keras_01
     lr.extend(["04"])  # exp_decay_step_01
-    # lr.extend(["05"])  # exp_decay_smooth_01
+    lr.extend(["05"])  # exp_decay_smooth_01
     # lr.extend(["06"])  # exp_decay_smooth_02
     hypa_grid_big["learning_rate_type"] = lr
     hypa_grid_big["optimizer_type"] = ["a1"]
@@ -231,6 +235,8 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
             elif dn.startswith("Lmel"):
                 preprocess_spec(dn, wt)
             elif dn.startswith("aug"):
+                do_augmentation(dn, wt)
+            elif dn.startswith("Laug"):
                 do_augmentation(dn, wt)
 
     for i, hypa in enumerate(the_grid):

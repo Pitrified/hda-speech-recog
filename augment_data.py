@@ -137,6 +137,23 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "n_fft": 1024,
         "hop_length": 256,
     }  # (64, 64)
+    mel_05 = {
+        "n_mels": 128,
+        "n_fft": 1024,
+        "hop_length": 128,
+    }  # (128, 128)
+    mel_01_loud = {
+        "n_mels": 64,
+        "n_fft": 512,
+        "hop_length": 128,
+        "fmin": 40,
+        "fmax": 8000,
+    }  # (64, 64)
+    mel_05_loud = {
+        "n_mels": 128,
+        "n_fft": 512,
+        "hop_length": 64,
+    }  # (128, 128)
 
     aug_dict["aug01"] = {
         "max_time_shifts": [1600, 3200],
@@ -206,6 +223,36 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
     }
 
+    # mel_01_loud
+    aug_dict["Laug06"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_01_loud,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 5},
+    }
+    aug_dict["Laug07"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_01_loud,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 0},
+    }
+    aug_dict["Laug08"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_01_loud,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 3, "max_warp_time": 0, "max_warp_freq": 5},
+    }
+    aug_dict["Laug09"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_01_loud,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
+    }
+
     # mel_03
     aug_dict["aug10"] = {
         "max_time_shifts": [],
@@ -265,6 +312,67 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "keep_originals": True,
         "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
     }
+
+    # mel_05
+    aug_dict["aug18"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_05,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 5},
+    }
+    aug_dict["aug19"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_05,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 0},
+    }
+    aug_dict["aug20"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_05,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 3, "max_warp_time": 0, "max_warp_freq": 5},
+    }
+    aug_dict["aug21"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_05,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
+    }
+
+    # mel_05_loud
+    aug_dict["Laug18"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_05_loud,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 5},
+    }
+    aug_dict["Laug19"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_05_loud,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 0},
+    }
+    aug_dict["Laug20"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_05_loud,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 3, "max_warp_time": 0, "max_warp_freq": 5},
+    }
+    aug_dict["Laug21"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_05_loud,
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
+    }
+
     return aug_dict
 
 
