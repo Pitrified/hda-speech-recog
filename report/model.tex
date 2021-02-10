@@ -239,11 +239,15 @@ landmarks.}%
 
 The training was done using the tensorflow library \cite{tensorflow2015-whitepaper}.
 
-% TODO: intro to this section.
+TODO: intro to this section.
 % Several training parameters were tweaked during the experiments to maximize the models' performance.
 % A brief overview of each parameter follows.
 
 \subsection{Learning rate}
+
+During the experiments, different values of learning rate and different
+schedules were used.
+The details are described in this section.
 
 \subsubsection{Finding optimal LR values}
 
@@ -352,9 +356,9 @@ One implementation of this policy as a tensorflow callback is available on
 GitHub \cite{bckenstlerCLR}.
 An example of the \texttt{triangular2} policy is shown by
 \fig{fig:cyclic_lr_example}: a sharp initial drop in loss can be seen, as the
-learning rate covers the optimal range of values found by sweeping. A small
-increase in loss corresponds to the peak of the second cycle. Finally with the
-last two cycles the model converges.
+learning rate covers the optimal range of values found by sweeping, as
+described previously. A small increase in loss corresponds to the peak of the
+second cycle. Finally with the last two cycles the model converges.
 
 \begin{figure}[t!]
     \centering
@@ -364,33 +368,84 @@ last two cycles the model converges.
 \end{figure}
 
 \subsection{Optimizer}
-
 Adam \cite{kingma2017adam}.
+TODO or todont?
 
-% TODO or todont?
-% \subsection{Regularization and Batch Normalization}
+\subsection{Regularization and Batch Normalization}
+TODO or todont?
 
 \subsection{Early stopping}
 
-Loss, validation, overfitting
+A very common problem encountered when training a model is overfitting the
+data. After a certain number of training epochs, the model has learned
+everything it can from the current data, and starts overfitting the
+\textit{noise} in the data, instead of meaningful information.
+When trying to use the model to make predictions, the results generalize badly.
+To prevent this behaviour, a part of the data is kept separate, in the so
+called validation fold, and is used to track the performances of the model on
+data that it is not training on.
+When the validation loss (or any metric that is being tracked, e.g. categorical
+accuracy) starts to increase, the training is stopped.
+A patience parameter can be set to train for a certain amount of additional
+epochs, hoping that the tracked metric will decrease below the current minimum.
+Tensorflow allows for model checkpointing, that neatly implements this
+behaviour.
+TensorBoard is a tool to visualize various metrics and other useful information
+during the training of a model, and can be used to compare different training
+runs.
+During the experiments, early stopping with patience 4 was used.
 
-Show a plot
+TODO: Show a plot
 
-Model checkpointing
+\subsection{Epochs number and batch size}
+TODO or todont?
 
-TensorBoard
+Epoche/batch, tempo di computazione
 
 \subsection{Hyper-parameter tuning}
 
-Come lo fai
+Hyper-parameter tuning was carried out using the class \texttt{ParameterGrid}
+implemented in scikit-learn \cite{scikit-learn}.
+The class accepts a dictionary that maps parameter names to a list of possible
+parameter values and produces all the possible combinations of those values.
 
-Usare Pool
+The number of combinations quickly grows to unfeasible levels, so a full grid
+search cannot be performed.
+During the experiments, a three step search was manually performed.
+The parameters were split in two sets:
+in the first step, the parameters in the first set were kept to a fixed value,
+while the others were allowed to change, thus investigating the effects of the
+second set of parameters on the training.
+In the second step, the roles were reversed:
+Once the best values for the second set of parameters were found, these
+parameters were kept fixed and the parameters in the first set were allowed to
+change.
+In the final step, each parameter was allowed to change between the one or two
+best values found for it, to fully investigate a reduced grid.
 
-Ovviamente non su tutte le combinazioni
+When analyzing the results, special care has to be taken to be sure that
+the grids were completely searched.
+As an example, say the learning rate parameter can be set to $1$ or $2$
+and the epoch number can be either $5$ or $10$.
+After some experiments, it is discovered that a learning rate of $2$
+outperforms $1$ consistently.
+This conclusion is valid if the entire grid was searched, but can be misleading
+if only a part of the grid was covered: it might be the case that the only
+combinations searched are $(1, 5)$ and $(2, 10)$.
+As such, the increase in performance when using a learning rate of $2$ might be
+only due to the epoch number set to $10$, whereas the best combination is the
+missing one: $(1, 10)$.
+No formal way to check for consistency in the grid was developed,
+but some care was taken in being methodical when exploring.
 
-Pay attention (no pun) to over-representation of the good params.
+% overshadow
 
-Epoche/batch, tempo di computazione
+TODO: Usare Pool, MAYBE in conclusion/what I learned section.
+
+% Ovviamente non su tutte le combinazioni
+% Pay attention (no pun) to over-representation of the good params.
+
+\subsection{Dataset loading}
 
 TODO: loading the dataset with AudioGenerator
 
