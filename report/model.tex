@@ -20,12 +20,12 @@ Test against a stream of sounds.
 
 % Measurement setup, data preprocess (describe the google dataset)
 
-The Speech Commands datasets (GSCD), described in \cite{warden2018speech},
-provides thousands of one second recording of $35$ differen words. The
-recordings are mainly of volounteers, who used their own device to record the
-words in a closed room wherever they happened to be (not in a studio setting).
-Ideally each volounteer only recorded the $135$ requested utterances once, so
-the dataset provides good variability of voices.
+The Speech Commands datasets \cite{warden2018speech} (GSCD), provides thousands
+of one second recording of $35$ different words. The recordings are mainly of
+volounteers, who used their own device to record the words in a closed room
+wherever they happened to be (not in a studio setting). Ideally each volounteer
+only recorded the $135$ requested utterances once, so the dataset provides good
+variability of voices.
 The utterances have a duration of one second.
 To more precisely align the recorded clips, the audio was acquired for $1.5$
 seconds and the $1$ second clip that contained the highest overrall volume was
@@ -235,60 +235,87 @@ landmarks.}%
 \section{Learning Framework}
 \label{sec:learning_framework}
 
-See Kumar Xception 4.4
+% TODO: See Kumar Xception 4.4
 
 The training was done using the tensorflow library \cite{tensorflow2015-whitepaper}.
 
-Several training parameters were tweaked during the experiments to maximize the models' performance.
-A brief overview of each parameter follows.
+% TODO: intro to this section.
+% Several training parameters were tweaked during the experiments to maximize the models' performance.
+% A brief overview of each parameter follows.
 
-\subsection{Learning rate schedule}
+\subsection{Learning rate}
 
 \subsubsection{Finding optimal LR values}
 
-% \begin{figure}[t!]
-%     \centering
-%     \includegraphics[width=0.9\linewidth]{LR_sweep_bs16_en15.pdf}
-%     \caption{LR_sweep_bs16_en15}%
-%     \label{fig:LR_sweep_bs16_en15}
-% \end{figure}
+For a model to learn, an optimizer computes the error gradient for the current
+model using a batch of training samples, then uses the back-propagation
+algorithm to update the weights of the model.
+The learning rate controls how much the model weights are changed after each batch.
+If the value is set too low, the model is not able to learn, and the loss does
+not decrease at all.
+If the value is set too high, the model changes too much after each batch,
+which leads to quick variations in the loss and the model ultimately cannot
+converge.
+
+To find proper values for the learning rate, a technique that sweeps all
+possible values was used \cite{PYISlearningsweep}.
+The algorithm starts learning with an extremely low value for the learning rate ($1e-9$),
+then exponentially increases this value after each batch update. The training
+continues until the learning rate reaches $1$ or the loss diverges too much.
+The loss value for each learning rate value is logged and the results are shown
+in \fig{fig:LR_sweep_bs16_en15}.
+From the plot the optimal range for the learning rate can be easily inferred:
+the model started learning at $1e-5$ and the training started to diverge at $1e-3$.
+The latter value can be chosen as initial learning rate and the former to tune
+the learning rate decay.
 
 % https://latexdraw.com/how-to-annotate-an-image-in-latex/
 \begin{figure}[t!]
     \centering
-
     \begin{tikzpicture}
-
-        % \node (image) at (0,0) {
-        % \node[anchor=south west] (image) at (0,0) {
         \node[above right] (image) at (0,0) {
             \includegraphics[width=0.9\linewidth]{LR_sweep_bs16_en15.pdf}
         };
-
         \draw[latex-, very thick,red] (4.3,6.4) -- ++(-1,-1.2)
-            % node[left,black,fill=white]{\small Voltage source};
-            % node[below left, black, fill=white, text width=2.5cm]{\small The loss starts to drop at $1e-5$};
-            node[below, black, fill=white, text width=2.5cm, align=center]{\small The loss starts to drop at $1e-5$};
-
+            node[below, black, fill=white, text width=2.5cm, align=center]{
+            \small The loss starts to drop at $1e-5$
+        };
         \draw[latex-, very thick,red] (5.9,1.3) -- ++(-1.5,0.4)
-            % node[left,black,fill=white]{\small Voltage source};
-            % node[below left, black, fill=white, text width=2.5cm]{\small The loss starts to drop at $1e-5$};
-            node[above left, black, fill=white, text width=2.5cm, align=center]{\small The loss starts to increase at $1e-3$};
-
+            node[above left, black, fill=white, text width=2.5cm, align=center]{
+            \small The loss starts to increase at $1e-3$
+        };
     \end{tikzpicture}
-
-    \caption{LR_sweep_bs16_en15}%
+    \caption{LR sweep with \texttt{batch\_size} 16, \texttt{epoch\_num} 15.}%
     \label{fig:LR_sweep_bs16_en15}
 \end{figure}
 
+\subsubsection{Learning rate schedules}
 
-\subsubsection{Fixed LR}
-\subsubsection{Exp decay LR}
-\subsubsection{Cyclic LR}
+Different schedules for the learning rate can be used, to set a specific learning rate each epoch:
+
+\paragraph{Fixed LR}
+
+The simplest one keeps the value fixed.
+
+\paragraph{Exp decay LR}
+
+Exp decay:
+step
+smooth
+
+TODO: plot the schedules
+
+\paragraph{Cyclic LR}
+
+Cyclic LR \cite{smith2017cyclical}
+Implemented by \cite{bckenstlerCLR}
 
 \subsection{Optimizer}
 
-\subsection{Regularization and Batch Normalization}
+Adam \cite{kingma2017adam}.
+
+% TODO or todont?
+% \subsection{Regularization and Batch Normalization}
 
 \subsection{Early stopping}
 
