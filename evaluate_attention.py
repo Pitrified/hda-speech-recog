@@ -527,11 +527,23 @@ def make_plots_clr() -> None:
 
     info_folder = Path("info") / "attention"
 
-    for model_folder in info_folder.iterdir():
+    # mf
+    # for mf in info_folder.iterdir()
+    # if (("_lr07" in mf.name or "_lr08" in mf.name) and "_en01" in mf.name)
+    info_folder_dirs = [
+        mf for mf in info_folder.iterdir() if ("_lr07" in mf.name or "_lr08" in mf.name)
+    ]
+    # info_folder_dirs = list(info_folder.iterdir())
+    logg.debug(f"len(info_folder_dirs): {len(info_folder_dirs)}")
+
+    # si = 14
+    # si = 0
+    # for model_folder in info_folder_dirs[si : si + 1]:
+    for model_folder in info_folder_dirs[:]:
         model_name = model_folder.name
         # if "_lr05" not in model_name and "_lr06" not in model_name:
-        if "_lr08" not in model_name:
-            continue
+        # if "_lr08" not in model_name:
+        #     continue
         logg.debug(f"model_name: {model_name}")
 
         clr_recap_path = model_folder / "clr_recap.json"
@@ -547,25 +559,71 @@ def make_plots_clr() -> None:
         logg.debug(f"metrics_names: {metrics_names}")
         logg.debug(f"train {metrics_names_train} val {metrics_names_val}")
 
+        # fscore data for training
         prec_train = np.array(clr_recap["precision"])
         recall_train = np.array(clr_recap["recall"])
-
-        # fscores_train = 2 * prec_train * recall_train / (prec_train + recall_train)
         pr_prod = 2 * prec_train * recall_train
         pr_sum = prec_train + recall_train
         fscores_train = np.zeros_like(pr_prod)
         np.divide(pr_prod, pr_sum, out=fscores_train, where=pr_sum > 0)
 
-        iterations = clr_recap["iterations"]
-        lr = clr_recap["lr"]
+        # loss for train
         loss_train = np.array(clr_recap["loss"])
 
-        fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(12, 12))
-        ax[0].plot(iterations, fscores_train)
-        ax[0].plot(iterations, loss_train)
-        ax[1].plot(iterations, lr)
+        # fscore data for validation
+        prec_val = np.array(clr_recap["val_precision"])
+        recall_val = np.array(clr_recap["val_recall"])
+        pr_prod = 2 * prec_val * recall_val
+        pr_sum = prec_val + recall_val
+        fscores_val = np.zeros_like(pr_prod)
+        np.divide(pr_prod, pr_sum, out=fscores_val, where=pr_sum > 0)
+        logg.debug(f"len(fscores_val): {len(fscores_val)}")
 
-        plt.show()
+        # loss for validation
+        loss_val = np.array(clr_recap["val_loss"])
+        logg.debug(f"len(loss_val): {len(loss_val)}")
+        # x_val = np.arange(len(loss_val))
+
+        # lr
+        lr = clr_recap["lr"]
+
+        # x_axis
+        iterations = clr_recap["iterations"]
+
+        fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(12, 12))
+
+        # https://matplotlib.org/gallery/subplots_axes_and_figures/two_scales.html
+
+        line_fscore, = ax[0].plot(iterations, fscores_train, color="C0")
+        # ax[0].plot(iterations, loss_train, label="loss_train")
+        ax[0].set_title("Loss and F-score")
+        ax[0].set_xlabel("Iterations")
+        ax[0].set_ylabel("F-score")
+        # ax[0].legend()
+
+        ax_loss = ax[0].twinx()
+        ax_loss.set_ylabel("Loss")
+        line_loss, = ax_loss.plot(iterations, loss_train, color="C1")
+        # ax_loss.legend()
+
+        ax[0].legend((line_fscore, line_loss), ("F-score", "loss"), loc="center right")
+
+        ax[1].plot(iterations, lr)
+        ax[1].set_title("Learning rate")
+        ax[1].set_xlabel("Iterations")
+        ax[1].set_ylabel("Learning rate")
+
+        fig.tight_layout()
+
+        fig_name = f"{model_name}"
+        fig_name += "_fscore_loss_clr.{}"
+
+        results_path = plot_fol / fig_name.format("png")
+        fig.savefig(results_path)
+        results_path = plot_fol / fig_name.format("pdf")
+        fig.savefig(results_path)
+
+    plt.show()
 
 
 def delete_bad_models_att() -> None:

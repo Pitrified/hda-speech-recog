@@ -577,7 +577,10 @@ def augment_signals(
 
     # compute the spectrograms
     logg.info("Computing melspectrograms")
-    data_specs: np.ndarray = compute_spectrograms(all_signals, mel_kwargs, p2d_kwargs)
+    # FIXME extract the mel shape and pass it
+    data_specs: np.ndarray = compute_spectrograms(
+        all_signals, mel_kwargs, p2d_kwargs, None
+    )
 
     # warp the spectrograms
     # if num_landmarks > 0 and which_fold != "testing":
@@ -599,9 +602,7 @@ def augment_signals(
 
 
 def do_augmentation(
-    augmentation_type: str,
-    words_type: str,
-    force_augment: bool = False,
+    augmentation_type: str, words_type: str, force_augment: bool = False,
 ) -> None:
     """TODO: what is do_augmentation doing?
 
