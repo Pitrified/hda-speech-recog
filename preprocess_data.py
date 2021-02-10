@@ -162,9 +162,52 @@ def get_spec_dict():
         "mel15": {"n_mels": 128, "n_fft": 3072, "hop_length": 256},  # (128, 64)
         "mela1": {"n_mels": 80, "n_fft": 1024, "hop_length": 128, "fmin": 40},
         "meL04": {"n_mels": 64, "n_fft": 512, "hop_length": 128},  # (64, 64)
+        "meLa1": {"n_mels": 80, "n_fft": 512, "hop_length": 64, "fmin": 40},
+        "meLa2": {"n_mels": 80, "n_fft": 512, "hop_length": 128, "fmin": 40},
+        "meLa3": {"n_mels": 80, "n_fft": 1024, "hop_length": 128, "fmin": 40},
     }
 
     return spec_dict
+
+
+def get_spec_shape_dict() -> ty.Dict[str, ty.Tuple[int, int]]:
+    """TODO: what is get_spec_shape_dict doing?"""
+    logg = logging.getLogger(f"c.{__name__}.get_spec_shape_dict")
+    # logg.setLevel("INFO")
+    logg.debug("Start get_spec_shape_dict")
+
+    spec_shape_dict = {
+        "mfcc01": (20, 32),
+        "mfcc02": (40, 32),
+        "mfcc03": (40, 64),
+        "mfcc04": (80, 128),
+        "mfcc05": (10, 16),
+        "mfcc06": (128, 128),
+        "mfcc07": (128, 128),
+        "mfcc08": (128, 128),
+        "mel01": (128, 32),
+        "mel02": (64, 16),
+        "mel03": (64, 32),
+        "mel04": (64, 64),
+        "mel05": (128, 128),
+        "mel06": (128, 64),
+        "mel07": (128, 64),
+        "mel08": (128, 64),
+        "mel09": (128, 128),
+        "mel10": (128, 128),
+        "mel11": (128, 128),
+        "mel12": (128, 64),
+        "mel13": (128, 64),
+        "mel14": (128, 64),
+        "mel15": (128, 64),
+        "mela1": (80, 128),
+        "meL04": (64, 64),
+        "meLa1": (80, 128),
+        "meLa2": (80, 64),
+        "meLa3": (80, 64),
+    }
+
+    return spec_shape_dict
 
 
 def preprocess_spec(

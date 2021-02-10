@@ -163,55 +163,25 @@ def visualize_datasets():
 
     # show different datasets
 
-    datasets = [
-        "mfcc01",
-        "mfcc02",
-        "mfcc03",
-        "mfcc04",
-        "mfcc05",
-        "mfcc06",
-        "mfcc07",
-        "mfcc08",
-    ]
-    datasets = [
-        # "mel01",
-        # "mel02",
-        # "mel03",
-        # "mel04",
-        # "mel05",
-        # "mel06",
-        # "mel07",
-        # "mel08",
-        # "mel09",
-        # "mel10",
-        # "mel11",
-        # "mel12",
-        # "mel13",
-        # "mel14",
-        # "mel15",
-        # "melc1",
-        # "melc2",
-        # "melc3",
-        # "melc4",
-        "mela1",
-        "meL04",
-        # "auL18",
-        # "aug18",
-    ]
-    # datasets = [
-    #     "mel01",
-    #     "mel04",
-    #     "mel06",
-    #     "melc1",
-    # ]
+    # datasets = [ "mfcc01", "mfcc02", "mfcc03", "mfcc04", "mfcc05", "mfcc06", "mfcc07", "mfcc08"]
+    # datasets = [ "mel01", "mel02", "mel03", "mel04", "mel05", "mel06", "mel07", "mel08",
+    #     "mel09", "mel10", "mel11", "mel12", "mel13", "mel14", "mel15", "melc1", "melc2",
+    #     "melc3", "melc4", "mela1", "meL04", "meLa1", "auL18", "aug18", ]
+    # datasets = [ "mel01", "mel04", "mel06", "melc1" ]
 
     # words = words_types["f1"]
     # a_word = words[0]
-    a_word = "loudest_one"
+    # a_word = "loudest_one"
     # a_word = "_other_ltts_loud"
 
+    datasets = ["meL04", "meLa1", "meLa2", "meLa3"]
+    a_word = "loudest_one"
+
+    # datasets = ["mel04", "mela1"]
+    # a_word = "one"
+
     # which word in the dataset to plot
-    iw = 3
+    iw = 5
 
     processed_folder = Path("data_proc")
 

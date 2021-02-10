@@ -163,6 +163,9 @@ def hyper_train_attention(
     # ds.extend(["auL18"])
     # ds.extend(["mela1"])
     ds.extend(["meL04"])
+    ds.extend(["meLa1"])
+    ds.extend(["meLa2"])
+    ds.extend(["meLa3"])
     # hypa_grid["dataset_name"] = ["mela1"]
     # hypa_grid["dataset_name"] = ["mel04"]
     # hypa_grid["dataset_name"] = ["aug01"]
@@ -204,7 +207,7 @@ def hyper_train_attention(
     # lr.extend(["01", "02"])  # fixed
     lr.extend(["03"])  # exp_decay_step_01
     lr.extend(["04"])  # exp_decay_smooth_01
-    # lr.extend(["07"])  # clr_triangular2_03
+    lr.extend(["07"])  # clr_triangular2_03
     # lr.extend(["09"])  # clr_triangular2_05
     lr.extend(["10"])  # exp_decay_smooth_02
     hypa_grid["learning_rate_type"] = lr
@@ -219,8 +222,8 @@ def hyper_train_attention(
 
     ###### the number of epochs
     en = []
-    # en.extend(["01"])  # 15
-    en.extend(["02"])  # 30
+    en.extend(["01"])  # 15
+    # en.extend(["02"])  # 30
     # en.extend(["03", "04"])
     hypa_grid["epoch_num_type"] = en
 
@@ -245,9 +248,9 @@ def hyper_train_attention(
     for dn in hypa_grid["dataset_name"]:
         for wt in hypa_grid["words_type"]:
             logg.debug(f"\nwt: {wt} dn: {dn}\n")
-            if "mel" in dn:
+            if dn.startswith("me"):
                 preprocess_spec(dn, wt)
-            elif "aug" in dn:
+            elif dn.startswith("au"):
                 do_augmentation(dn, wt)
 
     # useful to pick good values of lr

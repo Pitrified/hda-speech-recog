@@ -3,18 +3,20 @@ from tensorflow.keras import models  # type: ignore
 import argparse
 import librosa  # type: ignore
 import logging
+import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 import re
 import typing as ty
-import matplotlib.pyplot as plt  # type: ignore
 
 from augment_data import augment_signals
-from preprocess_data import get_spec_dict
 from augment_data import compute_spectrograms
+from preprocess_data import get_spec_dict
+from preprocess_data import get_spec_shape_dict
+from train_attention import build_attention_name
 from train_cnn import build_cnn_name
+from utils import setup_gpus
 from utils import setup_logger
 from utils import words_types
-from utils import setup_gpus
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -185,6 +187,49 @@ def split_sentence(
     return splits
 
 
+def load_trained_model_att(override_hypa) -> models.Model:
+    """TODO: what is load_trained_model_att doing?"""
+    logg = logging.getLogger(f"c.{__name__}.load_trained_model_att")
+    # logg.setLevel("INFO")
+    logg.debug("Start load_trained_model_att")
+    logg.debug(f"override_hypa: {override_hypa}")
+
+    # default values for the hypas
+    hypa: ty.Dict[str, str] = {
+        "batch_size_type": "02",
+        "conv_size_type": "02",
+        "dataset_name": "meLa1",
+        "dense_width_type": "01",
+        "dropout_type": "01",
+        "epoch_num_type": "01",
+        "kernel_size_type": "01",
+        "learning_rate_type": "04",
+        "lstm_units_type": "01",
+        "optimizer_type": "a1",
+        "query_style_type": "04",
+        "words_type": "LTnumLS",
+    }
+    use_validation = True
+
+    # override the values
+    for hypa_name in override_hypa:
+        hypa[hypa_name] = override_hypa[hypa_name]
+
+    model_name = build_attention_name(hypa, use_validation)
+    logg.debug(f"model_name: {model_name}")
+
+    model_folder = Path("trained_models") / "attention"
+    model_path = model_folder / f"{model_name}.h5"
+    if not model_path.exists():
+        logg.error(f"Model not found at: {model_path}")
+        logg.error(f"Train it with hypa_grid = {hypa}")
+        raise FileNotFoundError
+
+    model = models.load_model(model_path)
+
+    return model
+
+
 def load_trained_model_cnn(override_hypa) -> models.Model:
     """MAKEDOC: what is load_trained_model_cnn doing?"""
     logg = logging.getLogger(f"c.{__name__}.load_trained_model_cnn")
@@ -231,11 +276,14 @@ def load_trained_model(
     """MAKEDOC: what is load_trained_model doing?"""
     logg = logging.getLogger(f"c.{__name__}.load_trained_model")
     # logg.setLevel("INFO")
-    logg.debug("Start load_trained_model")
+    logg.debug(f"Start load_trained_model {model_type}")
 
     if model_type == "cnn":
         override_hypa = {"dataset": datasets_type, "words": train_words_type}
         model = load_trained_model_cnn(override_hypa)
+    elif model_type == "attention":
+        override_hypa = {"dataset_name": datasets_type, "words_type": train_words_type}
+        model = load_trained_model_att(override_hypa)
 
     return model
 
@@ -339,6 +387,15 @@ def evaluate_stream(
     sentence_index 100
     sentence_wav_paths[1993_147966_000015_000000]: 1993/147966/1993_147966_000015_000000.wav
     sentence_norm_tra[1993_147966_000015_000000]: We had three weeks of this mild, open weather.
+
+    ATT_ct02_dr01_ks01_lu01_qt04_dw01_opa1_lr04_bs02_en01_dsmeLa3_wLTnumLS
+    sentence_index 10
+    sentence_wav_paths[6241_61943_000011_000003]: /home/pmn/audiodatasets/LibriTTS/dev-clean/6241/61943/6241_61943_000011_000003.wav
+    sentence_norm_tra[6241_61943_000011_000003]: As usual, the crew was small, five Danes doing the whole of the work.
+
+    sentence_index 40
+    sentence_wav_paths[7976_110124_000015_000000]: /home/pmn/audiodatasets/LibriTTS/dev-clean/7976/110124/7976_110124_000015_000000.wav
+    sentence_norm_tra[7976_110124_000015_000000]: "Have pity upon a poor unfortunate one!" he called out.
     """
     logg = logging.getLogger(f"c.{__name__}.evaluate_stream")
     # logg.setLevel("INFO")
@@ -392,11 +449,20 @@ def evaluate_stream(
         logg.debug(f"specs_img.shape: {specs_img.shape}")
 
     elif datasets_type.startswith("me"):
+
         spec_dict = get_spec_dict()
         mel_kwargs = spec_dict[datasets_type]
         logg.debug(f"mel_kwargs: {mel_kwargs}")
+
+        spec_shape_dict = get_spec_shape_dict()
+        spec_shape = spec_shape_dict[datasets_type]
+        requested_length = spec_shape[1]
+        logg.debug(f"requested_length: {requested_length}")
+
         p2d_kwargs = {"ref": np.max}
-        specs_img = compute_spectrograms(splits, mel_kwargs, p2d_kwargs)
+        specs_img = compute_spectrograms(
+            splits, mel_kwargs, p2d_kwargs, requested_length
+        )
         logg.debug(f"specs_img.shape: {specs_img.shape}")
 
     words = sorted(words_types[train_words_type])
@@ -433,13 +499,14 @@ def run_evaluate_stream(args: argparse.Namespace) -> None:
     architecture_type = args.architecture_type
     sentence_index = args.sentence_index
 
-    evaluate_stream(
-        evaluation_type,
-        which_dataset,
-        train_words_type,
-        architecture_type,
-        sentence_index,
-    )
+    for sentence_index in range(116):
+        evaluate_stream(
+            evaluation_type,
+            which_dataset,
+            train_words_type,
+            architecture_type,
+            sentence_index,
+        )
 
 
 if __name__ == "__main__":

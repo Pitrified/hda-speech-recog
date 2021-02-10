@@ -92,7 +92,9 @@ def stretch_signal(sig, rate) -> np.ndarray:
     return stretched
 
 
-def sig2mel(signal, mel_kwargs, p2d_kwargs, sample_rate=16000) -> np.ndarray:
+def sig2mel(
+    signal, mel_kwargs, p2d_kwargs, requested_length, sample_rate=16000
+) -> np.ndarray:
     """TODO: what is sig2mel doing?"""
     # logg = logging.getLogger(f"c.{__name__}.sig2mel")
     # logg.setLevel("INFO")
@@ -107,7 +109,6 @@ def sig2mel(signal, mel_kwargs, p2d_kwargs, sample_rate=16000) -> np.ndarray:
     # FIXME THE requested_length is fixed lol so bad
 
     # pad_needed = 16384 // mel_kwargs["hop_length"] - log_mel.shape[1]
-    requested_length = 64
     pad_needed = requested_length - log_mel.shape[1]
     pad_needed = max(0, pad_needed)
     # print(f"pad_needed: {pad_needed}")
@@ -156,12 +157,12 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "hop_length": 128,
         "fmin": 40,
         "fmax": 8000,
-    }  # (64, 64)
+    }  # (64, 64?)
     mel_05_loud = {
         "n_mels": 128,
         "n_fft": 512,
         "hop_length": 128,
-    }  # (128, 128)
+    }  # (128, 128?)
 
     aug_dict["aug01"] = {
         "max_time_shifts": [1600, 3200],
@@ -452,7 +453,7 @@ def stretch_signals(
 
 
 def compute_spectrograms(
-    signals: ty.List[np.ndarray], mel_kwargs, p2d_kwargs
+    signals: ty.List[np.ndarray], mel_kwargs, p2d_kwargs, requested_length
 ) -> np.ndarray:
     """TODO: what is compute_spectrograms doing?"""
     logg = logging.getLogger(f"c.{__name__}.compute_spectrograms")
@@ -461,7 +462,7 @@ def compute_spectrograms(
 
     specs = []
     for s in tqdm(signals):
-        log_mel = sig2mel(s, mel_kwargs, p2d_kwargs)
+        log_mel = sig2mel(s, mel_kwargs, p2d_kwargs, requested_length)
         img_mel = log_mel.reshape((*log_mel.shape, 1))
         specs.append(img_mel)
     data_specs = np.stack(specs)
@@ -598,7 +599,9 @@ def augment_signals(
 
 
 def do_augmentation(
-    augmentation_type: str, words_type: str, force_augment: bool = False,
+    augmentation_type: str,
+    words_type: str,
+    force_augment: bool = False,
 ) -> None:
     """TODO: what is do_augmentation doing?
 
