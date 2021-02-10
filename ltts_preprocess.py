@@ -13,6 +13,14 @@ def parse_arguments() -> argparse.Namespace:
     """Setup CLI interface"""
     parser = argparse.ArgumentParser(description="")
 
+    parser.add_argument(
+        "-dl",
+        "--do_loud",
+        dest="do_loud",
+        action="store_true",
+        help="Extract half a second samples",
+    )
+
     # last line to parse the args
     args = parser.parse_args()
     return args
@@ -48,7 +56,7 @@ def setup_env() -> argparse.Namespace:
     return args
 
 
-def split_ltts() -> None:
+def split_ltts(do_loud: bool) -> None:
     """MAKEDOC: what is split_ltts doing?"""
     logg = logging.getLogger(f"c.{__name__}.split_ltts")
     # logg.setLevel("INFO")
@@ -124,10 +132,8 @@ def split_ltts() -> None:
     ####################################################################################
 
     # where to save the results
-    # ltts_proc_folder = this_file_folder / "data_ltts_raw"
     ltts_proc_folder = this_file_folder / "data_raw"
 
-    do_loud = True
     if do_loud:
         loud_tag = "_loud"
     else:
@@ -220,7 +226,9 @@ def run_ltts_preprocess(args: argparse.Namespace) -> None:
     logg = logging.getLogger(f"c.{__name__}.run_ltts_preprocess")
     logg.debug("Starting run_ltts_preprocess")
 
-    split_ltts()
+    do_loud = args.do_loud
+
+    split_ltts(do_loud)
 
 
 if __name__ == "__main__":

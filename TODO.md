@@ -2,6 +2,9 @@
 
 ### Misc
 
+* Better result aggregator (num LTnum ...)
+* Fix augment
+
 * Top one error as metric (described in the Google dataset paper)
 * spoken\_digit dataset as final test, ljspeech, vctk.
 * Analyze fsdd and increase volume?

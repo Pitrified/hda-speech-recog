@@ -165,6 +165,7 @@ def get_spec_dict():
         "meLa1": {"n_mels": 80, "n_fft": 512, "hop_length": 64, "fmin": 40},
         "meLa2": {"n_mels": 80, "n_fft": 512, "hop_length": 128, "fmin": 40},
         "meLa3": {"n_mels": 80, "n_fft": 1024, "hop_length": 128, "fmin": 40},
+        "meLa4": {"n_mels": 80, "n_fft": 1024, "hop_length": 64, "fmin": 40},
     }
 
     return spec_dict
@@ -205,6 +206,7 @@ def get_spec_shape_dict() -> ty.Dict[str, ty.Tuple[int, int]]:
         "meLa1": (80, 128),
         "meLa2": (80, 64),
         "meLa3": (80, 64),
+        "meLa4": (80, 128),
     }
 
     return spec_shape_dict

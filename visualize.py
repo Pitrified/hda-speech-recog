@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 
 from augment_data import warp_spectrograms
+from augment_data import do_augmentation
 from preprocess_data import preprocess_spec
 from plot_utils import plot_spec
 from plot_utils import plot_waveform
@@ -30,6 +31,10 @@ def parse_arguments():
         default="augment",
         choices=["augment", "spec", "datasets", "waveform", "lr_decay"],
         help="Which visualization to perform",
+    )
+
+    parser.add_argument(
+        "-wi", "--word_index", type=int, default=0, help="Which word to show",
     )
 
     # last line to parse the args
@@ -159,7 +164,7 @@ def visualize_spec():
     fig.savefig(plot_folder / "mel10_filterbank.pdf")
 
 
-def visualize_datasets():
+def visualize_datasets(word_index):
     """TODO: what is visualize_datasets doing?"""
     logg = logging.getLogger(f"c.{__name__}.visualize_datasets")
     logg.debug("Start visualize_datasets")
@@ -177,14 +182,19 @@ def visualize_datasets():
     # a_word = "loudest_one"
     # a_word = "_other_ltts_loud"
 
-    datasets = ["meL04", "meLa1", "meLa2", "meLa3"]
+    datasets = []
+    datasets.extend(["meL04", "meLa1", "meLa2", "meLa3", "meLa4"])
+    datasets.extend(["auL06", "auL07", "auL08", "auL09"])
+    datasets.extend(["auL18", "auL19", "auL20", "auL21"])
     a_word = "loudest_one"
 
-    # datasets = ["mel04", "mela1"]
-    # a_word = "one"
+    # datasets = []
+    # datasets.extend(["mel04", "mela1"])
+    # datasets.extend(["aug14", "aug15"])
+    # a_word = "forward"
 
     # which word in the dataset to plot
-    iw = 5
+    iw = word_index
 
     processed_folder = Path("data_proc")
 
@@ -193,9 +203,13 @@ def visualize_datasets():
     base_figsize = 5
     figsize = (ncols * base_figsize * 1.5, nrows * base_figsize)
     fig, axes = plt.subplots(nrows, ncols, figsize=figsize)
+    if nrows * ncols > 1:
+        axes_flat = axes.flat
+    else:
+        axes_flat = [axes]
 
     fig.suptitle(f"Various spectrograms for {a_word}", fontsize=20)
-    for i, ax in enumerate(axes.flat[: len(datasets)]):
+    for i, ax in enumerate(axes_flat[: len(datasets)]):
 
         # the current dataset being plotted
         dataset_name = datasets[i]
@@ -205,7 +219,10 @@ def visualize_datasets():
 
         # FIXME this is shaky as hell
         if not word_path.exists():
-            preprocess_spec(dataset_name, f"_{a_word}")
+            if dataset_name.startswith("me"):
+                preprocess_spec(dataset_name, f"_{a_word}")
+            elif dataset_name.startswith("au"):
+                do_augmentation(dataset_name, f"_{a_word}")
 
         word_data = np.load(word_path, allow_pickle=True)
         logg.debug(f"{dataset_name} {a_word} shape: {word_data[iw].shape}")
@@ -457,13 +474,14 @@ def run_visualize(args):
     logg.debug("Starting run_visualize")
 
     visualization_type = args.visualization_type
+    word_index = args.word_index
 
     if visualization_type == "augment":
         visualize_augment()
     elif visualization_type == "spec":
         visualize_spec()
     elif visualization_type == "datasets":
-        visualize_datasets()
+        visualize_datasets(word_index)
     elif visualization_type == "waveform":
         visualize_waveform()
     elif visualization_type == "lr_decay":

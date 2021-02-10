@@ -267,11 +267,11 @@ def setup_logger(logLevel="DEBUG"):
 
     module_console_handler = logging.StreamHandler()
 
-    #  log_format_module = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    #  log_format_module = "%(name)s - %(levelname)s: %(message)s"
-    #  log_format_module = '%(levelname)s: %(message)s'
-    #  log_format_module = '%(name)s: %(message)s'
-    log_format_module = "%(message)s"
+    # log_format_module = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    # log_format_module = "%(name)s - %(levelname)s: %(message)s"
+    # log_format_module = '%(levelname)s: %(message)s'
+    log_format_module = '%(name)s: %(message)s'
+    # log_format_module = "%(message)s"
 
     formatter = logging.Formatter(log_format_module)
     module_console_handler.setFormatter(formatter)

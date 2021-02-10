@@ -102,16 +102,16 @@ def sig2mel(
 
     mel = librosa.feature.melspectrogram(signal, sr=sample_rate, **mel_kwargs)
     log_mel = librosa.power_to_db(mel, **p2d_kwargs)
-    # logg.debug(f"log_mel.shape: {log_mel.shape}")
 
     # the shape is not consistent, pad it
 
-    # FIXME THE requested_length is fixed lol so bad
-
-    # pad_needed = 16384 // mel_kwargs["hop_length"] - log_mel.shape[1]
     pad_needed = requested_length - log_mel.shape[1]
     pad_needed = max(0, pad_needed)
-    # print(f"pad_needed: {pad_needed}")
+
+    # recap = f"signal.shape: {signal.shape}"
+    # recap += f" log_mel.shape: {log_mel.shape}"
+    # recap += f" pad_needed: {pad_needed}"
+    # logg.debug(recap)
 
     # number of values padded to the edges of each axis.
     pad_width = ((0, 0), (0, pad_needed))
@@ -157,17 +157,18 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "hop_length": 128,
         "fmin": 40,
         "fmax": 8000,
-    }  # (64, 64?)
+    }  # (64, 64)
     mel_05_loud = {
         "n_mels": 128,
         "n_fft": 512,
-        "hop_length": 128,
-    }  # (128, 128?)
+        "hop_length": 64,
+    }  # (128, 128)
 
     aug_dict["aug01"] = {
         "max_time_shifts": [1600, 3200],
         "stretch_rates": [0.8, 1.2],
         "mel_kwargs": mel_01,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 6},
     }
@@ -177,6 +178,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_02,
+        "aug_shape": (128, 32),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 5},
     }
@@ -184,6 +186,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_02,
+        "aug_shape": (128, 32),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 0},
     }
@@ -191,6 +194,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_02,
+        "aug_shape": (128, 32),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 0, "max_warp_freq": 5},
     }
@@ -198,6 +202,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_02,
+        "aug_shape": (128, 32),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
     }
@@ -207,6 +212,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_01,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 5},
     }
@@ -214,6 +220,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_01,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 0},
     }
@@ -221,6 +228,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_01,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 0, "max_warp_freq": 5},
     }
@@ -228,6 +236,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_01,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
     }
@@ -237,6 +246,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_01_loud,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 5},
     }
@@ -244,6 +254,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_01_loud,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 0},
     }
@@ -251,6 +262,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_01_loud,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 0, "max_warp_freq": 5},
     }
@@ -258,6 +270,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_01_loud,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
     }
@@ -267,6 +280,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_03,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 5},
     }
@@ -274,6 +288,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_03,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 0},
     }
@@ -281,6 +296,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_03,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 0, "max_warp_freq": 5},
     }
@@ -288,6 +304,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_03,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
     }
@@ -297,6 +314,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_03,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 4, "max_warp_time": 2, "max_warp_freq": 2},
     }
@@ -304,6 +322,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_03,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 4, "max_warp_time": 2, "max_warp_freq": 0},
     }
@@ -311,6 +330,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_03,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 4, "max_warp_time": 0, "max_warp_freq": 2},
     }
@@ -318,6 +338,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_03,
+        "aug_shape": (64, 64),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
     }
@@ -327,6 +348,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_05,
+        "aug_shape": (128, 128),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 5},
     }
@@ -334,6 +356,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_05,
+        "aug_shape": (128, 128),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 0},
     }
@@ -341,6 +364,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_05,
+        "aug_shape": (128, 128),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 0, "max_warp_freq": 5},
     }
@@ -348,6 +372,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_05,
+        "aug_shape": (128, 128),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
     }
@@ -357,6 +382,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_05_loud,
+        "aug_shape": (128, 128),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 5},
     }
@@ -364,6 +390,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_05_loud,
+        "aug_shape": (128, 128),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 0},
     }
@@ -371,6 +398,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_05_loud,
+        "aug_shape": (128, 128),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 3, "max_warp_time": 0, "max_warp_freq": 5},
     }
@@ -378,6 +406,7 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "max_time_shifts": [],
         "stretch_rates": [],
         "mel_kwargs": mel_05_loud,
+        "aug_shape": (128, 128),
         "keep_originals": True,
         "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
     }
@@ -416,7 +445,7 @@ def load_wav(
             continue
 
         sig, sample_rate = librosa.load(wav_path, sr=None)
-        sig = pad_signal(sig, 16000)
+        # sig = pad_signal(sig, 16000)
         sig_original.append(sig)
 
     logg.debug(f"Loaded {len(sig_original)} of {word} for {which_fold}")
@@ -457,8 +486,8 @@ def compute_spectrograms(
 ) -> np.ndarray:
     """TODO: what is compute_spectrograms doing?"""
     logg = logging.getLogger(f"c.{__name__}.compute_spectrograms")
-    logg.setLevel("INFO")
-    logg.debug("Start compute_spectrograms")
+    # logg.setLevel("INFO")
+    # logg.debug("Start compute_spectrograms")
 
     specs = []
     for s in tqdm(signals):
@@ -466,7 +495,7 @@ def compute_spectrograms(
         img_mel = log_mel.reshape((*log_mel.shape, 1))
         specs.append(img_mel)
     data_specs = np.stack(specs)
-    logg.debug(f"data_specs.shape: {data_specs.shape}")
+    logg.debug(f"data_specs.shape: {data_specs.shape} req_len {requested_length}")
 
     return data_specs
 
@@ -544,6 +573,12 @@ def augment_signals(
 
     # get the params for the augmentation
     aug_dict = get_aug_dict()
+
+    # the shape that we want for the spectrogram
+    aug_shape = aug_dict[augmentation_type]["aug_shape"]
+    requested_length = aug_shape[1]
+
+    # the augmentation params
     aug_param = aug_dict[augmentation_type]
     max_time_shifts = aug_param["max_time_shifts"]
     stretch_rates = aug_param["stretch_rates"]
@@ -579,7 +614,7 @@ def augment_signals(
     logg.info("Computing melspectrograms")
     # FIXME extract the mel shape and pass it
     data_specs: np.ndarray = compute_spectrograms(
-        all_signals, mel_kwargs, p2d_kwargs, None
+        all_signals, mel_kwargs, p2d_kwargs, requested_length
     )
 
     # warp the spectrograms
@@ -649,7 +684,7 @@ def do_augmentation(
                     continue
 
             raw_word_fol = raw_data_fol / word
-            logg.info(f"\nProcessing folder: {raw_word_fol}")
+            logg.info(f"\nProcessing folder: {raw_word_fol} {which_fold}")
 
             # load the waveforms
             all_wavs_path = list(raw_word_fol.iterdir())
