@@ -313,6 +313,18 @@ TODO: plot the schedules
 Cyclic LR \cite{smith2017cyclical}
 Implemented by \cite{bckenstlerCLR}
 
+An example of this schedule is shown by \fig{fig:cyclic_lr_example}.
+A sharp initial drop in loss can be seen, as the learning rate covers the optimal range of values found by sweeping.
+A small increase in loss corresponds to the peak of the second cycle.
+Finally with the last two cycles the model converges.
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{ATT_ct02_dr01_ks01_lu01_qt04_dw01_opa1_lr07_bs02_en01_dsmela1_wk1_fscore_loss_clr.pdf}
+    \caption{Cyclic learning rate example: $4$ cycles, with relative F-score and loss}%
+    \label{fig:cyclic_lr_example}
+\end{figure}
+
 \subsection{Optimizer}
 
 Adam \cite{kingma2017adam}.
