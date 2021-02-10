@@ -2,6 +2,7 @@
 
 ### Misc
 
+* other ltts is not generated if it is missing the raw folder
 * Better result aggregator (num LTnum ...)
 * Fix augment
 

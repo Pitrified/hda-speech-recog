@@ -16,6 +16,7 @@ from plot_utils import plot_waveform
 from schedules import exp_decay_step
 from schedules import exp_decay_smooth
 from utils import find_rowcol
+from utils import setup_gpus
 from utils import setup_logger
 from utils import words_types
 
@@ -34,7 +35,11 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "-wi", "--word_index", type=int, default=0, help="Which word to show",
+        "-wi",
+        "--word_index",
+        type=int,
+        default=0,
+        help="Which word to show",
     )
 
     # last line to parse the args
@@ -169,6 +174,9 @@ def visualize_datasets(word_index):
     logg = logging.getLogger(f"c.{__name__}.visualize_datasets")
     logg.debug("Start visualize_datasets")
 
+    # magic to fix the GPUs
+    setup_gpus()
+
     # show different datasets
 
     # datasets = [ "mfcc01", "mfcc02", "mfcc03", "mfcc04", "mfcc05", "mfcc06", "mfcc07", "mfcc08"]
@@ -182,16 +190,19 @@ def visualize_datasets(word_index):
     # a_word = "loudest_one"
     # a_word = "_other_ltts_loud"
 
-    datasets = []
-    datasets.extend(["meL04", "meLa1", "meLa2", "meLa3", "meLa4"])
-    datasets.extend(["auL06", "auL07", "auL08", "auL09"])
-    datasets.extend(["auL18", "auL19", "auL20", "auL21"])
-    a_word = "loudest_one"
-
     # datasets = []
-    # datasets.extend(["mel04", "mela1"])
+    # datasets.extend(["meL04", "meLa1", "meLa2", "meLa3", "meLa4"])
+    # datasets.extend(["auL06", "auL07", "auL08", "auL09"])
+    # datasets.extend(["auL18", "auL19", "auL20", "auL21"])
+    # a_word = "loudest_one"
+
+    datasets = []
+    datasets.extend(["mel04", "mela1"])
     # datasets.extend(["aug14", "aug15"])
     # a_word = "forward"
+    datasets.extend(["aug14", "aug07"])
+    a_word = "one"
+    # a_word = "_other_ltts"
 
     # which word in the dataset to plot
     iw = word_index
