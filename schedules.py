@@ -11,8 +11,16 @@ def exp_decay_step(
 ) -> float:
     """TODO: what is exp_decay doing?
 
+    # use default values
     lrate = LearningRateScheduler(exp_decay_step)
     results = model.fit(... ,  callbacks=[lrate])
+
+    # use partials to set the parameters
+    from functools import partial
+    exp_decay_part = partial(exp_decay_step, epochs_drop=5)
+    lrate = LearningRateScheduler(exp_decay_part)
+    callbacks.append(lrate)
+    results = model.fit(... ,  callbacks=callbacks)
     """
     lrate = initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
 

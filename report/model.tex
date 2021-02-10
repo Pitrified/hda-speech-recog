@@ -296,32 +296,70 @@ Different schedules for the learning rate can be used, to set a specific learnin
 \paragraph{Fixed}
 
 The simplest schedule is a constant function that keeps the value fixed
-(e.g. lr=$1e-3$, $1e-4$).
+(e.g. \texttt{lr}$=1e-3$, \texttt{lr}$=1e-4$).
 
 \paragraph{Exponential decay}
 
-The exponential decay schedule decreases the learning rate by a certain factor each epoch.
-
-Exp decay:
-step
-smooth
-
-TODO: plot the schedules
+The exponential decay schedule decreases the learning rate by a certain factor
+each epoch. The shape of the decay is controlled by \texttt{initial\_lr},
+\texttt{drop}, \texttt{epochs\_drop} and \texttt{min\_lr}:
+\begin{equation}
+    lr =
+    \max \left\{ 
+        min\_lr,
+        initial\_lr * drop ^{ \frac{1 + epoch}{epochs\_drop} }
+    \right\}
+    .
+    \label{eq:lr_smooth}
+\end{equation}
+The step version of this schedule drops the learning rate every
+\texttt{epochs\_drop} epochs:
+\begin{equation}
+    lr =
+    \max \left\{ 
+        min\_lr,
+        initial\_lr * drop ^{
+            \left\lfloor 
+                \frac{1 + epoch}{epochs\_drop}
+            \right\rfloor
+        }
+    \right\}
+    .
+    \label{eq:lr_step}
+\end{equation}
+The two different schedules are compared in \fig{fig:lr_step_smooth}.
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{lr_step_smooth.pdf}
+    \caption{Learning rate schedules exponential decay step and smooth.
+        Parameters:
+        \texttt{initial\_lr} $=0.001$,
+        \texttt{drop} $=0.4$,
+        \texttt{epochs\_drop} $=5$,
+        \texttt{min\_lr} $=4e-5$.
+        The minimum value that is reached at epoch $19$.}%
+    \label{fig:lr_step_smooth}
+\end{figure}
 
 \paragraph{Cyclic}
 
-Cyclic LR \cite{smith2017cyclical}
-Implemented by \cite{bckenstlerCLR}
-
-An example of this schedule is shown by \fig{fig:cyclic_lr_example}.
-A sharp initial drop in loss can be seen, as the learning rate covers the optimal range of values found by sweeping.
-A small increase in loss corresponds to the peak of the second cycle.
-Finally with the last two cycles the model converges.
+One of the problem to solve when optimizing a function is avoiding local minima.
+A low learning rate might not be sufficient to escape the area and descend
+towards the global minimum.
+A cyclic learning rate schedule \cite{smith2017cyclical} can solve this problem,
+oscillating the learning rate cyclically between two values.
+One implementation of this policy as a tensorflow callback is available on
+GitHub \cite{bckenstlerCLR}.
+An example of the \texttt{triangular2} policy is shown by
+\fig{fig:cyclic_lr_example}: a sharp initial drop in loss can be seen, as the
+learning rate covers the optimal range of values found by sweeping. A small
+increase in loss corresponds to the peak of the second cycle. Finally with the
+last two cycles the model converges.
 
 \begin{figure}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{ATT_ct02_dr01_ks01_lu01_qt04_dw01_opa1_lr07_bs02_en01_dsmela1_wk1_fscore_loss_clr.pdf}
-    \caption{Cyclic learning rate example: $4$ cycles, with relative F-score and loss}%
+    \caption{Cyclic learning rate example: $4$ cycles, with relative F-score and loss.}%
     \label{fig:cyclic_lr_example}
 \end{figure}
 

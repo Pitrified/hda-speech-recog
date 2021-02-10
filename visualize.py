@@ -1,3 +1,4 @@
+from functools import partial
 from pathlib import Path
 import argparse
 import logging
@@ -11,6 +12,8 @@ from augment_data import warp_spectrograms
 from preprocess_data import preprocess_spec
 from plot_utils import plot_spec
 from plot_utils import plot_waveform
+from schedules import exp_decay_step
+from schedules import exp_decay_smooth
 from utils import find_rowcol
 from utils import setup_logger
 from utils import words_types
@@ -25,7 +28,7 @@ def parse_arguments():
         "--visualization_type",
         type=str,
         default="augment",
-        choices=["augment", "spec", "datasets", "waveform"],
+        choices=["augment", "spec", "datasets", "waveform", "lr_decay"],
         help="Which visualization to perform",
     )
 
@@ -414,6 +417,40 @@ def visualize_augment() -> None:
     plt.show()
 
 
+def visualize_lr_decay() -> None:
+    """MAKEDOC: what is visualize_lr_decay doing?"""
+    logg = logging.getLogger(f"c.{__name__}.visualize_lr_decay")
+    # logg.setLevel("INFO")
+    logg.debug("Start visualize_lr_decay")
+
+    num_epochs = 30
+    epochs = np.arange(num_epochs)
+
+    exp_decay_part = partial(exp_decay_step, epochs_drop=5)
+    lr_gen = (exp_decay_part(x, 0) for x in epochs)
+    lr_step = np.fromiter(lr_gen, dtype=np.float32, count=num_epochs)
+
+    exp_decay_part = partial(exp_decay_smooth, epochs_drop=5)
+    lr_gen = (exp_decay_part(x, 0) for x in epochs)
+    lr_smooth = np.fromiter(lr_gen, dtype=np.float32, count=num_epochs)
+
+    fig, axes = plt.subplots(nrows=1, ncols=1, figsize=(8, 5))
+    axes.plot(epochs, lr_step, label="LR step")
+    axes.plot(epochs, lr_smooth, label="LR smooth")
+    axes.legend()
+    axes.set_title("Comparison of learning rate schedules")
+    axes.set_xlabel("Epoch")
+    axes.set_ylabel("Learning rate")
+
+    fig.tight_layout()
+
+    plot_folder = Path("plot_results")
+    fig_name = "lr_step_smooth.pdf"
+    fig.savefig(plot_folder / fig_name)
+
+    plt.show()
+
+
 def run_visualize(args):
     """TODO: What is visualize doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_visualize")
@@ -429,6 +466,8 @@ def run_visualize(args):
         visualize_datasets()
     elif visualization_type == "waveform":
         visualize_waveform()
+    elif visualization_type == "lr_decay":
+        visualize_lr_decay()
 
     plt.show()
 
