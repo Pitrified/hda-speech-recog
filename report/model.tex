@@ -7,19 +7,25 @@ High level descripion of the processing flow:
 
 Throughout the report: extract Spectrograms, classify image.
 
+Some experiments extract only the loudest section of the inputs.
+
+Test against a stream of sounds.
+
 \section{Signals and Features}
 \label{sec:model}
 
-\subsection{Google Dataset}
+\subsection{Input Datasets}
+
+\subsubsection{Google Dataset}
 
 % Measurement setup, data preprocess (describe the google dataset)
 
-The Speech Commands datasets, described in \cite{warden2018speech}, provides
-thousands of one second recording of $35$ differen words. The recordings are
-mainly of volounteers, who used their own device to record the words in a
-closed room wherever they happened to be (not in a studio setting).
-Ideally each volounteer only recorded the $135$ requested utterances once, so the
-dataset provides good variability of voices.
+The Speech Commands datasets (GSCD), described in \cite{warden2018speech},
+provides thousands of one second recording of $35$ differen words. The
+recordings are mainly of volounteers, who used their own device to record the
+words in a closed room wherever they happened to be (not in a studio setting).
+Ideally each volounteer only recorded the $135$ requested utterances once, so
+the dataset provides good variability of voices.
 The utterances have a duration of one second.
 To more precisely align the recorded clips, the audio was acquired for $1.5$
 seconds and the $1$ second clip that contained the highest overrall volume was
@@ -27,10 +33,8 @@ extracted.
 Several background noise recording are included as well.
 The full dataset includes $105829$ utterances of $35$ words, saved in
 \textit{.wav} format at $16$ KHz rate.
-The dataset is released under the Creative Commons 
-Attribution $4.0$ International (CC~BY~$4.0$)
-License \cite{ccby4}.
-
+The dataset is released under the Creative Commons Attribution $4.0$
+International (CC~BY~$4.0$) License \cite{ccby4}.
 The dataset ships with a function to split the data in train, validation and
 test folds, as well as two example lists of validation data ($9981$ utterances)
 and test data ($11005$ utterances).
@@ -38,27 +42,13 @@ Throughout the experiments, those lists were used.
 % MAYBE both for the practicality of having them ready, but also to keep with
 % the spirit of the dataset as a tool to enable meaningf
 
-% TODO: how the words are grouped, tell the keys
+The Speech Commands dataset was preprocessed, extracting for each $1$ second
+utterance the loudest $0.5$ second section, using a simple analysis of the
+signal's power.
 
-Smaller tasks were used to evaluate the performance of the various
-architectures, and to perform the hyper-parameter search.
-Two 4 words task are composed by the words
-[\texttt{happy}, \texttt{learn}, \texttt{wow}, \texttt{visual}],
-[\texttt{backward}, \texttt{eight}, \texttt{go}, \texttt{yes}].
-A 6 words task contains the direction words:
-[\texttt{up}, \texttt{down}, \texttt{forward}, \texttt{backward},
-\texttt{left}, \texttt{right}]
-Two 10 words task contains the number utterances:
-[\texttt{zero}, \texttt{one}, \texttt{two}, \texttt{three}, \texttt{four},
-\texttt{five}, \texttt{six}, \texttt{seven}, \texttt{eight}, \texttt{nine}]
-and the words from a Kaggle competition aimed at solving this task:
-[\texttt{yes}, \texttt{no}, \texttt{up}, \texttt{down}, \texttt{left},
-\texttt{right}, \texttt{on}, \texttt{off}, \texttt{stop}, \texttt{go}]
-and a 20 words task is composed by the numbers and the Kaggle list.
+\subsubsection{Free Spoken Digit Dataset}
 
-\subsection{Free Spoken Digit Dataset}
-
-As a final test dataset, the Free Spoken Digit Dataset was used
+As a test dataset, the Free Spoken Digit Dataset was used
 \cite{zohar_jackson_2018_1342401}.
 The current version of the dataset contains $3000$ recordings made by $6$
 speakers, $50$ utterances of each digit per speaker.
@@ -66,9 +56,58 @@ Each utterance is saved in \textit{.wav} format at $8$ KHz rate.
 The dataset is released under the Creative Commons 
 Attribution-ShareAlike $4.0$ International (CC~BY-SA~$4.0$)
 License \cite{ccbysa4}.
-
-The dataset was only used after all hyper-parameters were tuned, to evaluate
+This dataset was only used after all hyper-parameters were tuned, to evaluate
 the performances on fresh data.
+
+\subsubsection{LibriTTS}
+
+To evaluate the model in a streaming setting, a section of LibriTTS was used
+\cite{zen2019libritts}.
+This dataset contains approximately $585$ hours of English speech, aligned at
+sentence level.
+Both original and normalized text is included (e.g. ``June $9$, $1872$'' is
+converted in ``june ninth eighteen seventy two''), and each sentence is saved
+in \textit{.wav} format at $24$ KHz rate.
+Metadata information regarding the speakers, the books and the chapters is
+available, but was not needed in this project.
+The dataset is released under the Creative Commons Attribution $4.0$
+International (CC~BY~$4.0$) License \cite{ccby4}.
+
+TODO: split in sentences that have or not the words.
+
+\subsection{Tasks definition}
+
+Smaller tasks were used to evaluate the performance of the various
+architectures, and to perform the hyper-parameter search.
+The set of tasks and the identifier key for GSCD is as follows:
+Two $4$ words task are composed by the words
+\texttt{f1}: [\texttt{happy}, \texttt{learn}, \texttt{wow}, \texttt{visual}],
+\texttt{f2}: [\texttt{backward}, \texttt{eight}, \texttt{go}, \texttt{yes}].
+A $6$ words task contains the direction words:
+\texttt{dir}: [\texttt{up}, \texttt{down}, \texttt{forward}, \texttt{backward},
+\texttt{left}, \texttt{right}]
+Two $10$ words task contains the number utterances:
+\texttt{num}: [\texttt{zero}, \texttt{one}, \texttt{two}, \texttt{three}, \texttt{four},
+\texttt{five}, \texttt{six}, \texttt{seven}, \texttt{eight}, \texttt{nine}]
+and the words from a Kaggle competition aimed at solving this task:
+\texttt{k1}: [\texttt{yes}, \texttt{no}, \texttt{up}, \texttt{down}, \texttt{left},
+\texttt{right}, \texttt{on}, \texttt{off}, \texttt{stop}, \texttt{go}].
+A $20$ words task (\texttt{w2}) is composed by the numbers and the Kaggle list, and
+a $35$ words task (\texttt{all}) uses the entire dataset.
+
+For FSDD, each number is prefixed with \texttt{fsdd\_}, and the set of words is
+referred as \texttt{fsdd\_num}.
+
+For LibriTTS, in addition to these categories, another word label is added:
+\texttt{\_other\_ltts}. This category is used to discriminate a conversation
+that does not contain the $35$ command words.
+Each task for GSCD is expanded by adding this category, and is referred as
+\texttt{LT\_\{task\_key\}}.
+
+For the shortened utterances extracted from GSCD, each word is prefixed with
+\texttt{loudest\_}, and
+the set of words is referred as
+\texttt{\{task\_key\}\_LS}.
 
 \subsection{Mel spectrogram and Mel-frequency Cepstral Coefficients}
 
