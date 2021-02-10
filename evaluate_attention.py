@@ -195,11 +195,14 @@ def evaluate_results_attention() -> None:
     logg.info(f"{df_f.head(30)}")
     logg.info(f"{df_f.tail()}")
 
-    # filter the dataframe to find the best hypas
-    for words_type in results_df["words"].unique():
+    # by word
+    for words_type in ["dir", "k1", "w2", "f2", "f1", "all", "num"]:
+        word_list = [w for w in results_df.words.unique() if words_type in w]
+
         df_f = results_df
         df_f = df_f.query("use_val == True")
-        df_f = df_f.query(f"words == '{words_type}'")
+        # df_f = df_f.query(f"words == '{words_type}'")
+        df_f = df_f[df_f["words"].isin(word_list)]
         df_f = df_f.sort_values("fscore", ascending=False)
         logg.info(f"\nOnly on {words_type}")
         logg.info(f"{df_f.head(30)}\n{df_f.tail()}")

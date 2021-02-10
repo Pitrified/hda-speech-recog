@@ -198,16 +198,22 @@ def evaluate_results_cnn(args):
 
     # filter the dataframe to find the best hypas
     # for words_type in ["f1", "all"]:
-    for words_type in results_df["words"].unique():
+    # for words_type in results_df["words"].unique():
+
+    for words_type in ["dir", "k1", "w2", "f2", "f1", "all", "num"]:
+
+        word_list = [w for w in results_df.words.unique() if words_type in w]
+
         df_f = results_df
         # df_f = df_f.query("use_val == True")
-        df_f = df_f.query(f"words == '{words_type}'")
+        # df_f = df_f.query(f"words == '{words_type}'")
         # df_f = df_f.sort_values("fscore", ascending=False)
+        df_f = df_f[df_f["words"].isin(word_list)]
         df_f = df_f.sort_values("cat_acc", ascending=False)
         logg.info(f"\nOnly on {words_type}")
         logg.info(f"{df_f.head(30)}\n{df_f.tail()}")
 
-    aug_list = [dn for dn in results_df.dataset.unique() if dn.startswith("aug")]
+    aug_list = [dn for dn in results_df.dataset.unique() if dn.startswith("au")]
     logg.info(f"\nOnly on aug_list: {aug_list}")
     df_f = results_df
     df_f = df_f[df_f["dataset"].isin(aug_list)]
