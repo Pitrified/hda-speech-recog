@@ -447,7 +447,19 @@ TODO: Usare Pool, MAYBE in conclusion/what I learned section.
 
 \subsection{Dataset loading}
 
-TODO: loading the dataset with AudioGenerator
+% TODO: loading the dataset with AudioGenerator
+
+For the datasets with a single spectrogram, even the 35-words task fits easily
+in memory. However, for the stacked 3-channel ``images'' with augmented data
+the size can grow to 20 gigabytes, which is inconvenient to load at once.
+Considering that the training is done in small batches of samples, loading only
+the images needed for the current batch is a reasonable approach.
+This behaviour was implemented by subclassing the \texttt{Sequence} tensorflow
+class, that provides an interface for loading data as needed in a thread safe
+way (i.e. it assures that each sample is loaded once per epoch, even when
+loading data from multiple threads).
+The guide followed to implement the \texttt{AudioGenerator} is available on 
+GitHub \cite{afshineaKDG}.
 
 \section{Convolutional Neural Network}
 \label{sec:convolutional_arch}
@@ -521,9 +533,13 @@ Adapting the networks for a new task, on the other hand, is a matter of roughly
 half an hour on a single GPU.
 
 As spectrograms can be interpreted as images, starting from an image classifier
-makes perfect sense. The two architecture used are Xception 
-\cite{chollet2017xception}
-and EfficientNet
+makes perfect sense. The three architecture used are
+DenseNet
+\cite{huang2018densely},
+Xception 
+\cite{chollet2017xception},
+and
+EfficientNet
 \cite{tan2020efficientnet}.
 
 \subsubsection{Xception structure}
@@ -562,7 +578,16 @@ parameters in a coordinated way.
 
 \subsubsection{DenseNet structure}
 
-TODO
+As a Convolutional Neural Network gets deeper, the information about the inputs
+or the gradients can vanish by the time it travels through the network.
+Many solutions to this problem are available, and they share a central insight:
+short paths are created from early layers to later layers.
+This idea is explored to the limit in a DenseNet: all layers with matching feature
+map size are connected to maximize information flow.
+A layer has as inputs all the feature maps of the preceding blocks and is used
+as input to all the subsequent layers.
+With this topology, a network with $L$ layers has roughly $L^2$ connections.
+% Features are composed by concatenating them.
 
 \subsection{Transfer learning and fine tuning}
 
