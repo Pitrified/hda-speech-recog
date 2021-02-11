@@ -128,7 +128,9 @@ def hyper_train_area(
     ###### the dataset to train on
     ds = []
     # ds.extend(["mel04"])
-    ds.extend(["mela1"])
+    ds.extend(["mela1"])  # still TODO with num
+    ds.extend(["aug07"])
+    ds.extend(["aug14"])
     hypa_grid["dataset_name"] = ds
 
     ###### the learning rates for the optimizer

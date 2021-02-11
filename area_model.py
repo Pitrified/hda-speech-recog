@@ -28,6 +28,8 @@ class AreaNet:
 
         ## area conv
 
+        # TODO: models can be layers, so split the query in separate part
+
         # extract the areas of interest
         aa = AreaNet.conv_module(aa, 20, (3, 3), (1, 1))
         aa = AreaNet.conv_module(aa, 20, (3, 3), (1, 1))
@@ -48,7 +50,6 @@ class AreaNet:
         aa = AreaNet.conv_module(aa, 80, (3, 3), (1, 1))
         aa = L.Dropout(0.2)(aa)
 
-        # aa = L.Lambda(tf.math.reduce_mean, axis=-1, keepdims=True)(aa)
         aa = L.Lambda(lambda q: tf.math.reduce_mean(q, axis=-1, keepdims=True))(aa)
 
         aa = tf.nn.softmax(aa, axis=-1, name="area_values_softmax")
@@ -81,7 +82,7 @@ class AreaNet:
         x = L.GlobalAvgPool2D()(x)
         # x = L.Flatten()(x)
         x = L.Dense(num_classes)(x)
-        x = L.Activation("softmax")(x)
+        x = L.Activation("softmax", name="output")(x)
 
         # create the model
         model = Model(inputs, x, name="area_net")

@@ -142,7 +142,7 @@ def build_att_results_df() -> pd.DataFrame:
         recap = json.loads(recap_path.read_text())
 
         if res["results_recap_version"] == "001":
-            logg.debug("\nWHAT ARE YOU DOING using this version\n")
+            logg.error("\nWHAT ARE YOU DOING using this version\n")
 
         hypa: ty.Dict[str, ty.Any] = recap["hypa"]
 
@@ -290,6 +290,7 @@ def evaluate_attention_weights(
     hypa["dataset_name"] = dataset_name
     hypa["words_type"] = train_words_type
     use_validation = True
+
     model_name = build_attention_name(hypa, use_validation)
     logg.debug(f"model_name: {model_name}")
 
