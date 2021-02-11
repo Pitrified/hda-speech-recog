@@ -11,14 +11,14 @@ import tensorflow as tf  # type: ignore
 import typing as ty
 
 from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
-from tensorflow.keras.callbacks import ModelCheckpoint  # type: ignore
 from tensorflow.keras.callbacks import LearningRateScheduler  # type: ignore
+from tensorflow.keras.callbacks import ModelCheckpoint  # type: ignore
 from tensorflow.keras.optimizers import Adam  # type: ignore
 from tensorflow.keras.optimizers import RMSprop  # type: ignore
 
-# from area_model import AreaNet
-# from area_model import SimpleNet
 from area_model import ActualAreaNet
+from area_model import AreaNet
+from area_model import SimpleNet
 from augment_data import do_augmentation
 from plot_utils import plot_confusion_matrix
 from preprocess_data import load_processed
@@ -124,6 +124,9 @@ def hyper_train_area(
 
     hypa_grid: ty.Dict[str, ty.List[str]] = {}
 
+    ###### the net type
+    hypa_grid["net_type"] = ["SIM", "ANN", "ARN"]
+
     ###### the words to train on
     hypa_grid["words_type"] = [words_type]
 
@@ -132,11 +135,11 @@ def hyper_train_area(
     # ds.extend(["mel04"])
     # ds.extend(["mela1"])
     # ds.extend(["aug07"])
-    ds.extend(["aug14"])
+    # ds.extend(["aug14"])
 
     # TODO auL6789 auL18901
     # ds.extend(["auA01", "auA02", "auA03", "auA04"])
-    # ds.extend(["auA05", "auA06", "auA07", "auA08"])
+    ds.extend(["auA05", "auA06", "auA07", "auA08"])
     hypa_grid["dataset_name"] = ds
 
     ###### the learning rates for the optimizer
@@ -221,7 +224,8 @@ def build_area_name(hypa: ty.Dict[str, str], use_validation: bool) -> str:
 
     # model_name = "ARN"
     # model_name = "SIM"
-    model_name = "AAN"
+    # model_name = "AAN"
+    model_name = hypa["net_type"]
     model_name += f"_op{hypa['optimizer_type']}"
     model_name += f"_lr{hypa['learning_rate_type']}"
     model_name += f"_bs{hypa['batch_size_type']}"
@@ -401,9 +405,13 @@ def train_area(
     model_param = get_model_param_area(hypa, num_labels, input_shape)
 
     # get the model with the chosen params
-    # model = AreaNet.build(**model_param)
-    # model = SimpleNet.build(**model_param)
-    model = ActualAreaNet.build(**model_param)
+    net_type = hypa["net_type"]
+    if net_type == "ARN":
+        model = AreaNet.build(**model_param)
+    elif net_type == "SIM":
+        model = SimpleNet.build(**model_param)
+    elif net_type == "AAN":
+        model = ActualAreaNet.build(**model_param)
 
     # from hypa extract training param (epochs, batch, opt, ...)
     training_param = get_training_param_area(hypa, use_validation, model_path)
