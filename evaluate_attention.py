@@ -517,8 +517,8 @@ def make_plots_hypa() -> None:
         hypa_grid["lr"] = ["01", "03", "04", "07"]
         hp_to_plot_names = [
             "dataset",
-            "query",
             "lr",
+            "query",
             # "batch",
             "epoch",
         ]

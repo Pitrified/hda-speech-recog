@@ -155,11 +155,11 @@ def hyper_train_attention(
     # ds.extend(["aug06", "aug07", "aug08", "aug09"])
     # ds.extend(["aug10", "aug11", "aug12", "aug13"])
     # ds.extend(["aug14", "aug15", "aug16", "aug17"])
-    ds.extend(["mela1"])
-    ds.extend(["mel04"])
+    # ds.extend(["mela1"])
+    # ds.extend(["mel04"])
     # ds.extend(["aug15"])
-    ds.extend(["aug14"])
-    ds.extend(["aug07"])
+    # ds.extend(["aug14"])
+    # ds.extend(["aug07"])
     # hypa_grid["dataset_name"] = ["mela1"]
     # hypa_grid["dataset_name"] = ["mel04"]
     # hypa_grid["dataset_name"] = ["aug01"]
@@ -170,6 +170,7 @@ def hyper_train_attention(
     # ds.extend(["meLa1"])
     # ds.extend(["meLa2"])
     # ds.extend(["meLa3"])
+    ds.extend(["meLa4"])
     # ds.extend(["auL18", "auL19", "auL20", "auL21"])
     # ds.extend(["auL18"])
 
@@ -229,37 +230,22 @@ def hyper_train_attention(
     # en.extend(["03", "04"])
     hypa_grid["epoch_num_type"] = en
 
-    hypa_grid = {
-        "batch_size_type": ["02"],
-        "conv_size_type": ["02"],
-        "dataset_name": ["aug07"],
-        "dense_width_type": ["01"],
-        "dropout_type": ["01"],
-        "epoch_num_type": ["03"],
-        "kernel_size_type": ["01"],
-        "learning_rate_type": ["10"],
-        "lstm_units_type": ["01"],
-        "optimizer_type": ["a1"],
-        "query_style_type": ["03"],
-        "words_type": ["k1"],
-    }
-
     # the grid you are generating from (useful to recreate the training)
     logg.debug(f"hypa_grid: {hypa_grid}")
 
     # create the list of combinations
     the_grid = list(ParameterGrid(hypa_grid))
 
-    from retrain_list import retrain_grid
-    the_grid = retrain_grid
-    for hypa in the_grid:
-        dn = hypa["dataset_name"]
-        wt = hypa["words_type"]
-        logg.debug(f"\nwt: {wt} dn: {dn}\n")
-        if dn.startswith("me"):
-            preprocess_spec(dn, wt)
-        elif dn.startswith("au"):
-            do_augmentation(dn, wt)
+    # from retrain_list import retrain_grid
+    # the_grid = retrain_grid
+    # for hypa in the_grid:
+    #     dn = hypa["dataset_name"]
+    #     wt = hypa["words_type"]
+    #     logg.debug(f"\nwt: {wt} dn: {dn}\n")
+    #     if dn.startswith("me"):
+    #         preprocess_spec(dn, wt)
+    #     elif dn.startswith("au"):
+    #         do_augmentation(dn, wt)
 
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
@@ -272,6 +258,9 @@ def hyper_train_attention(
             tra_info[train_status] += 1
         logg.debug(f"tra_info: {tra_info}")
         return
+
+    # magic to fix the GPUs
+    # setup_gpus()
 
     # check that the data is available
     for dn in hypa_grid["dataset_name"]:
