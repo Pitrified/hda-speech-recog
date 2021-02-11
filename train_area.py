@@ -11,6 +11,7 @@ import tensorflow as tf  # type: ignore
 import typing as ty
 
 from tensorflow.keras.callbacks import EarlyStopping  # type: ignore
+from tensorflow.keras.callbacks import ModelCheckpoint  # type: ignore
 from tensorflow.keras.callbacks import LearningRateScheduler  # type: ignore
 from tensorflow.keras.optimizers import Adam  # type: ignore
 from tensorflow.keras.optimizers import RMSprop  # type: ignore
@@ -126,7 +127,8 @@ def hyper_train_area(
 
     ###### the dataset to train on
     ds = []
-    ds.extend(["mel04"])
+    # ds.extend(["mel04"])
+    ds.extend(["mela1"])
     hypa_grid["dataset_name"] = ds
 
     ###### the learning rates for the optimizer
@@ -241,7 +243,7 @@ def get_model_param_area(
 
 
 def get_training_param_area(
-    hypa: ty.Dict[str, str], use_validation: bool
+    hypa: ty.Dict[str, str], use_validation: bool, model_path: Path,
 ) -> ty.Dict[str, ty.Any]:
     """TODO: what is get_training_param_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_training_param_area")
@@ -302,6 +304,11 @@ def get_training_param_area(
             monitor=metric_to_monitor, patience=4, restore_best_weights=True, verbose=1,
         )
         callbacks.append(early_stop)
+
+    model_checkpoint = ModelCheckpoint(
+        str(model_path), monitor=metric_to_monitor, verbose=1, save_best_only=True
+    )
+    callbacks.append(model_checkpoint)
 
     training_param["callbacks"] = callbacks
 
@@ -387,7 +394,7 @@ def train_area(
     model = AreaNet.build(**model_param)
 
     # from hypa extract training param (epochs, batch, opt, ...)
-    training_param = get_training_param_area(hypa, use_validation)
+    training_param = get_training_param_area(hypa, use_validation, model_path)
 
     # a few metrics to track
     metrics = [
@@ -418,6 +425,11 @@ def train_area(
     # logg.debug(f"recap: {recap}")
     recap_path = model_info_folder / "recap.json"
     recap_path.write_text(json.dumps(recap, indent=4))
+
+    # https://stackoverflow.com/a/45546663/2237151
+    model_summary_path = model_info_folder / "model_summary.txt"
+    with model_summary_path.open("w") as msf:
+        model.summary(line_length=150, print_fn=lambda x: msf.write(x + "\n"))
 
     ##########################################################
     #   Fit model
