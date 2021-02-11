@@ -79,10 +79,7 @@ def parse_arguments():
     )
 
     parser.add_argument(
-        "-dr",
-        "--dry_run",
-        action="store_true",
-        help="Do a dry run for the hypa grid",
+        "-dr", "--dry_run", action="store_true", help="Do a dry run for the hypa grid",
     )
 
     # last line to parse the args
@@ -232,11 +229,38 @@ def hyper_train_attention(
     # en.extend(["03", "04"])
     hypa_grid["epoch_num_type"] = en
 
+    hypa_grid = {
+        "batch_size_type": ["02"],
+        "conv_size_type": ["02"],
+        "dataset_name": ["aug07"],
+        "dense_width_type": ["01"],
+        "dropout_type": ["01"],
+        "epoch_num_type": ["03"],
+        "kernel_size_type": ["01"],
+        "learning_rate_type": ["10"],
+        "lstm_units_type": ["01"],
+        "optimizer_type": ["a1"],
+        "query_style_type": ["03"],
+        "words_type": ["k1"],
+    }
+
     # the grid you are generating from (useful to recreate the training)
     logg.debug(f"hypa_grid: {hypa_grid}")
 
     # create the list of combinations
     the_grid = list(ParameterGrid(hypa_grid))
+
+    from retrain_list import retrain_grid
+    the_grid = retrain_grid
+    for hypa in the_grid:
+        dn = hypa["dataset_name"]
+        wt = hypa["words_type"]
+        logg.debug(f"\nwt: {wt} dn: {dn}\n")
+        if dn.startswith("me"):
+            preprocess_spec(dn, wt)
+        elif dn.startswith("au"):
+            do_augmentation(dn, wt)
+
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
 
@@ -431,9 +455,7 @@ def train_attention(
     opt = optimizer_types[hypa["optimizer_type"]]
 
     model.compile(
-        optimizer=opt,
-        loss=tf.keras.losses.CategoricalCrossentropy(),
-        metrics=metrics,
+        optimizer=opt, loss=tf.keras.losses.CategoricalCrossentropy(), metrics=metrics,
     )
 
     # setup callbacks
@@ -505,10 +527,7 @@ def train_attention(
     if learning_rate_type in ["01", "02", "03", "04"]:
         metric_to_monitor = "val_loss" if use_validation else "loss"
         early_stop = EarlyStopping(
-            monitor=metric_to_monitor,
-            patience=4,
-            restore_best_weights=True,
-            verbose=1,
+            monitor=metric_to_monitor, patience=4, restore_best_weights=True, verbose=1,
         )
         callbacks.append(early_stop)
 
@@ -646,9 +665,7 @@ def find_best_lr(hypa: ty.Dict[str, str]) -> None:
     ]
 
     model.compile(
-        optimizer=opt,
-        loss=tf.keras.losses.CategoricalCrossentropy(),
-        metrics=metrics,
+        optimizer=opt, loss=tf.keras.losses.CategoricalCrossentropy(), metrics=metrics,
     )
 
     # find the best values

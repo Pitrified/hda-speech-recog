@@ -193,7 +193,7 @@ def evaluate_results_attention() -> None:
     df_f = df_f.sort_values("fscore", ascending=False)
     logg.info("All results:")
     logg.info(f"{df_f.head(30)}")
-    logg.info(f"{df_f.tail()}")
+    logg.info(f"{df_f.tail(100)}")
 
     # by word
     for words_type in ["dir", "k1", "w2", "f2", "f1", "all", "num"]:
@@ -449,16 +449,7 @@ def make_plots_hypa() -> None:
 
     results_df = build_att_results_df()
 
-    # the output folders
-    plot_fol = Path("plot_results") / "att"
-    pdf_split_fol = plot_fol / "pdf_split"
-    pdf_grid_fol = plot_fol / "pdf_grid"
-    png_split_fol = plot_fol / "png_split"
-    png_grid_fol = plot_fol / "png_grid"
-    for f in pdf_split_fol, pdf_grid_fol, png_split_fol, png_grid_fol:
-        if not f.exists():
-            f.mkdir(parents=True, exist_ok=True)
-
+    # print all unique values to get an idea of what is inside the dataframe
     for col in results_df:
         if col in ["model_name", "loss", "fscore", "recall", "precision", "cat_acc"]:
             continue
@@ -504,16 +495,41 @@ def make_plots_hypa() -> None:
     # all_hp_to_plot.append(("epoch", "batch", "query", "dataset"))
     # all_hp_to_plot.append(("query", "epoch", "batch", "dataset"))
 
+    df_f = results_df
+
+    # remove failed trainings
+    df_f = df_f[df_f["fscore"] > 0.5]
+
+    # filter by epochs
+    epoch_list = ["01", "02"]
+    df_f = df_f[df_f["epoch"].isin(epoch_list)]
+
+    # a unique name for this filtering
+    filter_tag = "001"
+
+    # the output folders
+    plot_fol = Path("plot_results") / "att"
+    filter_fol = plot_fol / filter_tag
+    pdf_split_fol = filter_fol / "pdf_split"
+    pdf_grid_fol = filter_fol / "pdf_grid"
+    png_split_fol = filter_fol / "png_split"
+    png_grid_fol = filter_fol / "png_grid"
+    for f in pdf_split_fol, pdf_grid_fol, png_split_fol, png_grid_fol:
+        if not f.exists():
+            f.mkdir(parents=True, exist_ok=True)
+
+    min_lower_limit = 0.92
     quad_plotter(
         all_hp_to_plot[:],
         hypa_grid,
-        results_df,
+        df_f,
         pdf_split_fol,
         png_split_fol,
         pdf_grid_fol,
         png_grid_fol,
         do_single_images=True,
         min_at_zero=False,
+        min_lower_limit=min_lower_limit,
     )
 
 
@@ -597,7 +613,7 @@ def make_plots_clr() -> None:
 
         # https://matplotlib.org/gallery/subplots_axes_and_figures/two_scales.html
 
-        line_fscore, = ax[0].plot(iterations, fscores_train, color="C0")
+        (line_fscore,) = ax[0].plot(iterations, fscores_train, color="C0")
         # ax[0].plot(iterations, loss_train, label="loss_train")
         ax[0].set_title("Loss and F-score")
         ax[0].set_xlabel("Iterations")
@@ -606,7 +622,7 @@ def make_plots_clr() -> None:
 
         ax_loss = ax[0].twinx()
         ax_loss.set_ylabel("Loss")
-        line_loss, = ax_loss.plot(iterations, loss_train, color="C1")
+        (line_loss,) = ax_loss.plot(iterations, loss_train, color="C1")
         # ax_loss.legend()
 
         ax[0].legend((line_fscore, line_loss), ("F-score", "loss"), loc="center right")
@@ -715,6 +731,7 @@ def run_evaluate_attention(args: argparse.Namespace) -> None:
     rec_words_type = args.rec_words_type
 
     pd.set_option("max_colwidth", 100)
+    pd.set_option("display.max_rows", None)
 
     if evaluation_type == "results":
         evaluate_results_attention()

@@ -229,6 +229,7 @@ def plot_triple_data(
     mean_all: float = None,
     max_all: float = None,
     min_all: float = None,
+    min_lower_limit: float = 0,
 ):
     """Plot groups of groups of columns
 
@@ -248,7 +249,10 @@ def plot_triple_data(
     |xxx xxx xxx xxx    xxx xxx xxx xxx
     .----------------------------------->
     """
-    # print(f"f_mean.shape: {f_mean.shape}")
+    # logg = logging.getLogger(f"c.{__name__}.plot_triple_data")
+    # logg.setLevel("INFO")
+    # logg.debug("Start plot_triple_data")
+    # logg.debug(f"f_mean.shape: {f_mean.shape}")
 
     title = ""
     if outer_label is not None and outer_value is not None:
@@ -388,20 +392,24 @@ def plot_triple_data(
                 ecolor="b",
             )
 
+    if min_all is not None and min_all < min_lower_limit:
+        # logg.debug(f"Resettin min_all: {min_all} to min_lower_limit")
+        min_all = min_lower_limit
+
     if max_all is not None and min_all is not None:
         ax.set_ylim(top=max_all * 1.01, bottom=min_all * 0.99)
     elif max_all is not None:
-        ax.set_ylim(top=max_all * 1.05)
+        ax.set_ylim(top=max_all * 1.01)
     elif min_all is not None:
-        ax.set_ylim(bottom=min_all * 0.95)
+        ax.set_ylim(bottom=min_all * 0.99)
 
     if mean_all is not None:
         ax.axhline(mean_all)
 
         bottom, top = ax.get_ylim()
-        mean_rescaled = mean_all / top * 1.01
+        mean_rescaled = ((mean_all - bottom) / (top - bottom)) * 1.01
         ax.annotate(
-            text=f"{mean_all:.02f}",
+            text=f"{mean_all:.03f}",
             xy=(0.005, mean_rescaled),
             xycoords="axes fraction",
             fontsize=13,
@@ -426,6 +434,7 @@ def quad_plotter(
     png_grid_fol: Path,
     do_single_images: bool = True,
     min_at_zero: bool = False,
+    min_lower_limit: float = 0,
 ) -> None:
     """TODO: what is quad_plotter doing?"""
     logg = logging.getLogger(f"c.{__name__}.quad_plotter")
@@ -501,6 +510,7 @@ def quad_plotter(
                 f_mean_all,
                 f_max.max(),
                 f_min_all,
+                min_lower_limit,
             )
 
             if do_single_images:
@@ -522,6 +532,7 @@ def quad_plotter(
                     f_mean_all,
                     f_max.max(),
                     f_min_all,
+                    min_lower_limit,
                 )
 
                 # save and close the single image

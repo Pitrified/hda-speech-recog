@@ -190,18 +190,18 @@ def visualize_datasets(word_index):
     # a_word = "loudest_one"
     # a_word = "_other_ltts_loud"
 
-    # datasets = []
+    datasets = []
     # datasets.extend(["meL04", "meLa1", "meLa2", "meLa3", "meLa4"])
     # datasets.extend(["auL06", "auL07", "auL08", "auL09"])
-    # datasets.extend(["auL18", "auL19", "auL20", "auL21"])
-    # a_word = "loudest_one"
+    datasets.extend(["auL18", "auL19", "auL20", "auL21"])
+    a_word = "loudest_two"
 
-    datasets = []
-    datasets.extend(["mel04", "mela1"])
+    # datasets = []
+    # datasets.extend(["mel04", "mela1"])
     # datasets.extend(["aug14", "aug15"])
     # a_word = "forward"
-    datasets.extend(["aug14", "aug07"])
-    a_word = "one"
+    # datasets.extend(["aug14", "aug07"])
+    # a_word = "one"
     # a_word = "_other_ltts"
 
     # which word in the dataset to plot
