@@ -1,3 +1,4 @@
+from copy import deepcopy
 from itertools import combinations
 from itertools import product
 from pathlib import Path
@@ -455,35 +456,85 @@ def make_plots_hypa() -> None:
             continue
         logg.debug(f"hypa_grid['{col}'] = {results_df[col].unique()}")
 
-    hypa_grid: ty.Dict[str, ty.List[str]] = {}
-    # hypa_grid["words"] = ["k1", "w2"]
-    hypa_grid["words"] = ["k1"]
-    hypa_grid["dataset"] = ["mela1", "mel04", "mel05", "mel01"]
-    hypa_grid["conv"] = ["01", "02"]
-    hypa_grid["dropout"] = ["01", "02"]
-    hypa_grid["kernel"] = ["01", "02"]
-    hypa_grid["lstm"] = ["01"]
-    hypa_grid["query"] = ["01", "02", "03", "04", "05"]
-    hypa_grid["dense"] = ["01", "02"]
-    hypa_grid["lr"] = ["01"]
-    hypa_grid["optimizer"] = ["a1"]
-    hypa_grid["batch"] = ["01", "02"]
-    hypa_grid["epoch"] = ["01", "02"]
+    # full hypa_grid
+    hypa_grid_all: ty.Dict[str, ty.List[str]] = {}
+    hypa_grid_all["words"] = ["k1", "LTnumLS", "w2", "FJall", "f2"]
+    ds = []
+    ds.extend(["mel01", "mel04", "mel05", "mela1"])
+    ds.extend(["aug01"])
+    ds.extend(["aug02", "aug03", "aug04", "aug05"])
+    ds.extend(["aug06", "aug07", "aug08", "aug09"])
+    ds.extend(["aug10", "aug11", "aug12", "aug13"])
+    ds.extend(["aug14", "aug15", "aug16", "aug17"])
+    ds.extend(["meL04", "meLa1", "meLa2", "meLa3"])
+    hypa_grid_all["dataset"] = ds
+    hypa_grid_all["conv"] = ["01", "02"]
+    hypa_grid_all["dropout"] = ["01", "02"]
+    hypa_grid_all["kernel"] = ["01", "02"]
+    hypa_grid_all["lstm"] = ["01"]
+    hypa_grid_all["query"] = ["01", "02", "03", "04", "05"]
+    hypa_grid_all["dense"] = ["01", "02"]
+    hypa_grid_all["lr"] = ["01", "03", "04", "05", "06", "07", "08", "09", "10"]
+    hypa_grid_all["optimizer"] = ["a1"]
+    hypa_grid_all["batch"] = ["02", "01"]
+    hypa_grid_all["epoch"] = ["01", "02", "03", "04"]
 
-    hp_to_plot_names = [
-        # "words",
+    hp_to_plot_names_all = [
+        "words",
         "dataset",
         "conv",
         "dropout",
         "kernel",
-        # "lstm",
+        "lstm",
         "query",
         "dense",
-        # "lr",
-        # "optimizer",
+        "lr",
+        "optimizer",
         "batch",
         "epoch",
     ]
+    logg.debug(f"hp_to_plot_names_all: {hp_to_plot_names_all}")
+    hp_to_plot_names: ty.List[str] = []
+
+    # a unique name for this filtering
+    filter_tag = "001"
+
+    # in each tag overwrite the hypas to reduce
+    # and set which hp to plot
+
+    if filter_tag == "001":
+        hypa_grid: ty.Dict[str, ty.List[str]] = deepcopy(hypa_grid_all)
+        hypa_grid["words"] = ["k1"]
+        ds = []
+        # ds.extend(["mel01", "mel04", "mel05", "mela1"])
+        ds.extend(["mel04"])
+        # ds.extend(["aug02", "aug03", "aug04", "aug05"])
+        # ds.extend(["aug06", "aug07", "aug08", "aug09"])
+        # ds.extend(["aug10", "aug11", "aug12", "aug13"])
+        ds.extend(["aug14", "aug15", "aug16", "aug17"])
+        hypa_grid["dataset"] = ds
+        # hypa_grid["epoch"] = ["01", "02"]
+        hypa_grid["lr"] = ["01", "03", "04", "07"]
+        hp_to_plot_names = [
+            "dataset",
+            "query",
+            "lr",
+            # "batch",
+            "epoch",
+        ]
+        # # hypa_grid["words"] = ["k1", "w2"]
+        # hypa_grid["words"] = ["k1"]
+        # hypa_grid["dataset"] = ["mela1", "mel04", "mel05", "mel01"]
+        # hypa_grid["conv"] = ["01", "02"]
+        # hypa_grid["dropout"] = ["01", "02"]
+        # hypa_grid["kernel"] = ["01", "02"]
+        # hypa_grid["lstm"] = ["01"]
+        # hypa_grid["query"] = ["01", "02", "03", "04", "05"]
+        # hypa_grid["dense"] = ["01", "02"]
+        # hypa_grid["lr"] = ["01"]
+        # hypa_grid["optimizer"] = ["a1"]
+        # hypa_grid["batch"] = ["01", "02"]
+        # hypa_grid["epoch"] = ["01", "02"]
 
     # all_hp_to_plot = list(combinations(hypa_grid.keys(), 4))
     all_hp_to_plot = list(combinations(hp_to_plot_names, 4))
@@ -501,11 +552,8 @@ def make_plots_hypa() -> None:
     df_f = df_f[df_f["fscore"] > 0.5]
 
     # filter by epochs
-    epoch_list = ["01", "02"]
-    df_f = df_f[df_f["epoch"].isin(epoch_list)]
-
-    # a unique name for this filtering
-    filter_tag = "001"
+    # epoch_list = ["01", "02"]
+    # df_f = df_f[df_f["epoch"].isin(epoch_list)]
 
     # the output folders
     plot_fol = Path("plot_results") / "att"
