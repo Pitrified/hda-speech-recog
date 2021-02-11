@@ -9,6 +9,7 @@ import numpy as np  # type: ignore
 import tensorflow as tf  # type: ignore
 import typing as ty
 
+from utils import setup_gpus
 from utils import get_val_test_list
 from utils import setup_logger
 from utils import words_types
@@ -21,6 +22,7 @@ def parse_arguments() -> argparse.Namespace:
     aug_dict = get_aug_dict()
     aug_keys = list(aug_dict.keys())
     aug_keys.extend(["2345", "6789", "10123", "14567"])
+    aug_keys.extend(["auA1234", "auA5678"])
     parser.add_argument(
         "-at",
         "--augmentation_type",
@@ -163,6 +165,12 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "n_fft": 512,
         "hop_length": 64,
     }  # (128, 128)
+    mel_a1_loud = {
+        "n_mels": 80,
+        "n_fft": 1024,
+        "hop_length": 128,
+        "fmin": 40,
+    }  # (80, 64)
 
     aug_dict["aug01"] = {
         "max_time_shifts": [1600, 3200],
@@ -411,6 +419,73 @@ def get_aug_dict() -> ty.Dict[str, ty.Any]:
         "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
     }
 
+    # mel_a1_loud
+    aug_dict["auA01"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_a1_loud,
+        "aug_shape": (80, 64),
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 5},
+    }
+    aug_dict["auA02"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_a1_loud,
+        "aug_shape": (80, 64),
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 3, "max_warp_time": 5, "max_warp_freq": 0},
+    }
+    aug_dict["auA03"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_a1_loud,
+        "aug_shape": (80, 64),
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 3, "max_warp_time": 0, "max_warp_freq": 5},
+    }
+    aug_dict["auA04"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_a1_loud,
+        "aug_shape": (80, 64),
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
+    }
+
+    # mel_a1_loud, smaller max_warp_time / max_warp_freq, more landmarks
+    aug_dict["auA05"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_a1_loud,
+        "aug_shape": (80, 64),
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 4, "max_warp_time": 2, "max_warp_freq": 2},
+    }
+    aug_dict["auA06"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_a1_loud,
+        "aug_shape": (80, 64),
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 4, "max_warp_time": 2, "max_warp_freq": 0},
+    }
+    aug_dict["auA07"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_a1_loud,
+        "aug_shape": (80, 64),
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 4, "max_warp_time": 0, "max_warp_freq": 2},
+    }
+    aug_dict["auA08"] = {
+        "max_time_shifts": [],
+        "stretch_rates": [],
+        "mel_kwargs": mel_a1_loud,
+        "aug_shape": (80, 64),
+        "keep_originals": True,
+        "warp_params": {"num_landmarks": 0, "max_warp_time": 0, "max_warp_freq": 0},
+    }
     return aug_dict
 
 
@@ -708,23 +783,30 @@ def run_augment_data(args: argparse.Namespace) -> None:
     logg = logging.getLogger(f"c.{__name__}.run_augment_data")
     logg.debug("Starting run_augment_data")
 
+    # magic to fix the GPUs
+    setup_gpus()
+
     augmentation_type = args.augmentation_type
     words_type = args.words_type
     force_augment = args.force_augment
 
-    if words_type == "2345":
-        words_type_list = ["aug02", "aug03", "aug04", "aug05"]
-    elif words_type == "6789":
-        words_type_list = ["aug06", "aug07", "aug08", "aug09"]
-    elif words_type == "10123":
-        words_type_list = ["aug10", "aug11", "aug12", "aug13"]
-    elif words_type == "14567":
-        words_type_list = ["aug14", "aug15", "aug16", "aug17"]
+    if augmentation_type == "2345":
+        aug_type_list = ["aug02", "aug03", "aug04", "aug05"]
+    elif augmentation_type == "6789":
+        aug_type_list = ["aug06", "aug07", "aug08", "aug09"]
+    elif augmentation_type == "10123":
+        aug_type_list = ["aug10", "aug11", "aug12", "aug13"]
+    elif augmentation_type == "14567":
+        aug_type_list = ["aug14", "aug15", "aug16", "aug17"]
+    elif augmentation_type == "auA1234":
+        aug_type_list = ["auA01", "auA02", "auA03", "auA04"]
+    elif augmentation_type == "auA5678":
+        aug_type_list = ["auA05", "auA06", "auA07", "auA08"]
     else:
-        words_type_list = [words_type]
+        aug_type_list = [augmentation_type]
 
-    for wt in words_type_list:
-        do_augmentation(augmentation_type, wt, force_augment)
+    for at in aug_type_list:
+        do_augmentation(at, words_type, force_augment)
 
 
 if __name__ == "__main__":

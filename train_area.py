@@ -95,9 +95,9 @@ def train_model_area_dry(
     hypa: ty.Dict[str, str], use_validation: bool, trained_folder: Path
 ) -> str:
     """TODO: what is train_model_area_dry doing?"""
-    logg = logging.getLogger(f"c.{__name__}.train_model_area_dry")
+    # logg = logging.getLogger(f"c.{__name__}.train_model_area_dry")
     # logg.setLevel("INFO")
-    logg.debug("Start train_model_area_dry")
+    # logg.debug("Start train_model_area_dry")
 
     model_name = build_area_name(hypa, use_validation)
     placeholder_path = trained_folder / f"{model_name}.txt"
@@ -128,9 +128,13 @@ def hyper_train_area(
     ###### the dataset to train on
     ds = []
     # ds.extend(["mel04"])
-    ds.extend(["mela1"])  # still TODO with num
-    ds.extend(["aug07"])
-    ds.extend(["aug14"])
+    # ds.extend(["mela1"])
+    # ds.extend(["aug07"])
+    # ds.extend(["aug14"])
+
+    # TODO auL6789 auL18901
+    # ds.extend(["auA01", "auA02", "auA03", "auA04"])
+    ds.extend(["auA05", "auA06", "auA07", "auA08"])
     hypa_grid["dataset_name"] = ds
 
     ###### the learning rates for the optimizer
