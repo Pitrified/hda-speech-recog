@@ -4,16 +4,20 @@ from utils import setup_gpus
 import argparse
 import json
 import logging
+import matplotlib.pyplot as plt  # type: ignore
+import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 import typing as ty
-import numpy as np  # type: ignore
 
 from preprocess_data import load_processed
-from utils import compute_permutation
+from train_area import build_area_name
 from utils import setup_logger
 from utils import words_types
-from train_area import build_area_name
+from utils import analyze_confusion
+from utils import pred_hot_2_cm
 
+# from plot_utils import plot_spec
+# from utils import compute_permutation
 # from random import seed as rseed
 # from timeit import default_timer as timer
 
@@ -178,7 +182,8 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     # magic to fix the GPUs
     setup_gpus()
 
-    dataset_name = "mela1"
+    # dataset_name = "mela1"
+    dataset_name = "mel04"
 
     hypa = {
         "batch_size_type": "32",
@@ -211,7 +216,12 @@ def evaluate_attention_weights(train_words_type: str) -> None:
         inputs=model.input,
         outputs=[
             model.get_layer(name_output_layer).output,
+            # model.outputs,
+            model.get_layer("activation_7").output,
+            model.get_layer("dropout_3").output,
+            model.get_layer("lambda").output,
             model.get_layer("tf_op_layer_area_values_softmax").output,
+            model.get_layer("area_values").output,
         ],
     )
     att_weight_model.summary()
@@ -219,7 +229,7 @@ def evaluate_attention_weights(train_words_type: str) -> None:
 
     # get the training words
     train_words = words_types[train_words_type]
-    perm_pred = compute_permutation(train_words)
+    # perm_pred = compute_permutation(train_words)
 
     # load data if you do not want to record new audios
     processed_folder = Path("data_proc")
@@ -232,7 +242,8 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     rec_data_l: ty.List[np.ndarray] = []
 
     # for now we do not record new words
-    rec_words = train_words
+    rec_words = train_words[:]
+    num_rec_words = len(rec_words)
 
     for i, word in enumerate(rec_words):
         data, labels = load_processed(processed_path, [word])
@@ -245,9 +256,59 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     rec_data = np.stack(rec_data_l)
 
     # get prediction and attention weights
-    pred, att_weights = att_weight_model.predict(rec_data)
+    pred, act7, drop3, lam, att_weights, av = att_weight_model.predict(rec_data)
+    # logg.debug(f"att_weights[0]: {att_weights[0]}")
     logg.debug(f"att_weights.shape: {att_weights.shape}")
     logg.debug(f"att_weights[0].shape: {att_weights[0].shape}")
+    logg.debug(f"act7[0].shape: {act7[0].shape}")
+
+    data, labels = load_processed(processed_path, rec_words)
+    logg.debug(f"data['testing'].shape: {data['testing'].shape}")
+    all_values = att_weight_model.predict(data["testing"])
+    y_pred = all_values[0]
+    # logg.debug(f"y_pred: {y_pred}")
+    logg.debug(f"y_pred.shape: {y_pred.shape}")
+    logg.debug(f"y_pred.dtype: {y_pred.dtype}")
+    # logg.debug(f"labels['testing']: {labels['testing']}")
+    logg.debug(f"labels['testing'].shape: {labels['testing'].shape}")
+    cm = pred_hot_2_cm(labels["testing"], y_pred, rec_words)
+    fscore = analyze_confusion(cm, rec_words)
+    logg.debug(f"fscore: {fscore}")
+
+    fig, axes = plt.subplots(nrows=6, ncols=num_rec_words, figsize=(30, 20))
+
+    for i, word in enumerate(rec_words):
+
+        # show the spectrogram
+        word_spec = rec_data[i][:, :, 0]
+        # logg.debug(f"word_spec: {word_spec}")
+        axes[0][i].set_title(f"spec {word}")
+        axes[0][i].imshow(word_spec, origin="lower")
+
+        axes[1][i].set_title("act7")
+        axes[1][i].imshow(act7[i][:, :, 0], origin="lower")
+
+        axes[2][i].set_title("drop3")
+        axes[2][i].imshow(drop3[i][:, :, 0], origin="lower")
+
+        axes[3][i].set_title("lam")
+        axes[3][i].imshow(lam[i][:, :, 0], origin="lower")
+
+        axes[4][i].set_title("att weights")
+        axes[4][i].imshow(att_weights[i][:, :, 0], origin="lower")
+
+        axes[5][i].set_title("att values")
+        axes[5][i].imshow(av[i][:, :, 0], origin="lower")
+
+    fig.tight_layout()
+
+    fig_name = f"{model_name}"
+    fig_name += "_0000.{}"
+    plot_folder = Path("plot_results")
+    results_path = plot_folder / fig_name.format("pdf")
+    fig.savefig(results_path)
+
+    # plt.show()
 
 
 def run_evaluate_area(args: argparse.Namespace) -> None:
