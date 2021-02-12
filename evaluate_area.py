@@ -11,15 +11,17 @@ import typing as ty
 
 from preprocess_data import load_processed
 from train_area import build_area_name
+from utils import compute_permutation
 from utils import setup_logger
 from utils import words_types
 
-# from utils import analyze_confusion
-# from utils import pred_hot_2_cm
+# from plot_utils import plot_pred
 # from plot_utils import plot_spec
-# from utils import compute_permutation
 # from random import seed as rseed
 # from timeit import default_timer as timer
+# from utils import analyze_confusion
+# from utils import compute_permutation
+# from utils import pred_hot_2_cm
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -184,28 +186,39 @@ def evaluate_attention_weights(train_words_type: str) -> None:
 
     # dataset_name = "mela1"
     # dataset_name = "mel04"
-    # dataset_name = "aug14"
+    dataset_name = "aug14"
 
+    # hypa = {
+    #     "net_type": "AAN",
+    #     "batch_size_type": "32",
+    #     # "dataset_name": "mela1",
+    #     "dataset_name": dataset_name,
+    #     "epoch_num_type": "15",
+    #     "learning_rate_type": "03",
+    #     "optimizer_type": "a1",
+    #     # "words_type": "LTnum",
+    #     "words_type": train_words_type,
+    # }
+
+    # hypa = {
+    #     "batch_size_type": "32",
+    #     "dataset_name": "auA05",
+    #     "epoch_num_type": "15",
+    #     "learning_rate_type": "03",
+    #     "net_type": "AAN",
+    #     "optimizer_type": "a1",
+    #     "words_type": "LTnumLS",
+    # }
+
+    # AAN_opa1_lr03_bs32_en15_dsaug14_wLTnum
     hypa = {
-        "net_type": "AAN",
         "batch_size_type": "32",
-        "dataset_name": "mela1",
-        # "dataset_name": dataset_name,
+        "dataset_name": "aug14",
         "epoch_num_type": "15",
         "learning_rate_type": "03",
-        "optimizer_type": "a1",
-        # "words_type": "LTnum",
-        "words_type": train_words_type,
-    }
-
-    hypa = {
-        "batch_size_type": "32",
-        "dataset_name": "auA05",
-        "epoch_num_type": "15",
-        "learning_rate_type": "03",
         "net_type": "AAN",
         "optimizer_type": "a1",
-        "words_type": "LTnumLS",
+        "words_type": "LTnum",
     }
 
     dataset_name = hypa["dataset_name"]
@@ -239,20 +252,23 @@ def evaluate_attention_weights(train_words_type: str) -> None:
 
     # get the training words
     train_words = words_types[train_words_type]
-    # perm_pred = compute_permutation(train_words)
+    perm_pred = compute_permutation(train_words)
+    logg.debug(f"perm_pred: {perm_pred}")
 
     # load data if you do not want to record new audios
     processed_folder = Path("data_proc")
     processed_path = processed_folder / f"{dataset_name}"
 
     # which word in the dataset to plot
-    word_id = 1
+    word_id = 3
 
     # the loaded spectrograms
     rec_data_l: ty.List[np.ndarray] = []
 
     # for now we do not record new words
-    rec_words = train_words[:]
+    # rec_words = train_words[-3:]
+    # rec_words = train_words[:3]
+    rec_words = train_words[:2]
     num_rec_words = len(rec_words)
 
     logg.debug(f"processed_path: {processed_path}")
@@ -265,6 +281,7 @@ def evaluate_attention_weights(train_words_type: str) -> None:
 
     # turn the list into np array
     rec_data = np.stack(rec_data_l)
+    logg.debug(f"rec_data.shape: {rec_data.shape}")
 
     # get prediction and attention weights
     pred, att_weights = att_weight_model.predict(rec_data)
@@ -273,29 +290,43 @@ def evaluate_attention_weights(train_words_type: str) -> None:
 
     plot_size = 5
     fw = plot_size * num_rec_words
-    nrows = 3
+    nrows = 2
     fh = plot_size * nrows
     fig, axes = plt.subplots(nrows=nrows, ncols=num_rec_words, figsize=(fw, fh))
+    fig.suptitle("Attention weights computed with AreaNet", fontsize=20)
 
     for i, word in enumerate(rec_words):
 
         # show the spectrogram
         word_spec = rec_data[i][:, :, 0]
         # logg.debug(f"word_spec: {word_spec}")
-        axes[0][i].set_title(f"spec {word}")
+        axes[0][i].set_title(f"Spectrogram for {word}", fontsize=20)
         axes[0][i].imshow(word_spec, origin="lower")
 
-        axes[1][i].set_title("att weights")
+        axes[1][i].set_title(f"Area attention weights for {word}", fontsize=20)
         att_w = att_weights[i][:, :, 0]
         axes[1][i].imshow(att_w, origin="lower")
 
-        weighted = word_spec * att_w
-        axes[2][i].imshow(weighted, origin="lower")
+        # axes[0][i].imshow(
+        #     att_w, origin="lower", extent=img.get_extent(), cmap="gray", alpha=0.4
+        # )
+
+        # weighted = word_spec * att_w
+        # axes[2][i].imshow(weighted, origin="lower")
+
+        # # plot the predictions
+        # word_pred = pred[i]
+        # logg.debug(f"word_pred: {word_pred}")
+        # # permute the prediction from sorted to the order you have
+        # word_pred = word_pred[perm_pred]
+        # pred_index = np.argmax(word_pred)
+        # title = f"Predictions for {word}"
+        # plot_pred(word_pred, train_words, axes[2][i], title, pred_index)
 
     fig.tight_layout()
 
     fig_name = f"{model_name}"
-    fig_name += "_0000.{}"
+    fig_name += "_0001.{}"
     plot_folder = Path("plot_results")
     results_path = plot_folder / fig_name.format("pdf")
     fig.savefig(results_path)
