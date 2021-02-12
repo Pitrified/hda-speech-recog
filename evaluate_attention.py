@@ -495,17 +495,25 @@ def make_plots_hypa() -> None:
         "epoch",
     ]
     logg.debug(f"hp_to_plot_names_all: {hp_to_plot_names_all}")
-    hp_to_plot_names: ty.List[str] = []
+    # hp_to_plot_names: ty.List[str] = []
 
     # a unique name for this filtering
     filter_tag = "001"
+
+    # clone the results
+    df_f = results_df
+
+    # remove failed trainings
+    df_f = df_f[df_f["fscore"] > 0.5]
 
     # in each tag overwrite the hypas to reduce
     # and set which hp to plot
 
     if filter_tag == "001":
         hypa_grid: ty.Dict[str, ty.List[str]] = deepcopy(hypa_grid_all)
+
         hypa_grid["words"] = ["k1"]
+
         ds = []
         # ds.extend(["mel01", "mel04", "mel05", "mela1"])
         ds.extend(["mel04"])
@@ -514,46 +522,27 @@ def make_plots_hypa() -> None:
         # ds.extend(["aug10", "aug11", "aug12", "aug13"])
         ds.extend(["aug14", "aug15", "aug16", "aug17"])
         hypa_grid["dataset"] = ds
+
         # hypa_grid["epoch"] = ["01", "02"]
         hypa_grid["lr"] = ["01", "03", "04", "07"]
+
         hp_to_plot_names = [
             "dataset",
             "lr",
             "epoch",
             "query",
         ]
-        # # hypa_grid["words"] = ["k1", "w2"]
-        # hypa_grid["words"] = ["k1"]
-        # hypa_grid["dataset"] = ["mela1", "mel04", "mel05", "mel01"]
-        # hypa_grid["conv"] = ["01", "02"]
-        # hypa_grid["dropout"] = ["01", "02"]
-        # hypa_grid["kernel"] = ["01", "02"]
-        # hypa_grid["lstm"] = ["01"]
-        # hypa_grid["query"] = ["01", "02", "03", "04", "05"]
-        # hypa_grid["dense"] = ["01", "02"]
-        # hypa_grid["lr"] = ["01"]
-        # hypa_grid["optimizer"] = ["a1"]
-        # hypa_grid["batch"] = ["01", "02"]
-        # hypa_grid["epoch"] = ["01", "02"]
+        min_lower_limit = 0.92
 
-    # all_hp_to_plot = list(combinations(hypa_grid.keys(), 4))
+        # filter by epochs
+        # epoch_list = ["01", "02"]
+        # df_f = df_f[df_f["epoch"].isin(epoch_list)]
+
     all_hp_to_plot = list(combinations(hp_to_plot_names, 4))
     logg.debug(f"len(all_hp_to_plot): {len(all_hp_to_plot)}")
 
-    # all_hp_to_plot = []
+    # add additional combinations if needed
     # all_hp_to_plot.append(("epoch", "dataset", "batch", "query"))
-    # all_hp_to_plot.append(("epoch", "query", "batch", "dataset"))
-    # all_hp_to_plot.append(("epoch", "batch", "query", "dataset"))
-    # all_hp_to_plot.append(("query", "epoch", "batch", "dataset"))
-
-    df_f = results_df
-
-    # remove failed trainings
-    df_f = df_f[df_f["fscore"] > 0.5]
-
-    # filter by epochs
-    # epoch_list = ["01", "02"]
-    # df_f = df_f[df_f["epoch"].isin(epoch_list)]
 
     # the output folders
     plot_fol = Path("plot_results") / "att"
@@ -566,7 +555,6 @@ def make_plots_hypa() -> None:
         if not f.exists():
             f.mkdir(parents=True, exist_ok=True)
 
-    min_lower_limit = 0.92
     quad_plotter(
         all_hp_to_plot[:],
         hypa_grid,

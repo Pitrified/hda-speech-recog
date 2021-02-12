@@ -2,10 +2,19 @@
 
 \section{Results}
 \label{sec:results}
+% Dazzling numerical results
 
 \subsection{Attention weights}
 
-% Dazzling numerical results
+\subsubsection{Attention model}
+
+Show attention weights for Att model
+
+\subsubsection{AreaNet}
+
+Show AreaNet
+
+Show VerticalAreaNet
 
 \subsection{Hyper-parameter analysis}
 
@@ -13,15 +22,41 @@
 
 % First specific hypas
 
+Tell total number of experiment per type
+
 \subsubsection{CNN}
 
 \subsubsection{Transfer}
 
 \subsubsection{Attention}
 
+Group by (conv, dropout, kernel, lstm, dense) to show difference in architecture
+
+Group by query
+
+Group by (lr, batch, epoch)
+
+Group by dataset: not augmented, augmented
+
+Group by type of augmentation: along both, one, none axis
+
+Group by dataset: 1 sec vs loud section
+
 \subsection{Architecture analysis}
 
 Then aggregate table for cross architecture
 
+Pick the best 5 models per category
+
+Compare: CNN, Dense, Xception, EfficientB047, AreaNet, SimpleNet, VerticalAreaNet
+on num, all, LTnum, LTall, numLS, allLS
+
+Not every combination of everything
+
 \subsection{Stream predictions}
 
+Compare normal vs loud
+
+Attention vs Simple vs AreaNet vs VerticalAreaNet
+
+Compare inference time, model size
