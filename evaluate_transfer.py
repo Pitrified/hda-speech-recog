@@ -80,7 +80,7 @@ def setup_env():
 
 
 def build_tra_results_df() -> pd.DataFrame:
-    """TODO: what is build_tra_results_df doing?"""
+    """MAKEDOC: what is build_tra_results_df doing?"""
     logg = logging.getLogger(f"c.{__name__}.build_tra_results_df")
     logg.setLevel("INFO")
     logg.debug("Start build_tra_results_df")
@@ -151,7 +151,7 @@ def build_tra_results_df() -> pd.DataFrame:
 
 
 def evaluate_results_transfer(args: argparse.Namespace) -> None:
-    """TODO: what is evaluate_results_transfer doing?"""
+    """MAKEDOC: what is evaluate_results_transfer doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_results_transfer")
     logg.setLevel("INFO")
     logg.debug("Start evaluate_results_transfer")
@@ -183,7 +183,7 @@ def evaluate_results_transfer(args: argparse.Namespace) -> None:
 
 
 def delete_bad_models_transfer(args: argparse.Namespace) -> None:
-    """TODO: what is delete_bad_models_transfer doing?"""
+    """MAKEDOC: what is delete_bad_models_transfer doing?"""
     logg = logging.getLogger(f"c.{__name__}.delete_bad_models_transfer")
     logg.setLevel("INFO")
     logg.debug("Start delete_bad_models_transfer")
@@ -259,7 +259,7 @@ def delete_bad_models_transfer(args: argparse.Namespace) -> None:
 
 
 def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
-    """TODO: what is evaluate_audio_transfer doing?"""
+    """MAKEDOC: what is evaluate_audio_transfer doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_audio_transfer")
     # logg.setLevel("INFO")
     logg.debug("Start evaluate_audio_transfer")
@@ -396,7 +396,7 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
 
 
 def run_evaluate_transfer(args: argparse.Namespace) -> None:
-    """TODO: What is evaluate_transfer doing?"""
+    """MAKEDOC: What is evaluate_transfer doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate_transfer")
     logg.debug("Starting run_evaluate_transfer")
 

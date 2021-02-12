@@ -37,7 +37,7 @@ def setup_env() -> argparse.Namespace:
 
 
 def preprocess_fsdd() -> None:
-    """TODO: what is preprocess_fsdd doing?
+    """MAKEDOC: what is preprocess_fsdd doing?
 
     Get the dataset with:
     git clone https://github.com/Jakobovski/free-spoken-digit-dataset.git ~/free_spoken_digit_dataset
@@ -131,7 +131,7 @@ def preprocess_fsdd() -> None:
 
 
 def run_fsdd_preprocess(args: argparse.Namespace) -> None:
-    """TODO: What is fsdd_preprocess doing?"""
+    """MAKEDOC: What is fsdd_preprocess doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_fsdd_preprocess")
     logg.debug("Starting run_fsdd_preprocess")
 

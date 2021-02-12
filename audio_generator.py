@@ -31,7 +31,7 @@ class AudioGenerator(Sequence):
         dim=(64, 64),
         shuffle=True,
     ) -> None:
-        """TODO: what is __init__ doing?
+        """MAKEDOC: what is __init__ doing?
 
         https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
 
@@ -127,7 +127,7 @@ class AudioGenerator(Sequence):
         return X, y_hot
 
     def pred2labelnames(self, y_pred) -> ty.List[str]:
-        """TODO: what is pred2labelnames doing?
+        """MAKEDOC: what is pred2labelnames doing?
 
         >>> lab = ['a', 'b', 'c', 'a']
         >>> y = LabelEncoder().fit_transform(lab)
@@ -152,7 +152,7 @@ class AudioGenerator(Sequence):
         return y_lab
 
     def get_true_labels(self) -> ty.List[str]:
-        """TODO: what is get_true_labels doing?"""
+        """MAKEDOC: what is get_true_labels doing?"""
         # logg = logging.getLogger(f"c.{__name__}.get_true_labels")
         # logg.setLevel("INFO")
         # logg.debug("Start get_true_labels")
@@ -210,7 +210,7 @@ def setup_env() -> argparse.Namespace:
 
 
 def test_audio_generator(words_type: str) -> None:
-    """TODO: what is test_audio_generator doing?"""
+    """MAKEDOC: what is test_audio_generator doing?"""
     logg = logging.getLogger(f"c.{__name__}.test_audio_generator")
     # logg.setLevel("INFO")
     logg.debug("Start test_audio_generator")
@@ -297,7 +297,7 @@ def test_audio_generator(words_type: str) -> None:
 def get_generator_mean_var_cached(
     au_gen: AudioGenerator, words_type: str, datasets_type: str, processed_folder: Path
 ) -> ty.Tuple[float, float]:
-    """TODO: what is get_generator_mean_var_cached doing?"""
+    """MAKEDOC: what is get_generator_mean_var_cached doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_generator_mean_var_cached")
     # logg.setLevel("INFO")
     logg.debug("Start get_generator_mean_var_cached")
@@ -317,7 +317,7 @@ def get_generator_mean_var_cached(
 
 
 def get_generator_mean_var(au_gen) -> ty.Tuple[float, float]:
-    """TODO: what is get_generator_mean_var doing?"""
+    """MAKEDOC: what is get_generator_mean_var doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_generator_mean_var")
     logg.setLevel("INFO")
     logg.debug("Start get_generator_mean_var")
@@ -344,7 +344,7 @@ def get_generator_mean_var(au_gen) -> ty.Tuple[float, float]:
 
 
 def test_get_generator_mean_var(words_type: str) -> None:
-    """TODO: what is test_get_generator_mean_var doing?"""
+    """MAKEDOC: what is test_get_generator_mean_var doing?"""
     logg = logging.getLogger(f"c.{__name__}.test_get_generator_mean_var")
     # logg.setLevel("INFO")
     logg.debug("Start test_get_generator_mean_var")
@@ -387,7 +387,7 @@ def test_get_generator_mean_var(words_type: str) -> None:
 
 
 def run_audio_generator(args: argparse.Namespace) -> None:
-    """TODO: What is audio_generator doing?"""
+    """MAKEDOC: What is audio_generator doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_audio_generator")
     logg.debug("Starting run_audio_generator")
 

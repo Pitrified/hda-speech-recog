@@ -16,19 +16,17 @@ Show AreaNet
 
 Show VerticalAreaNet
 
-\subsection{Hyper-parameter analysis}
+\subsection{Hyper-parameter analysis: CNN}
 
+% \subsection{Hyper-parameter analysis}
 % Hypa comparison
-
 % First specific hypas
 
 Tell total number of experiment per type
 
-\subsubsection{CNN}
+\subsection{Hyper-parameter analysis: Transfer}
 
-\subsubsection{Transfer}
-
-\subsubsection{Attention}
+\subsection{Hyper-parameter analysis: Attention}
 
 Group by (conv, dropout, kernel, lstm, dense) to show difference in architecture
 
@@ -42,16 +40,21 @@ Group by type of augmentation: along both, one, none axis
 
 Group by dataset: 1 sec vs loud section
 
-\subsection{Architecture analysis}
+\subsection{Architecture comparison}
+
+Show best and top 5 average
 
 Then aggregate table for cross architecture
 
 Pick the best 5 models per category
 
-Compare: CNN, Dense, Xception, EfficientB047, AreaNet, SimpleNet, VerticalAreaNet
-on num, all, LTnum, LTall, numLS, allLS
+Compare: CNN, Dense, Xception, EfficientB047, AreaNet, SimpleNet,
+VerticalAreaNet on num, all, LTnum, LTall, numLS, allLS
 
 Not every combination of everything
+
+Show confusion matrices, speak about similar sounding words, note how AreaNet
+does not miss them
 
 \subsection{Stream predictions}
 

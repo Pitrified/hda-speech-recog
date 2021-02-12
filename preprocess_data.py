@@ -81,7 +81,7 @@ def setup_env():
 
 
 def wav2mfcc(wav_path, mfcc_kwargs, p2d_kwargs):
-    """TODO: what is wav2mfcc doing?"""
+    """MAKEDOC: what is wav2mfcc doing?"""
     sig, sample_rate = librosa.load(wav_path, sr=None)
     mfcc = librosa.feature.mfcc(sig, sr=sample_rate, **mfcc_kwargs)
     log_mfcc = librosa.power_to_db(mfcc, **p2d_kwargs)
@@ -99,7 +99,7 @@ def wav2mfcc(wav_path, mfcc_kwargs, p2d_kwargs):
 
 
 def wav2mel(wav_path: Path, mel_kwargs, p2d_kwargs):
-    """TODO: what is wav2mel doing?"""
+    """MAKEDOC: what is wav2mel doing?"""
     sig, sample_rate = librosa.load(wav_path, sr=None)
     mel = librosa.feature.melspectrogram(sig, sr=sample_rate, **mel_kwargs)
     log_mel = librosa.power_to_db(mel, **p2d_kwargs)
@@ -134,7 +134,7 @@ def wav2mel(wav_path: Path, mel_kwargs, p2d_kwargs):
 
 
 def get_spec_dict():
-    """TODO: what is get_spec_dict doing?"""
+    """MAKEDOC: what is get_spec_dict doing?"""
 
     spec_dict = {
         "mfcc01": {"n_mfcc": 20, "n_fft": 2048, "hop_length": 512},  # (20, 32)
@@ -172,7 +172,7 @@ def get_spec_dict():
 
 
 def get_spec_shape_dict() -> ty.Dict[str, ty.Tuple[int, int]]:
-    """TODO: what is get_spec_shape_dict doing?"""
+    """MAKEDOC: what is get_spec_shape_dict doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_spec_shape_dict")
     # logg.setLevel("INFO")
     logg.debug("Start get_spec_shape_dict")
@@ -215,7 +215,7 @@ def get_spec_shape_dict() -> ty.Dict[str, ty.Tuple[int, int]]:
 def preprocess_spec(
     which_dataset: str, words_type: str, force_preprocess: bool = False
 ) -> None:
-    """TODO: what is preprocess_spec doing?"""
+    """MAKEDOC: what is preprocess_spec doing?"""
     logg = logging.getLogger(f"c.{__name__}.preprocess_spec")
     logg.debug("Start preprocess_spec")
 
@@ -311,7 +311,7 @@ def preprocess_spec(
 
 
 def load_processed(processed_path, words):
-    """TODO: what is load_processed doing?"""
+    """MAKEDOC: what is load_processed doing?"""
     # logg = logging.getLogger(f"c.{__name__}.load_processed")
     # logg.debug("Start load_processed")
 
@@ -357,7 +357,7 @@ def load_processed(processed_path, words):
 
 
 def test_load_processed():
-    """TODO: what is test_load_processed doing?"""
+    """MAKEDOC: what is test_load_processed doing?"""
     logg = logging.getLogger(f"c.{__name__}.test_load_processed")
     logg.debug("Start test_load_processed")
     processed_path = Path("data_proc") / "mfcc01"
@@ -372,7 +372,7 @@ def test_load_processed():
 
 
 def get_compose_types():
-    """TODO: what is get_compose_types doing?"""
+    """MAKEDOC: what is get_compose_types doing?"""
 
     compose_types = {
         "melc1": ["mel06", "mel08"],
@@ -387,7 +387,7 @@ def get_compose_types():
 def compose_spec(
     which_dataset: str, words_type: str, force_preprocess: bool = False
 ) -> None:
-    """TODO: what is compose_spec doing?"""
+    """MAKEDOC: what is compose_spec doing?"""
     logg = logging.getLogger(f"c.{__name__}.compose_spec")
     # logg.setLevel("INFO")
     logg.debug("Start compose_spec")
@@ -441,7 +441,7 @@ def compose_spec(
 def load_triple(
     data_paths: ty.Iterable[Path], words: ty.Iterable[str]
 ) -> ty.Tuple[ty.Dict[str, np.ndarray], ty.Dict[str, np.ndarray]]:
-    """TODO: what is load_triple doing?"""
+    """MAKEDOC: what is load_triple doing?"""
     # logg = logging.getLogger(f"c.{__name__}.load_triple")
     # logg.setLevel("INFO")
     # logg.debug("Start load_triple")
@@ -494,7 +494,7 @@ def load_triple(
 
 
 def test_load_triple(args: argparse.Namespace) -> None:
-    """TODO: what is test_load_triple doing?"""
+    """MAKEDOC: what is test_load_triple doing?"""
     logg = logging.getLogger(f"c.{__name__}.test_load_triple")
     # logg.setLevel("INFO")
     logg.debug("Start test_load_triple")
@@ -529,7 +529,7 @@ def compute_folder_spec(
     spec_kwargs,
     p2d_kwargs,
 ) -> None:
-    """TODO: what is compute_folder_spec doing?"""
+    """MAKEDOC: what is compute_folder_spec doing?"""
     # extract all the wavs
     all_wavs = list(word_in_folder.iterdir())
 
@@ -556,7 +556,7 @@ def compute_folder_spec(
 def preprocess_split(
     dataset_name: str, words_type: str, force_preprocess: bool = False
 ) -> None:
-    """TODO: what is preprocess_split doing?"""
+    """MAKEDOC: what is preprocess_split doing?"""
     logg = logging.getLogger(f"c.{__name__}.preprocess_split")
     # logg.setLevel("INFO")
     # logg.debug("Start preprocess_split")
@@ -610,7 +610,7 @@ def preprocess_split(
 def prepare_partitions(
     words_type: str,
 ) -> ty.Tuple[ty.Dict[str, ty.List[str]], ty.Dict[str, ty.Tuple[str, str]]]:
-    """TODO: what is prepare_partitions doing?
+    """MAKEDOC: what is prepare_partitions doing?
 
     TODO: add unknown, silence and things
     """
@@ -656,7 +656,7 @@ def prepare_partitions(
 
 
 def run_preprocess_data(args) -> None:
-    """TODO: What is preprocess_data doing?"""
+    """MAKEDOC: What is preprocess_data doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_preprocess_data")
     logg.debug("Starting run_preprocess_data")
 

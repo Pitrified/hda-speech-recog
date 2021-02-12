@@ -90,7 +90,7 @@ def visualize_waveform() -> None:
 
 
 def visualize_spec():
-    """TODO: what is visualize_spec doing?"""
+    """MAKEDOC: what is visualize_spec doing?"""
     logg = logging.getLogger(f"c.{__name__}.visualize_spec")
     logg.debug("Start visualize_spec")
 
@@ -170,7 +170,7 @@ def visualize_spec():
 
 
 def visualize_datasets(word_index):
-    """TODO: what is visualize_datasets doing?"""
+    """MAKEDOC: what is visualize_datasets doing?"""
     logg = logging.getLogger(f"c.{__name__}.visualize_datasets")
     logg.debug("Start visualize_datasets")
 
@@ -260,7 +260,7 @@ def visualize_datasets(word_index):
 
 
 def visualize_augment() -> None:
-    """TODO: what is visualize_augment doing?"""
+    """MAKEDOC: what is visualize_augment doing?"""
     logg = logging.getLogger(f"c.{__name__}.visualize_augment")
     # logg.setLevel("INFO")
     logg.debug("Start visualize_augment")
@@ -480,7 +480,7 @@ def visualize_lr_decay() -> None:
 
 
 def run_visualize(args):
-    """TODO: What is visualize doing?"""
+    """MAKEDOC: What is visualize doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_visualize")
     logg.debug("Starting run_visualize")
 

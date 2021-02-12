@@ -15,7 +15,7 @@ from utils import find_rowcol
 
 
 def plot_waveform(sample_sig, ax, title="Sample waveform", sample_rate=16000):
-    """TODO: what is plot_waveform doing?"""
+    """MAKEDOC: what is plot_waveform doing?"""
     ax.plot(sample_sig)
     ax.set_title(title, fontsize=20)
     ax.set_xlabel("Time (s)")
@@ -30,7 +30,7 @@ def plot_waveform(sample_sig, ax, title="Sample waveform", sample_rate=16000):
 
 
 def plot_spec(log_spec, ax, title="Spectrogram", sample_rate=16000):
-    """TODO: what is plot_spec doing?"""
+    """MAKEDOC: what is plot_spec doing?"""
     # logg = logging.getLogger(f"c.{__name__}.plot_spec")
     # logg.debug("Start plot_spec")
     ld.specshow(
@@ -44,7 +44,7 @@ def plot_spec(log_spec, ax, title="Spectrogram", sample_rate=16000):
 
 
 def plot_loss(train_loss, val_loss, ax, model_name):
-    """TODO: what is plot_loss doing?"""
+    """MAKEDOC: what is plot_loss doing?"""
     # logg = logging.getLogger(f"c.{__name__}.plot_loss")
     # logg.debug("Start plot_loss")
 
@@ -105,7 +105,7 @@ def plot_att_weights(weights, ax, title="Attention weights"):
 
 
 def plot_cat_acc(train_cat_acc, val_cat_acc, ax, model_name):
-    """TODO: what is plot_cat_acc doing?"""
+    """MAKEDOC: what is plot_cat_acc doing?"""
     # logg = logging.getLogger(f"c.{__name__}.plot_cat_acc")
     # logg.debug("Start plot_cat_acc")
 
@@ -118,7 +118,7 @@ def plot_cat_acc(train_cat_acc, val_cat_acc, ax, model_name):
 
 
 def plot_confusion_matrix(conf_mat, ax, model_name, words, fscore=None):
-    """TODO: what is plot_confusion_matrix doing?
+    """MAKEDOC: what is plot_confusion_matrix doing?
 
     https://matplotlib.org/3.1.1/gallery/images_contours_and_fields/image_annotated_heatmap.html
     """
@@ -436,7 +436,7 @@ def quad_plotter(
     min_at_zero: bool = False,
     min_lower_limit: float = 0,
 ) -> None:
-    """TODO: what is quad_plotter doing?"""
+    """MAKEDOC: what is quad_plotter doing?"""
     logg = logging.getLogger(f"c.{__name__}.quad_plotter")
     # logg.setLevel("INFO")
     # logg.debug("Start quad_plotter")

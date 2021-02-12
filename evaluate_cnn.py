@@ -93,7 +93,7 @@ def setup_env() -> argparse.Namespace:
 
 
 def build_cnn_results_df() -> pd.DataFrame:
-    """TODO: what is build_cnn_results_df doing?"""
+    """MAKEDOC: what is build_cnn_results_df doing?"""
     logg = logging.getLogger(f"c.{__name__}.build_cnn_results_df")
     logg.setLevel("INFO")
     logg.debug("Start build_cnn_results_df")
@@ -176,7 +176,7 @@ def build_cnn_results_df() -> pd.DataFrame:
 
 
 def evaluate_results_cnn(args):
-    """TODO: what is evaluate_results_cnn doing?"""
+    """MAKEDOC: what is evaluate_results_cnn doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_results_cnn")
     logg.setLevel("INFO")
     logg.debug("Start evaluate_results_cnn")
@@ -223,7 +223,7 @@ def evaluate_results_cnn(args):
 
 
 def make_plots_cnn() -> None:
-    """TODO: what is make_plots_cnn doing?"""
+    """MAKEDOC: what is make_plots_cnn doing?"""
     logg = logging.getLogger(f"c.{__name__}.make_plots_cnn")
     # logg.setLevel("INFO")
     logg.debug("Start make_plots_cnn")
@@ -396,7 +396,7 @@ def make_plots_cnn() -> None:
 def evaluate_model_cnn(
     which_dataset: str, train_words_type: str, test_words_type: str
 ) -> None:
-    """TODO: what is evaluate_model_cnn doing?"""
+    """MAKEDOC: what is evaluate_model_cnn doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_model_cnn")
     # logg.setLevel("INFO")
     logg.debug("Start evaluate_model_cnn")
@@ -492,7 +492,7 @@ def evaluate_model_cnn(
 
 
 def evaluate_audio_cnn(args):
-    """TODO: what is evaluate_audio_cnn doing?"""
+    """MAKEDOC: what is evaluate_audio_cnn doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_audio_cnn")
     logg.debug("Start evaluate_audio_cnn")
 
@@ -610,7 +610,7 @@ def evaluate_audio_cnn(args):
 
 
 def delete_bad_models_cnn(args) -> None:
-    """TODO: what is delete_bad_models_cnn doing?"""
+    """MAKEDOC: what is delete_bad_models_cnn doing?"""
     logg = logging.getLogger(f"c.{__name__}.delete_bad_models_cnn")
     # logg.setLevel("INFO")
     logg.debug("Start delete_bad_models_cnn")
@@ -708,7 +708,7 @@ def delete_bad_models_cnn(args) -> None:
 
 
 def run_evaluate_cnn(args: argparse.Namespace) -> None:
-    """TODO: What is evaluate_cnn doing?"""
+    """MAKEDOC: What is evaluate_cnn doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate_cnn")
     logg.debug("Starting run_evaluate_cnn")
 

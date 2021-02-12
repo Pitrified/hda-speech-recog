@@ -9,7 +9,7 @@ def exp_decay_step(
     epochs_drop: int = 15,
     min_lrate: float = 4e-5,
 ) -> float:
-    """TODO: what is exp_decay doing?
+    """MAKEDOC: what is exp_decay doing?
 
     # use default values
     lrate = LearningRateScheduler(exp_decay_step)
@@ -39,7 +39,7 @@ def exp_decay_smooth(
     epochs_drop: int = 15,
     min_lrate: float = 4e-5,
 ) -> float:
-    """TODO: what is exp_decay doing?
+    """MAKEDOC: what is exp_decay doing?
 
     lrate = LearningRateScheduler(exp_decay_smooth)
     results = model.fit(... ,  callbacks=[lrate])

@@ -222,7 +222,7 @@ def split_ltts(do_loud: bool) -> None:
 
 
 def run_ltts_preprocess(args: argparse.Namespace) -> None:
-    """TODO: What is ltts_preprocess doing?"""
+    """MAKEDOC: What is ltts_preprocess doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_ltts_preprocess")
     logg.debug("Starting run_ltts_preprocess")
 

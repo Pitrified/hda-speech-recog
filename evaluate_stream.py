@@ -188,7 +188,7 @@ def split_sentence(
 
 
 def load_trained_model_att(override_hypa) -> models.Model:
-    """TODO: what is load_trained_model_att doing?"""
+    """MAKEDOC: what is load_trained_model_att doing?"""
     logg = logging.getLogger(f"c.{__name__}.load_trained_model_att")
     # logg.setLevel("INFO")
     logg.debug("Start load_trained_model_att")
@@ -489,7 +489,7 @@ def evaluate_stream(
 
 
 def run_evaluate_stream(args: argparse.Namespace) -> None:
-    """TODO: What is evaluate_stream doing?"""
+    """MAKEDOC: What is evaluate_stream doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate_stream")
     logg.debug("Starting run_evaluate_stream")
 

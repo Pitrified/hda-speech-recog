@@ -304,7 +304,7 @@ def evaluate_attention_weights(train_words_type: str) -> None:
 
 
 def run_evaluate_area(args: argparse.Namespace) -> None:
-    """TODO: What is evaluate_area doing?"""
+    """MAKEDOC: What is evaluate_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate_area")
     logg.debug("Starting run_evaluate_area")
 

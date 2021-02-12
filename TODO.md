@@ -23,6 +23,7 @@
 * Nel paper di Xception ti dicono che parametri usare per gli optimizer
 * Mode data augmentation, mask, only roll, only stratch...
 * When padding use -80 or whatever the min of the spectrogram is
+* MAYBE Normalize the spectrograms
 
 ##### Done
 

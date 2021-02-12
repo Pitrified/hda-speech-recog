@@ -330,7 +330,7 @@ class VerticalAreaNet:
 
 
 def test_build_aa() -> None:
-    """TODO: what is test_build_aa doing?"""
+    """MAKEDOC: what is test_build_aa doing?"""
     logg = logging.getLogger(f"c.{__name__}.test_build_aa")
     # logg.setLevel("INFO")
     logg.debug("Start test_build_aa")

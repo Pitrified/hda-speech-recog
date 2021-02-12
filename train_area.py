@@ -98,7 +98,7 @@ def setup_env() -> argparse.Namespace:
 def train_model_area_dry(
     hypa: ty.Dict[str, str], use_validation: bool, trained_folder: Path
 ) -> str:
-    """TODO: what is train_model_area_dry doing?"""
+    """MAKEDOC: what is train_model_area_dry doing?"""
     # logg = logging.getLogger(f"c.{__name__}.train_model_area_dry")
     # logg.setLevel("INFO")
     # logg.debug("Start train_model_area_dry")
@@ -115,7 +115,7 @@ def train_model_area_dry(
 def hyper_train_area(
     words_type: str, force_retrain: bool, use_validation: bool, dry_run: bool,
 ) -> None:
-    """TODO: what is hyper_train_area doing?"""
+    """MAKEDOC: what is hyper_train_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.hyper_train_area")
     # logg.setLevel("INFO")
     logg.debug("Start hyper_train_area")
@@ -142,11 +142,14 @@ def hyper_train_area(
     # ds.extend(["aug07"])
     # ds.extend(["aug14"])
 
+    # TODO auL6789 auL18901 on all net_type
     # TODO auA5678 on VAN (on LTnumLS)
     # TODO auA5678 with lr04 (on LTnumLS to complete lr03 is done)
-    # TODO auL6789 auL18901
+    # MAYBE start removing ARN, too much time
     # ds.extend(["auA01", "auA02", "auA03", "auA04"])
     ds.extend(["auA05", "auA06", "auA07", "auA08"])
+
+    # TODO just the 3 best per architecture on noval
 
     hypa_grid["dataset_name"] = ds
 
@@ -161,12 +164,12 @@ def hyper_train_area(
     # hypa_grid["optimizer_type"] = ["a1", "r1"]
     hypa_grid["optimizer_type"] = ["a1"]
 
-    ###### the batch size (the key is converted to int, use 04 to keep the names consistent)
+    ###### the batch size (the key is converted to int)
     bs = []
     bs.extend(["32"])
     hypa_grid["batch_size_type"] = bs
 
-    ###### the number of epochs
+    ###### the number of epochs (the key is converted to int)
     en = []
     en.extend(["15"])
     hypa_grid["epoch_num_type"] = en
@@ -225,7 +228,7 @@ def hyper_train_area(
 
 
 def build_area_name(hypa: ty.Dict[str, str], use_validation: bool) -> str:
-    """TODO: what is build_area_name doing?"""
+    """MAKEDOC: what is build_area_name doing?"""
     logg = logging.getLogger(f"c.{__name__}.build_area_name")
     logg.setLevel("INFO")
     logg.debug("Start build_area_name")
@@ -251,7 +254,7 @@ def build_area_name(hypa: ty.Dict[str, str], use_validation: bool) -> str:
 def get_model_param_area(
     hypa: ty.Dict[str, str], num_labels: int, input_shape: ty.Tuple[int, int, int]
 ) -> ty.Dict[str, ty.Any]:
-    """TODO: what is get_model_param_area doing?"""
+    """MAKEDOC: what is get_model_param_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_model_param_area")
     # logg.setLevel("INFO")
     logg.debug("Start get_model_param_area")
@@ -267,7 +270,7 @@ def get_model_param_area(
 def get_training_param_area(
     hypa: ty.Dict[str, str], use_validation: bool, model_path: ty.Optional[Path],
 ) -> ty.Dict[str, ty.Any]:
-    """TODO: what is get_training_param_area doing?"""
+    """MAKEDOC: what is get_training_param_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_training_param_area")
     # logg.setLevel("INFO")
     logg.debug("Start get_training_param_area")
@@ -346,7 +349,7 @@ def train_area(
     trained_folder: Path,
     root_info_folder: Path,
 ) -> None:
-    """TODO: what is train_area doing?"""
+    """MAKEDOC: what is train_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.train_area")
     # logg.setLevel("INFO")
     logg.debug("Start train_area")
@@ -627,7 +630,7 @@ def find_best_lr(hypa: ty.Dict[str, str]) -> None:
 
 
 def run_train_area(args: argparse.Namespace) -> None:
-    """TODO: What is train_area doing?"""
+    """MAKEDOC: What is train_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_train_area")
     logg.debug("Starting run_train_area")
 

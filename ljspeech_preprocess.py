@@ -204,7 +204,7 @@ def split_ljspeech() -> None:
 
 
 def run_ljspeech_preprocess(args: argparse.Namespace) -> None:
-    """TODO: What is ljspeech_preprocess doing?"""
+    """MAKEDOC: What is ljspeech_preprocess doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_ljspeech_preprocess")
     logg.debug("Starting run_ljspeech_preprocess")
 

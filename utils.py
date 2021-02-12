@@ -290,7 +290,7 @@ def setup_logger(logLevel="DEBUG"):
 
 
 def setup_gpus():
-    """TODO: what is setup_gpus doing?
+    """MAKEDOC: what is setup_gpus doing?
 
     https://www.tensorflow.org/guide/gpu#limiting_gpu_memory_growth
     https://github.com/tensorflow/tensorflow/issues/25138
@@ -355,7 +355,7 @@ def record_audios(
     fs: int = 16000,
     timeout: int = 0,
 ) -> ty.List[np.ndarray]:
-    """TODO: what is record_audios doing?"""
+    """MAKEDOC: what is record_audios doing?"""
     logg = logging.getLogger(f"c.{__name__}.record_audios")
     logg.setLevel("INFO")
     logg.debug("Start record_audios")
@@ -392,7 +392,7 @@ def record_audios(
 
 
 def find_rowcol(n: int) -> ty.Tuple[int, int]:
-    """TODO: what is find_rowcol doing?"""
+    """MAKEDOC: what is find_rowcol doing?"""
     sn = np.sqrt(n)
     sn_low = int(np.floor(sn))
     sn_high = int(np.ceil(sn))
@@ -404,7 +404,7 @@ def find_rowcol(n: int) -> ty.Tuple[int, int]:
 
 
 def get_val_test_list(dataset_path: Path) -> ty.Tuple[ty.List[str], ty.List[str]]:
-    """TODO: what is get_val_test_list doing?"""
+    """MAKEDOC: what is get_val_test_list doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_val_test_list")
     logg.setLevel("INFO")
     logg.debug("Start get_val_test_list")

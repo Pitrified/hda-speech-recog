@@ -93,7 +93,7 @@ def setup_env():
 
 
 def build_att_results_df() -> pd.DataFrame:
-    """TODO: what is build_att_results_df doing?"""
+    """MAKEDOC: what is build_att_results_df doing?"""
     logg = logging.getLogger(f"c.{__name__}.build_att_results_df")
     # logg.setLevel("INFO")
     logg.debug("Start build_att_results_df")
@@ -176,7 +176,7 @@ def build_att_results_df() -> pd.DataFrame:
 
 
 def evaluate_results_attention() -> None:
-    """TODO: what is evaluate_results_attention doing?"""
+    """MAKEDOC: what is evaluate_results_attention doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_results_attention")
     logg.setLevel("INFO")
     logg.debug("Start evaluate_results_attention")
@@ -237,7 +237,7 @@ def evaluate_results_attention() -> None:
 
 
 def evaluate_batch_epoch() -> None:
-    """TODO: what is evaluate_batch_epoch doing?"""
+    """MAKEDOC: what is evaluate_batch_epoch doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_batch_epoch")
     # logg.setLevel("INFO")
     logg.debug("Start evaluate_batch_epoch")
@@ -266,7 +266,7 @@ def evaluate_batch_epoch() -> None:
 def evaluate_attention_weights(
     train_words_type: str, rec_words_type: str, do_new_record: bool = False
 ) -> None:
-    """TODO: what is evaluate_attention_weights doing?"""
+    """MAKEDOC: what is evaluate_attention_weights doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_attention_weights")
     # logg.setLevel("INFO")
     logg.debug("Start evaluate_attention_weights")
@@ -444,7 +444,7 @@ def evaluate_attention_weights(
 
 
 def make_plots_hypa() -> None:
-    """TODO: what is make_plots_hypa doing?"""
+    """MAKEDOC: what is make_plots_hypa doing?"""
     logg = logging.getLogger(f"c.{__name__}.make_plots_hypa")
     # logg.setLevel("INFO")
     logg.debug("Start make_plots_hypa")
@@ -570,7 +570,7 @@ def make_plots_hypa() -> None:
 
 
 def make_plots_clr() -> None:
-    """TODO: what is make_plots_clr doing?"""
+    """MAKEDOC: what is make_plots_clr doing?"""
     logg = logging.getLogger(f"c.{__name__}.make_plots_clr")
     # logg.setLevel("INFO")
     logg.debug("Start make_plots_clr")
@@ -682,7 +682,7 @@ def make_plots_clr() -> None:
 
 
 def delete_bad_models_att() -> None:
-    """TODO: what is delete_bad_models_att doing?"""
+    """MAKEDOC: what is delete_bad_models_att doing?"""
     logg = logging.getLogger(f"c.{__name__}.delete_bad_models_att")
     # logg.setLevel("INFO")
     logg.debug("Start delete_bad_models_att")
@@ -758,7 +758,7 @@ def delete_bad_models_att() -> None:
 
 
 def run_evaluate_attention(args: argparse.Namespace) -> None:
-    """TODO: What is evaluate_attention doing?"""
+    """MAKEDOC: What is evaluate_attention doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate_attention")
     logg.debug("Starting run_evaluate_attention")
 

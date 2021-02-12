@@ -51,7 +51,7 @@ def setup_env():
 
 
 def build_attention_name_v1(hypa: ty.Dict[str, str], use_validation: bool) -> str:
-    """TODO: what is build_attention_name doing?"""
+    """MAKEDOC: what is build_attention_name doing?"""
     model_name = "ATT"
 
     model_name += f"_ct{hypa['conv_size_type']}"
@@ -75,7 +75,7 @@ def build_attention_name_v1(hypa: ty.Dict[str, str], use_validation: bool) -> st
 
 
 def build_attention_name_v2(hypa: ty.Dict[str, str], use_validation: bool) -> str:
-    """TODO: what is build_attention_name doing?"""
+    """MAKEDOC: what is build_attention_name doing?"""
     model_name = "ATT"
 
     model_name += f"_ct{hypa['conv_size_type']}"
@@ -240,7 +240,7 @@ def rename_att_v1_to_v2() -> None:
 
 
 def recompute_fscore_cnn() -> None:
-    """TODO: what is recompute_fscore_cnn doing?"""
+    """MAKEDOC: what is recompute_fscore_cnn doing?"""
     logg = logging.getLogger(f"c.{__name__}.recompute_fscore_cnn")
     # logg.setLevel("INFO")
     logg.debug("Start recompute_fscore_cnn")
@@ -319,7 +319,7 @@ def recompute_fscore_cnn() -> None:
 
 
 def create_placeholders() -> None:
-    """TODO: what is create_placeholders doing?"""
+    """MAKEDOC: what is create_placeholders doing?"""
     logg = logging.getLogger(f"c.{__name__}.create_placeholders")
     # logg.setLevel("INFO")
     logg.debug("Start create_placeholders")
@@ -336,7 +336,7 @@ def create_placeholders() -> None:
 
 
 def run_renamer(args: argparse.Namespace) -> None:
-    """TODO: What is renamer doing?"""
+    """MAKEDOC: What is renamer doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_renamer")
     logg.debug("Starting run_renamer")
 

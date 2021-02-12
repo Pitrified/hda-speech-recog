@@ -104,7 +104,7 @@ def setup_env():
 
 
 def build_transfer_name(hypa: ty.Dict[str, str], use_validation: bool) -> str:
-    """TODO: what is build_transfer_name doing?"""
+    """MAKEDOC: what is build_transfer_name doing?"""
 
     # model_name = "TB4"
     # model_name = "TB7"
@@ -148,7 +148,7 @@ def get_datasets_types() -> ty.Tuple[
 def hyper_train_transfer(
     words_type: str, force_retrain: bool, use_validation: bool, dry_run: bool
 ) -> None:
-    """TODO: what is hyper_train_transfer doing?"""
+    """MAKEDOC: what is hyper_train_transfer doing?"""
     logg = logging.getLogger(f"c.{__name__}.hyper_train_transfer")
     # logg.setLevel("INFO")
     logg.debug("Start hyper_train_transfer")
@@ -288,7 +288,7 @@ def hyper_train_transfer(
 
 
 def train_model_tra_dry(hypa, use_validation: bool, trained_folder: Path) -> str:
-    """TODO: what is train_model_tra_dry doing?"""
+    """MAKEDOC: what is train_model_tra_dry doing?"""
     model_name = build_transfer_name(hypa, use_validation)
     placeholder_path = trained_folder / f"{model_name}.txt"
 
@@ -301,7 +301,7 @@ def train_model_tra_dry(hypa, use_validation: bool, trained_folder: Path) -> str
 def get_model_param_transfer(
     hypa: ty.Dict[str, str], num_labels: int, input_shape: ty.Tuple[int, int, int]
 ) -> ty.Dict[str, ty.Any]:
-    """TODO: what is get_model_param_transfer doing?"""
+    """MAKEDOC: what is get_model_param_transfer doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_model_param_transfer")
     # logg.setLevel("INFO")
     logg.debug("Start get_model_param_transfer")
@@ -327,7 +327,7 @@ def get_training_param_transfer(
     tensorboard_logs_folder: Path,
     model_path: Path,
 ) -> ty.Dict[str, ty.Any]:
-    """TODO: what is get_training_param_transfer doing?"""
+    """MAKEDOC: what is get_training_param_transfer doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_training_param_transfer")
     # logg.setLevel("INFO")
     logg.debug("Start get_training_param_transfer")
@@ -443,7 +443,7 @@ def train_transfer(
     root_info_folder: Path,
     tensorboard_logs_folder: Path,
 ) -> None:
-    """TODO: what is train_transfer doing?
+    """MAKEDOC: what is train_transfer doing?
 
     https://www.tensorflow.org/guide/keras/transfer_learning/#build_a_model
     """
@@ -700,7 +700,7 @@ def train_transfer(
 
 
 def run_train_transfer(args: argparse.Namespace) -> None:
-    """TODO: What is train_transfer doing?"""
+    """MAKEDOC: What is train_transfer doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_train_transfer")
     logg.debug("Starting run_train_transfer")
 

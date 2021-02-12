@@ -159,7 +159,7 @@ def shorten_gs_utterances() -> None:
 
 
 def run_gs_dataset(args: argparse.Namespace) -> None:
-    """TODO: What is gs_dataset doing?"""
+    """MAKEDOC: What is gs_dataset doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_gs_dataset")
     logg.debug("Starting run_gs_dataset")
 

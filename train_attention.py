@@ -105,7 +105,7 @@ def setup_env():
 
 
 def build_attention_name(hypa: ty.Dict[str, str], use_validation: bool) -> str:
-    """TODO: what is build_attention_name doing?"""
+    """MAKEDOC: what is build_attention_name doing?"""
     model_name = "ATT"
 
     model_name += f"_ct{hypa['conv_size_type']}"
@@ -134,12 +134,14 @@ def hyper_train_attention(
     dry_run: bool,
     do_find_best_lr: bool,
 ) -> None:
-    """TODO: what is hyper_train_attention doing?"""
+    """MAKEDOC: what is hyper_train_attention doing?"""
     logg = logging.getLogger(f"c.{__name__}.hyper_train_attention")
     # logg.setLevel("INFO")
     logg.debug("Start hyper_train_attention")
 
     # TODO fix best params then change all datasets
+
+    # TODO auA5678 auA1234 on a bit of everything
 
     hypa_grid: ty.Dict[str, ty.List[str]] = {}
 
@@ -288,7 +290,7 @@ def hyper_train_attention(
 def get_model_param_attention(
     hypa: ty.Dict[str, str], num_labels: int, input_shape: np.ndarray
 ) -> ty.Dict[str, ty.Any]:
-    """TODO: what is get_model_param_attention doing?"""
+    """MAKEDOC: what is get_model_param_attention doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_model_param_attention")
     # logg.setLevel("INFO")
     logg.debug("Start get_model_param_attention")
@@ -327,7 +329,7 @@ def get_model_param_attention(
 
 
 def train_model_att_dry(hypa, use_validation: bool) -> str:
-    """TODO: what is train_model_att_dry doing?"""
+    """MAKEDOC: what is train_model_att_dry doing?"""
     model_folder = Path("trained_models") / "attention"
 
     model_name = build_attention_name(hypa, use_validation)
@@ -342,7 +344,7 @@ def train_model_att_dry(hypa, use_validation: bool) -> str:
 def train_attention(
     hypa: ty.Dict[str, str], force_retrain: bool, use_validation: bool
 ) -> None:
-    """TODO: what is train_attention doing?"""
+    """MAKEDOC: what is train_attention doing?"""
     logg = logging.getLogger(f"c.{__name__}.train_attention")
     # logg.setLevel("INFO")
     logg.debug("Start train_attention")
@@ -605,7 +607,7 @@ def train_attention(
 
 
 def find_best_lr(hypa: ty.Dict[str, str]) -> None:
-    """TODO: what is find_best_lr doing?"""
+    """MAKEDOC: what is find_best_lr doing?"""
     logg = logging.getLogger(f"c.{__name__}.find_best_lr")
     # logg.setLevel("INFO")
     logg.debug("Start find_best_lr")
@@ -686,7 +688,7 @@ def find_best_lr(hypa: ty.Dict[str, str]) -> None:
 
 
 def run_train_attention(args: argparse.Namespace) -> None:
-    """TODO: What is train_attention doing?"""
+    """MAKEDOC: What is train_attention doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_train_attention")
     logg.debug("Starting run_train_attention")
 

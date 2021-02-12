@@ -72,7 +72,7 @@ def setup_env():
 
 
 def pad_signal(sig: np.ndarray, req_len: int) -> np.ndarray:
-    """TODO: what is pad_signal doing?"""
+    """MAKEDOC: what is pad_signal doing?"""
     sig_len = len(sig)
 
     if sig_len >= req_len:
@@ -87,7 +87,7 @@ def pad_signal(sig: np.ndarray, req_len: int) -> np.ndarray:
 
 
 def stretch_signal(sig, rate) -> np.ndarray:
-    """TODO: what is stretch_signal doing?"""
+    """MAKEDOC: what is stretch_signal doing?"""
     old_len = len(sig)
     stretched = librosa.effects.time_stretch(sig, rate)
     stretched = pad_signal(stretched, old_len)
@@ -97,7 +97,7 @@ def stretch_signal(sig, rate) -> np.ndarray:
 def sig2mel(
     signal, mel_kwargs, p2d_kwargs, requested_length, sample_rate=16000
 ) -> np.ndarray:
-    """TODO: what is sig2mel doing?"""
+    """MAKEDOC: what is sig2mel doing?"""
     # logg = logging.getLogger(f"c.{__name__}.sig2mel")
     # logg.setLevel("INFO")
     # logg.debug("Start sig2mel")
@@ -122,7 +122,7 @@ def sig2mel(
 
 
 def get_aug_dict() -> ty.Dict[str, ty.Any]:
-    """TODO: what is get_aug_dict doing?"""
+    """MAKEDOC: what is get_aug_dict doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_aug_dict")
     logg.setLevel("INFO")
     logg.debug("Start get_aug_dict")
@@ -496,7 +496,7 @@ def load_wav(
     validation_names: ty.Iterable[str],
     testing_names: ty.Iterable[str],
 ) -> ty.List[np.ndarray]:
-    """TODO: what is load_wav doing?"""
+    """MAKEDOC: what is load_wav doing?"""
     logg = logging.getLogger(f"c.{__name__}.load_wav")
     logg.setLevel("INFO")
     logg.debug("Start load_wav")
@@ -532,7 +532,7 @@ def roll_signals(
     max_time_shifts: ty.List[int],
     rng: np.random.Generator,
 ) -> ty.List[np.ndarray]:
-    """TODO: what is roll_signals doing?"""
+    """MAKEDOC: what is roll_signals doing?"""
     sig_rolled: ty.List[np.ndarray] = []
     for s in tqdm(sig_original):
         for max_shift in max_time_shifts:
@@ -547,7 +547,7 @@ def stretch_signals(
     stretch_rates: ty.List[float],
     rng: np.random.Generator,
 ) -> ty.List[np.ndarray]:
-    """TODO: what is stretch_signals doing?"""
+    """MAKEDOC: what is stretch_signals doing?"""
     sig_stretched: ty.List[np.ndarray] = []
     for s in tqdm(sig_original):
         for stretch_rate in stretch_rates:
@@ -559,7 +559,7 @@ def stretch_signals(
 def compute_spectrograms(
     signals: ty.List[np.ndarray], mel_kwargs, p2d_kwargs, requested_length
 ) -> np.ndarray:
-    """TODO: what is compute_spectrograms doing?"""
+    """MAKEDOC: what is compute_spectrograms doing?"""
     logg = logging.getLogger(f"c.{__name__}.compute_spectrograms")
     # logg.setLevel("INFO")
     # logg.debug("Start compute_spectrograms")
@@ -582,7 +582,7 @@ def warp_spectrograms(
     max_warp_freq: int,
     rng: np.random.Generator,
 ) -> np.ndarray:
-    """TODO: what is warp_spectrograms doing?"""
+    """MAKEDOC: what is warp_spectrograms doing?"""
     logg = logging.getLogger(f"c.{__name__}.warp_spectrograms")
     logg.setLevel("INFO")
     logg.debug("Start warp_spectrograms")
@@ -714,7 +714,7 @@ def augment_signals(
 def do_augmentation(
     augmentation_type: str, words_type: str, force_augment: bool = False,
 ) -> None:
-    """TODO: what is do_augmentation doing?
+    """MAKEDOC: what is do_augmentation doing?
 
     * Load wav
     * Time shift (data_roll = np.roll(data, 1600))
@@ -779,7 +779,7 @@ def do_augmentation(
 
 
 def run_augment_data(args: argparse.Namespace) -> None:
-    """TODO: What is augment_data doing?"""
+    """MAKEDOC: What is augment_data doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_augment_data")
     logg.debug("Starting run_augment_data")
 

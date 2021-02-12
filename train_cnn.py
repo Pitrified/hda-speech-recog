@@ -130,7 +130,7 @@ def build_cnn_name(hypa: ty.Dict[str, ty.Union[str, int]]) -> str:
 
 
 def hyper_train(words_type, force_retrain, use_validation, dry_run):
-    """TODO: what is hyper_train doing?"""
+    """MAKEDOC: what is hyper_train doing?"""
     logg = logging.getLogger(f"c.{__name__}.hyper_train")
     logg.debug("Start hyper_train")
 
@@ -258,7 +258,7 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
 
 
 def train_model_cnn_dry(hypa) -> str:
-    """TODO: what is train_model_cnn_dry doing?"""
+    """MAKEDOC: what is train_model_cnn_dry doing?"""
     model_folder = Path("trained_models") / "cnn"
 
     model_name = build_cnn_name(hypa)
@@ -280,7 +280,7 @@ def train_model_cnn_dry(hypa) -> str:
 
 
 def train_model(hypa, force_retrain):
-    """TODO: What is train_model doing?"""
+    """MAKEDOC: What is train_model doing?"""
     logg = logging.getLogger(f"c.{__name__}.train_model")
     # logg.debug("Starting train_model")
 
@@ -519,7 +519,7 @@ def train_model(hypa, force_retrain):
 
 
 def run_train_cnn(args: argparse.Namespace) -> None:
-    """TODO: What is train_cnn doing?"""
+    """MAKEDOC: What is train_cnn doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_train_cnn")
     logg.debug("Starting run_train_cnn")
 
