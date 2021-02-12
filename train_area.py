@@ -125,7 +125,7 @@ def hyper_train_area(
     hypa_grid: ty.Dict[str, ty.List[str]] = {}
 
     ###### the net type
-    hypa_grid["net_type"] = ["SIM", "ANN", "ARN"]
+    hypa_grid["net_type"] = ["SIM", "AAN", "ARN"]
 
     ###### the words to train on
     hypa_grid["words_type"] = [words_type]
@@ -440,7 +440,7 @@ def train_area(
     recap["batch_size"] = training_param["batch_size"]
     recap["epochs"] = training_param["epochs"]
     recap["lr_name"] = training_param["lr_name"]
-    recap["version"] = "001"
+    recap["version"] = "002"
 
     # logg.debug(f"recap: {recap}")
     recap_path = model_info_folder / "recap.json"

@@ -17,6 +17,8 @@
 * More AreaNet
 * Multiple training of the same hypas to check consistency, build model name takes a param and finds the first `_00x` free
 
+* When padding use -80 or whatever the min of the spectrogram is
+
 ### More datasets
 
 For background noise
