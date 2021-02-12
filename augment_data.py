@@ -626,13 +626,19 @@ def warp_spectrograms(
     source_landmarks = tf.convert_to_tensor(source_landmarks, dtype=tf.float32)
     dest_landmarks = tf.convert_to_tensor(dest_landmarks, dtype=tf.float32)
 
-    # siw = tf.function(sparse_image_warp, experimental_relax_shapes=True)
+    siw = tf.function(sparse_image_warp, experimental_relax_shapes=True)
     # https://www.tensorflow.org/guide/function#controlling_retracing
-    siw = tf.function(
-        sparse_image_warp,
-        experimental_relax_shapes=True,
-        input_signature=(tf.TensorSpec(shape=[None], dtype=tf.float32),),
-    )
+    # siw = tf.function(
+    #     sparse_image_warp,
+    #     experimental_relax_shapes=True,
+    #     input_signature=(
+    #         tf.TensorSpec(shape=[None], dtype=tf.float32),
+    #         tf.TensorSpec(shape=[None], dtype=tf.float32),
+    #         tf.TensorSpec(shape=[None], dtype=tf.float32),
+    #         tf.TensorSpec(shape=[None], dtype=tf.float32),
+    #     ),
+    # )
+
     data_warped, _ = siw(
         data_specs, source_landmarks, dest_landmarks, num_boundary_points=2
     )
@@ -719,7 +725,9 @@ def augment_signals(
 
 
 def do_augmentation(
-    augmentation_type: str, words_type: str, force_augment: bool = False,
+    augmentation_type: str,
+    words_type: str,
+    force_augment: bool = False,
 ) -> None:
     """MAKEDOC: what is do_augmentation doing?
 
