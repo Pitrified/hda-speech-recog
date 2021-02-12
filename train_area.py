@@ -19,7 +19,9 @@ from tensorflow.keras.optimizers import RMSprop  # type: ignore
 from area_model import ActualAreaNet
 from area_model import AreaNet
 from area_model import SimpleNet
+from area_model import VerticalAreaNet
 from augment_data import do_augmentation
+from lr_finder import LearningRateFinder
 from plot_utils import plot_confusion_matrix
 from preprocess_data import load_processed
 from preprocess_data import preprocess_spec
@@ -125,21 +127,27 @@ def hyper_train_area(
     hypa_grid: ty.Dict[str, ty.List[str]] = {}
 
     ###### the net type
-    hypa_grid["net_type"] = ["SIM", "AAN", "ARN"]
+    hypa_grid["net_type"] = ["SIM", "AAN", "ARN", "VAN"]
 
     ###### the words to train on
     hypa_grid["words_type"] = [words_type]
 
     ###### the dataset to train on
     ds = []
+
+    # TODO VAN on LTall
+    # TODO AAN/SIM/VAN on LTnum
     # ds.extend(["mel04"])
     # ds.extend(["mela1"])
     # ds.extend(["aug07"])
     # ds.extend(["aug14"])
 
+    # TODO auA5678 on VAN (on LTnumLS)
+    # TODO auA5678 with lr04 (on LTnumLS to complete lr03 is done)
     # TODO auL6789 auL18901
     # ds.extend(["auA01", "auA02", "auA03", "auA04"])
     ds.extend(["auA05", "auA06", "auA07", "auA08"])
+
     hypa_grid["dataset_name"] = ds
 
     ###### the learning rates for the optimizer
@@ -257,7 +265,7 @@ def get_model_param_area(
 
 
 def get_training_param_area(
-    hypa: ty.Dict[str, str], use_validation: bool, model_path: Path,
+    hypa: ty.Dict[str, str], use_validation: bool, model_path: ty.Optional[Path],
 ) -> ty.Dict[str, ty.Any]:
     """TODO: what is get_training_param_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_training_param_area")
@@ -319,10 +327,12 @@ def get_training_param_area(
         )
         callbacks.append(early_stop)
 
-    model_checkpoint = ModelCheckpoint(
-        str(model_path), monitor=metric_to_monitor, verbose=1, save_best_only=True
-    )
-    callbacks.append(model_checkpoint)
+    # to inhibit checkpointing by passing None
+    if model_path is not None:
+        model_checkpoint = ModelCheckpoint(
+            str(model_path), monitor=metric_to_monitor, verbose=1, save_best_only=True
+        )
+        callbacks.append(model_checkpoint)
 
     training_param["callbacks"] = callbacks
 
@@ -412,6 +422,8 @@ def train_area(
         model = SimpleNet.build(**model_param)
     elif net_type == "AAN":
         model = ActualAreaNet.build(**model_param)
+    elif net_type == "VAN":
+        model = VerticalAreaNet.build(**model_param)
 
     # from hypa extract training param (epochs, batch, opt, ...)
     training_param = get_training_param_area(hypa, use_validation, model_path)
@@ -514,6 +526,104 @@ def train_area(
 
     # save the placeholder
     placeholder_path.write_text(f"Trained. F-score: {fscore}")
+
+
+def find_best_lr(hypa: ty.Dict[str, str]) -> None:
+    """MAKEDOC: what is find_best_lr doing?"""
+    logg = logging.getLogger(f"c.{__name__}.find_best_lr")
+    # logg.setLevel("INFO")
+    logg.debug("Start find_best_lr")
+
+    # get the word list
+    words = words_types[hypa["words_type"]]
+    num_labels = len(words)
+
+    # no validation just find the LR
+    use_validation = False
+
+    # name the model
+    model_name = build_area_name(hypa, use_validation)
+    logg.debug(f"model_name: {model_name}")
+
+    # load data
+    processed_folder = Path("data_proc")
+    processed_path = processed_folder / f"{hypa['dataset_name']}"
+    data, labels = load_processed(processed_path, words)
+
+    # the shape of each sample
+    input_shape = data["training"][0].shape
+
+    # from hypa extract model param
+    model_param = get_model_param_area(hypa, num_labels, input_shape)
+
+    # no need for validation
+    x = np.concatenate((data["training"], data["validation"]))
+    y = np.concatenate((labels["training"], labels["validation"]))
+
+    # magic to fix the GPUs
+    setup_gpus()
+
+    # get the model with the chosen params
+    net_type = hypa["net_type"]
+    if net_type == "ARN":
+        model = AreaNet.build(**model_param)
+    elif net_type == "SIM":
+        model = SimpleNet.build(**model_param)
+    elif net_type == "AAN":
+        model = ActualAreaNet.build(**model_param)
+
+    # from hypa extract training param (epochs, batch, opt, ...)
+    training_param = get_training_param_area(hypa, use_validation, model_path=None)
+
+    # a few metrics to track
+    metrics = [
+        tf.keras.metrics.CategoricalAccuracy(),
+        tf.keras.metrics.Precision(),
+        tf.keras.metrics.Recall(),
+    ]
+
+    # compile the model
+    model.compile(
+        optimizer=training_param["opt"],
+        loss=tf.keras.losses.CategoricalCrossentropy(),
+        metrics=metrics,
+    )
+
+    # boundary values
+    start_lr = 1e-9
+    end_lr = 1e1
+
+    # find the best values
+    lrf = LearningRateFinder(model)
+    lrf.find(
+        (x, y),
+        start_lr,
+        end_lr,
+        epochs=training_param["epochs"],
+        batchSize=training_param["batch_size"],
+    )
+
+    fig_title = "LR_sweep"
+    fig_title += f"__{model_name}"
+
+    fig, ax = plt.subplots(figsize=(8, 8))
+
+    # get the plot
+    lrf.plot_loss(ax=ax, title=fig_title)
+
+    # save the plot
+    plot_fol = Path("plot_results") / "area" / "find_best_lr"
+    if not plot_fol.exists():
+        plot_fol.mkdir(parents=True, exist_ok=True)
+    fig_name = fig_title + ".{}"
+    fig.savefig(plot_fol / fig_name.format("png"))
+    fig.savefig(plot_fol / fig_name.format("pdf"))
+
+    # TODO: save the loss history
+    # lrs = self.lrs[skipBegin:-skipEnd]
+    # losses = self.losses[skipBegin:-skipEnd]
+
+    plt.show()
 
 
 def run_train_area(args: argparse.Namespace) -> None:

@@ -184,19 +184,31 @@ def evaluate_attention_weights(train_words_type: str) -> None:
 
     # dataset_name = "mela1"
     # dataset_name = "mel04"
-    dataset_name = "aug14"
+    # dataset_name = "aug14"
 
     hypa = {
         "net_type": "AAN",
         "batch_size_type": "32",
-        # "dataset_name": "mela1",
-        "dataset_name": dataset_name,
+        "dataset_name": "mela1",
+        # "dataset_name": dataset_name,
         "epoch_num_type": "15",
         "learning_rate_type": "03",
         "optimizer_type": "a1",
         # "words_type": "LTnum",
         "words_type": train_words_type,
     }
+
+    hypa = {
+        "batch_size_type": "32",
+        "dataset_name": "auA05",
+        "epoch_num_type": "15",
+        "learning_rate_type": "03",
+        "net_type": "AAN",
+        "optimizer_type": "a1",
+        "words_type": "LTnumLS",
+    }
+
+    dataset_name = hypa["dataset_name"]
 
     use_validation = True
 
@@ -243,6 +255,7 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     rec_words = train_words[:]
     num_rec_words = len(rec_words)
 
+    logg.debug(f"processed_path: {processed_path}")
     for i, word in enumerate(rec_words):
         data, labels = load_processed(processed_path, [word])
 
