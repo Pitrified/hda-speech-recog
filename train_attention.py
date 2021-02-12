@@ -139,8 +139,9 @@ def hyper_train_attention(
     # logg.setLevel("INFO")
     logg.debug("Start hyper_train_attention")
 
-    # TODO fix best params then change all datasets
+    # TODO: dropout 12 kernel 2
 
+    # TODO fix best params then change all datasets
     # TODO auA5678 auA1234 on a bit of everything
 
     hypa_grid: ty.Dict[str, ty.List[str]] = {}

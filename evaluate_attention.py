@@ -12,6 +12,7 @@ import pandas as pd  # type: ignore
 import tensorflow as tf  # type: ignore
 import typing as ty
 
+from keras_diagram import ascii_model
 from plot_utils import plot_att_weights
 from plot_utils import plot_pred
 from plot_utils import plot_spec
@@ -235,6 +236,9 @@ def evaluate_results_attention() -> None:
     df_f = df_f.sort_values("fscore", ascending=False)
     logg.info(f"{df_f.head(30)}\n{df_f.tail()}")
 
+    # df['a'].value_counts()
+    logg.info(f"results_df['conv'].value_count(): {results_df['conv'].value_counts()}")
+
 
 def evaluate_batch_epoch() -> None:
     """MAKEDOC: what is evaluate_batch_epoch doing?"""
@@ -322,12 +326,15 @@ def evaluate_attention_weights(
     model = tf.keras.models.load_model(
         model_path, custom_objects={"backend": tf.keras.backend}
     )
+    model.summary()
+    logg.debug(f"ascii_model(model): {ascii_model(model)}")
 
     att_weight_model = tf.keras.models.Model(
         inputs=model.input,
         outputs=[
             model.get_layer("output").output,
             model.get_layer("att_softmax").output,
+            model.get_layer("bidirectional_1").output,
         ],
     )
     att_weight_model.summary()
@@ -404,7 +411,7 @@ def evaluate_attention_weights(
         rec_data = np.stack(rec_data_l)
 
     # get prediction and attention weights
-    pred, att_weights = att_weight_model.predict(rec_data)
+    pred, att_weights, LSTM_out = att_weight_model.predict(rec_data)
     # logg.debug(f"att_weights.shape: {att_weights.shape}")
     # logg.debug(f"att_weights[0].shape: {att_weights[0].shape}")
 
@@ -415,6 +422,7 @@ def evaluate_attention_weights(
     plot_size = 5
     fw = plot_size * num_rec_words
     nrows = 3 + ax_add
+    # nrows = 4 + ax_add
     fh = plot_size * nrows * 0.7
     fig, axes = plt.subplots(
         nrows=nrows, ncols=num_rec_words, figsize=(fw, fh), sharey="row"
@@ -445,6 +453,8 @@ def evaluate_attention_weights(
         pred_index = np.argmax(word_pred)
         title = f"Predictions for {word}"
         plot_pred(word_pred, train_words, axes[2 + ax_add][i], title, pred_index)
+
+        # axes[3 + ax_add][i].imshow(LSTM_out[i], origin="lower")
 
     # fig.tight_layout()
     fig.tight_layout(h_pad=3, rect=[0, 0.03, 1, 0.97])
@@ -522,7 +532,7 @@ def make_plots_hypa() -> None:
     # hp_to_plot_names: ty.List[str] = []
 
     # a unique name for this filtering
-    filter_tag = "001"
+    filter_tag = "002"
 
     # clone the results
     df_f = results_df
@@ -532,9 +542,10 @@ def make_plots_hypa() -> None:
 
     # in each tag overwrite the hypas to reduce
     # and set which hp to plot
+    hypa_grid: ty.Dict[str, ty.List[str]] = deepcopy(hypa_grid_all)
 
     if filter_tag == "001":
-        hypa_grid: ty.Dict[str, ty.List[str]] = deepcopy(hypa_grid_all)
+        hypa_grid = deepcopy(hypa_grid_all)
 
         hypa_grid["words"] = ["k1"]
 
@@ -561,6 +572,26 @@ def make_plots_hypa() -> None:
         # filter by epochs
         # epoch_list = ["01", "02"]
         # df_f = df_f[df_f["epoch"].isin(epoch_list)]
+
+    elif filter_tag == "002":
+        # TODO: dropout 12 kernel 2 query 12345 dataset pick 2 (or dense pick 2)
+        hypa_grid = deepcopy(hypa_grid_all)
+        hp_to_plot_names = [
+            "query",
+            "conv",
+            "dropout",
+            "kernel",
+            # "lstm",  # only one, kinda useless
+            "dense",
+        ]
+
+        # word_list = ["num", "LTnum", "k1"]
+        # word_list = ["k1", "LTnum", "LTnumLS", "w2", "FJall", "LTall"]
+        word_list = ["w2", "FJall", "LTall"]
+        # word_list = ["k1"]
+        df_f = df_f[df_f["words"].isin(word_list)]
+
+        min_lower_limit = 0.92
 
     all_hp_to_plot = list(combinations(hp_to_plot_names, 4))
     logg.debug(f"len(all_hp_to_plot): {len(all_hp_to_plot)}")

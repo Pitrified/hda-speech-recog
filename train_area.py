@@ -128,15 +128,15 @@ def hyper_train_area(
 
     ###### the net type
     nt = []
-    nt.append("SIM")
+    # nt.append("SIM")
     nt.append("AAN")
     # nt.append("ARN")
-    nt.append("VAN")
+    # nt.append("VAN")
     hypa_grid["net_type"] = nt
 
     ###### the words to train on
-    # hypa_grid["words_type"] = [words_type]
-    hypa_grid["words_type"] = ["LTnum", "LTall"]
+    hypa_grid["words_type"] = [words_type]
+    # hypa_grid["words_type"] = ["LTnum", "LTall"]
 
     ###### the dataset to train on
     ds = []
@@ -144,10 +144,10 @@ def hyper_train_area(
     # TODO VAN on LTall
     # TODO AAN/SIM/VAN on LTnum
     # TODO AAN on LTnum for all datasets, only one lr
-    ds.extend(["mel04"])
-    ds.extend(["mela1"])
-    ds.extend(["aug07"])
-    ds.extend(["aug14"])
+    # ds.extend(["mel04"])
+    # ds.extend(["mela1"])
+    # ds.extend(["aug07"])
+    # ds.extend(["aug14"])
 
     # TODO auL6789 auL18901 on all net_type
     # TODO auA5678 on VAN (on LTnumLS)
@@ -155,6 +155,7 @@ def hyper_train_area(
     # MAYBE start removing ARN, too much time
     # ds.extend(["auA01", "auA02", "auA03", "auA04"])
     # ds.extend(["auA05", "auA06", "auA07", "auA08"])
+    ds.extend(["auA04"])
 
     # TODO just the 3 best per architecture on noval
 
@@ -164,7 +165,7 @@ def hyper_train_area(
     lr = []
     # lr.extend(["01", "02"])  # fixed
     lr.extend(["03"])  # exp_decay_step_01
-    lr.extend(["04"])  # exp_decay_smooth_01
+    # lr.extend(["04"])  # exp_decay_smooth_01
     hypa_grid["learning_rate_type"] = lr
 
     ###### which optimizer to use
