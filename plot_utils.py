@@ -75,7 +75,7 @@ def plot_pred(pred, words, ax, title="Predictions", correct_index=None):
     if num_words <= 6:
         ax.xaxis.set_major_locator(mticker.FixedLocator(x))
         ax.set_xticklabels(words)
-    elif num_words <= 10:
+    elif num_words <= 13:
         ax.xaxis.set_major_locator(mticker.FixedLocator(x))
         ax.set_xticklabels(words, rotation=30)
     else:
@@ -93,7 +93,7 @@ def plot_pred(pred, words, ax, title="Predictions", correct_index=None):
         # set the labels
         ax.set_xticklabels(high_words, rotation=90)
 
-    ax.set_title(title)
+    ax.set_title(title, fontsize=20)
 
 
 def plot_att_weights(weights, ax, title="Attention weights"):
@@ -101,7 +101,7 @@ def plot_att_weights(weights, ax, title="Attention weights"):
     num_weights = len(weights)
     x = np.arange(num_weights)
     ax.bar(x, weights)
-    ax.set_title(title)
+    ax.set_title(title, fontsize=20)
 
 
 def plot_cat_acc(train_cat_acc, val_cat_acc, ax, model_name):

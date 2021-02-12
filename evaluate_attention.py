@@ -275,21 +275,40 @@ def evaluate_attention_weights(
     setup_gpus()
 
     # ATT_ct02_dr02_ks02_lu01_as01_qt01_dw01_opa1_lr01_bs01_en01_dsmel04_wk1
-    hypa: ty.Dict[str, str] = {}
-    hypa["conv_size_type"] = "02"
-    hypa["dropout_type"] = "02"
-    hypa["kernel_size_type"] = "02"
-    hypa["lstm_units_type"] = "01"
-    hypa["query_style_type"] = "01"
-    hypa["dense_width_type"] = "01"
-    hypa["optimizer_type"] = "a1"
-    hypa["learning_rate_type"] = "01"
-    hypa["batch_size_type"] = "01"
-    hypa["epoch_num_type"] = "01"
-    dataset_name = "mel04"
-    hypa["dataset_name"] = dataset_name
-    hypa["words_type"] = train_words_type
+    # hypa: ty.Dict[str, str] = {}
+    # hypa["conv_size_type"] = "02"
+    # hypa["dropout_type"] = "02"
+    # hypa["kernel_size_type"] = "02"
+    # hypa["lstm_units_type"] = "01"
+    # hypa["query_style_type"] = "01"
+    # hypa["dense_width_type"] = "01"
+    # hypa["optimizer_type"] = "a1"
+    # hypa["learning_rate_type"] = "01"
+    # hypa["batch_size_type"] = "01"
+    # hypa["epoch_num_type"] = "01"
+    # dataset_name = "mel04"
+    # hypa["dataset_name"] = dataset_name
+    # hypa["words_type"] = train_words_type
+    # use_validation = True
+
+    # ATT_ct02_dr01_ks01_lu01_qt05_dw01_opa1_lr03_bs02_en02_dsaug07_wLTnum
+    hypa = {
+        "batch_size_type": "02",
+        "conv_size_type": "02",
+        "dataset_name": "aug07",
+        "dense_width_type": "01",
+        "dropout_type": "01",
+        "epoch_num_type": "02",
+        "kernel_size_type": "01",
+        "learning_rate_type": "03",
+        "lstm_units_type": "01",
+        "optimizer_type": "a1",
+        "query_style_type": "05",
+        "words_type": "LTnum",
+    }
     use_validation = True
+
+    dataset_name = hypa["dataset_name"]
 
     model_name = build_attention_name(hypa, use_validation)
     logg.debug(f"model_name: {model_name}")
@@ -321,7 +340,9 @@ def evaluate_attention_weights(
 
     rec_words_type = args.rec_words_type
     if rec_words_type == "train":
-        rec_words = train_words
+        rec_words = train_words[-3:]
+        # rec_words = train_words[:]
+        logg.debug(f"Using rec_words: {rec_words}")
     else:
         rec_words = words_types[rec_words_type]
     num_rec_words = len(rec_words)
@@ -367,7 +388,7 @@ def evaluate_attention_weights(
         processed_path = processed_folder / f"{dataset_name}"
 
         # which word in the dataset to plot
-        word_id = 0
+        word_id = 2
 
         # the loaded spectrograms
         rec_data_l: ty.List[np.ndarray] = []
@@ -394,9 +415,11 @@ def evaluate_attention_weights(
     plot_size = 5
     fw = plot_size * num_rec_words
     nrows = 3 + ax_add
-    fh = plot_size * nrows
-    fig, axes = plt.subplots(nrows=nrows, ncols=num_rec_words, figsize=(fw, fh))
-    fig.suptitle(f"Attention weights and prediction for {rec_words}")
+    fh = plot_size * nrows * 0.7
+    fig, axes = plt.subplots(
+        nrows=nrows, ncols=num_rec_words, figsize=(fw, fh), sharey="row"
+    )
+    fig.suptitle(f"Attention weights and predictions for {rec_words}", fontsize=20)
 
     for i, word in enumerate(rec_words):
         word_spec = rec_data[i][:, :, 0]
@@ -434,9 +457,10 @@ def evaluate_attention_weights(
     else:
         fig_name += "_data.{}"
 
-    results_path = audio_folder / fig_name.format("png")
+    plot_folder = Path("plot_results")
+    results_path = plot_folder / fig_name.format("png")
     fig.savefig(results_path)
-    results_path = audio_folder / fig_name.format("pdf")
+    results_path = plot_folder / fig_name.format("pdf")
     fig.savefig(results_path)
 
     if num_rec_words <= 6:

@@ -10,6 +10,19 @@
 
 Show attention weights for Att model
 
+% ATT_ct02_dr01_ks01_lu01_qt05_dw01_opa1_lr03_bs02_en02_dsaug07_wLTnum_LTnum_train_data
+\begin{figure*}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{ATT_ct02_dr01_ks01_lu01_qt05_dw01_opa1_lr03_bs02_en02_dsaug07_wLTnum_LTnum_train_data.pdf}
+    \caption{Spectrograms, attention weights and predictions for three sample words.
+    Notice how the attention weights correctly selected the interesting part of
+    the ``eight'' spectrogram, avoiding the noise in the latter part.
+    For ``\_other\_ltts'', which corresponds to a random audio snippet from the LibriTTS
+    dataset, the attention weights still selected the section where a word is spoken,
+    and, with some small uncertainty, the word is indeed recognized as ``other''.}%
+    \label{fig:attention_weights_standard}
+\end{figure*}
+
 \subsubsection{AreaNet}
 
 Show AreaNet

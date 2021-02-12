@@ -127,7 +127,12 @@ def hyper_train_area(
     hypa_grid: ty.Dict[str, ty.List[str]] = {}
 
     ###### the net type
-    hypa_grid["net_type"] = ["SIM", "AAN", "ARN", "VAN"]
+    nt = []
+    nt.append("SIM")
+    nt.append("AAN")
+    # nt.append("ARN")
+    # nt.append("VAN")
+    hypa_grid["net_type"] = nt
 
     ###### the words to train on
     hypa_grid["words_type"] = [words_type]
@@ -137,6 +142,7 @@ def hyper_train_area(
 
     # TODO VAN on LTall
     # TODO AAN/SIM/VAN on LTnum
+    # TODO AAN on LTnum for all datasets, only one lr
     # ds.extend(["mel04"])
     # ds.extend(["mela1"])
     # ds.extend(["aug07"])
@@ -146,7 +152,7 @@ def hyper_train_area(
     # TODO auA5678 on VAN (on LTnumLS)
     # TODO auA5678 with lr04 (on LTnumLS to complete lr03 is done)
     # MAYBE start removing ARN, too much time
-    # ds.extend(["auA01", "auA02", "auA03", "auA04"])
+    ds.extend(["auA01", "auA02", "auA03", "auA04"])
     ds.extend(["auA05", "auA06", "auA07", "auA08"])
 
     # TODO just the 3 best per architecture on noval
