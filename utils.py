@@ -128,6 +128,8 @@ def define_words_types():
     words_ltts_all.extend(additional_ltts)
     words_ltts_num = copy(words_num)
     words_ltts_num.extend(additional_ltts)
+    words_ltts_yn = copy(words_yesno)
+    words_ltts_yn.extend(additional_ltts)
 
     additional_ltts_loud = ["_other_ltts_loud"]
     words_ltts_all_loud = copy(words_all_loud)
@@ -173,6 +175,7 @@ def define_words_types():
     words_ltts = {
         "LTall": words_ltts_all,
         "LTnum": words_ltts_num,
+        "LTyn": words_ltts_yn,
     }
     words_types.update(words_ltts)
 
