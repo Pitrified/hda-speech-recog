@@ -211,14 +211,25 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     # }
 
     # AAN_opa1_lr03_bs32_en15_dsaug14_wLTnum
+    # hypa = {
+    #     "batch_size_type": "32",
+    #     "dataset_name": "aug14",
+    #     "epoch_num_type": "15",
+    #     "learning_rate_type": "03",
+    #     "net_type": "AAN",
+    #     "optimizer_type": "a1",
+    #     "words_type": "LTnum",
+    # }
+
+    # VAN_opa1_lr04_bs32_en15_dsaug14_wLTall
     hypa = {
         "batch_size_type": "32",
         "dataset_name": "aug14",
         "epoch_num_type": "15",
-        "learning_rate_type": "03",
-        "net_type": "AAN",
+        "learning_rate_type": "04",
+        "net_type": "VAN",
         "optimizer_type": "a1",
-        "words_type": "LTnum",
+        "words_type": "LTall",
     }
 
     dataset_name = hypa["dataset_name"]
@@ -260,7 +271,9 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     processed_path = processed_folder / f"{dataset_name}"
 
     # which word in the dataset to plot
-    word_id = 3
+    # word_id = 5
+    # word_id = 7
+    word_id = 11
 
     # the loaded spectrograms
     rec_data_l: ty.List[np.ndarray] = []
@@ -268,7 +281,10 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     # for now we do not record new words
     # rec_words = train_words[-3:]
     # rec_words = train_words[:3]
-    rec_words = train_words[:2]
+    # rec_words = train_words[:2]
+    # rec_words = train_words[10:21]
+    # rec_words = train_words[20:31]
+    rec_words = train_words[30:32]
     num_rec_words = len(rec_words)
 
     logg.debug(f"processed_path: {processed_path}")
@@ -293,7 +309,7 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     nrows = 2
     fh = plot_size * nrows
     fig, axes = plt.subplots(nrows=nrows, ncols=num_rec_words, figsize=(fw, fh))
-    fig.suptitle("Attention weights computed with AreaNet", fontsize=20)
+    fig.suptitle("Attention weights computed with VerticalAreaNet", fontsize=20)
 
     for i, word in enumerate(rec_words):
 
@@ -303,7 +319,7 @@ def evaluate_attention_weights(train_words_type: str) -> None:
         axes[0][i].set_title(f"Spectrogram for {word}", fontsize=20)
         axes[0][i].imshow(word_spec, origin="lower")
 
-        axes[1][i].set_title(f"Area attention weights for {word}", fontsize=20)
+        axes[1][i].set_title(f"Attention weights for {word}", fontsize=20)
         att_w = att_weights[i][:, :, 0]
         axes[1][i].imshow(att_w, origin="lower")
 
