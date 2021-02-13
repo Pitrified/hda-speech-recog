@@ -51,10 +51,11 @@ A total of $130$ experiment were performed for the transfer learning approach.
 
 A total of $1389$ experiment were performed for the LSTM+attention model.
 
-% Fscore_att_dropout__conv__query__dense.pdf
 
-Group by (conv, dropout, kernel, lstm, dense) to show difference in architecture
-Group by query
+%%%%%%%%%%%%%%%%%%%
+% Group by (conv, dropout, kernel, lstm, dense) to show difference in architecture
+% Group by query
+% Fscore_att2_dropout__conv__query__dense.pdf
 
 \fig{fig:dropout_conv_query_dense} shows F-score values for 
 variation of 
@@ -79,10 +80,17 @@ and the quality is less assured when training that models for new datasets.
 \begin{figure*}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{Fscore_att2_dropout__conv__query__dense.pdf}
-    \caption{F-score values for (dropout, convolution, query, dense)}%
+    \caption{F-score for varying
+        dense classifier width,
+        query type,
+        convolution type,
+        dropout.
+        Averaged on 20 and 35 words task.
+        }%
     \label{fig:dropout_conv_query_dense}
 \end{figure*}
 
+%%%%%%%%%%%%%%%%%%%
 Group by (lr, batch, epoch)
 
 Group by dataset: not augmented, augmented

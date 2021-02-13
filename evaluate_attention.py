@@ -493,7 +493,7 @@ def make_plots_hypa() -> None:
 
     # full hypa_grid
     hypa_grid_all: ty.Dict[str, ty.List[str]] = {}
-    hypa_grid_all["words"] = ["k1", "LTnumLS", "w2", "FJall", "f2"]
+    hypa_grid_all["words"] = ["k1", "LTnumLS", "w2", "FJall", "f2", "LTnum", "LTall"]
     ds = []
     ds.extend(["mel01", "mel04", "mel05", "mela1"])
     ds.extend(["aug01"])
@@ -511,7 +511,7 @@ def make_plots_hypa() -> None:
     hypa_grid_all["dense"] = ["01", "02"]
     hypa_grid_all["lr"] = ["01", "03", "04", "05", "06", "07", "08", "09", "10"]
     hypa_grid_all["optimizer"] = ["a1"]
-    hypa_grid_all["batch"] = ["02", "01"]
+    hypa_grid_all["batch"] = ["01", "02"]
     hypa_grid_all["epoch"] = ["01", "02", "03", "04"]
 
     hp_to_plot_names_all = [
@@ -532,7 +532,7 @@ def make_plots_hypa() -> None:
     # hp_to_plot_names: ty.List[str] = []
 
     # a unique name for this filtering
-    filter_tag = "002"
+    filter_tag = "004"
 
     # clone the results
     df_f = results_df
@@ -569,11 +569,14 @@ def make_plots_hypa() -> None:
         ]
         min_lower_limit = 0.92
 
+        sub_tag = "nofilter"
+
         # filter by epochs
         # epoch_list = ["01", "02"]
         # df_f = df_f[df_f["epoch"].isin(epoch_list)]
 
-    elif filter_tag == "002":
+    elif filter_tag == "003":
+        logg.debug(f"filter_tag: {filter_tag}")
         # TODO: dropout 12 kernel 2 query 12345 dataset pick 2 (or dense pick 2)
         hypa_grid = deepcopy(hypa_grid_all)
         hp_to_plot_names = [
@@ -586,11 +589,50 @@ def make_plots_hypa() -> None:
         ]
 
         # word_list = ["num", "LTnum", "k1"]
+        word_list = ["num", "k1"]
         # word_list = ["k1", "LTnum", "LTnumLS", "w2", "FJall", "LTall"]
-        word_list = ["w2", "FJall", "LTall"]
+        # word_list = ["w2", "FJall", "LTall"]
         # word_list = ["k1"]
         df_f = df_f[df_f["words"].isin(word_list)]
 
+        sub_tag = "_".join(word_list)
+
+        min_lower_limit = 0.92
+
+    elif filter_tag == "004":
+        logg.debug(f"filter_tag: {filter_tag}")
+
+        # TODO all lr, all batch, all epochs on k1
+
+        hypa_grid = deepcopy(hypa_grid_all)
+        # hypa_grid["words"] = ["k1", "w2", "f2"]
+        # hypa_grid["words"] = ["k1"]
+        word_list = ["k1"]
+        df_f = df_f[df_f["words"].isin(word_list)]
+
+        # this to highlight lr
+        # hp_to_plot_names = [
+        #     "lr",
+        #     "epoch",
+        #     "batch",
+        #     "words",
+        # ]
+
+        # hp_to_plot_names = [
+        #     "epoch",
+        #     "lr",
+        #     "batch",
+        #     "words",
+        # ]
+
+        hp_to_plot_names = [
+            "batch",
+            "lr",
+            "epoch",
+            "words",
+        ]
+
+        sub_tag = "_".join(word_list)
         min_lower_limit = 0.92
 
     all_hp_to_plot = list(combinations(hp_to_plot_names, 4))
@@ -601,7 +643,7 @@ def make_plots_hypa() -> None:
 
     # the output folders
     plot_fol = Path("plot_results") / "att"
-    filter_fol = plot_fol / filter_tag
+    filter_fol = plot_fol / filter_tag / sub_tag
     pdf_split_fol = filter_fol / "pdf_split"
     pdf_grid_fol = filter_fol / "pdf_grid"
     png_split_fol = filter_fol / "png_split"
