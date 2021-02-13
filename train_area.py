@@ -80,6 +80,14 @@ def parse_arguments() -> argparse.Namespace:
         help="Do a dry run for the hypa grid",
     )
 
+    parser.add_argument(
+        "-lrf",
+        "--do_find_best_lr",
+        dest="do_find_best_lr",
+        action="store_true",
+        help="Find the best values for the learning rate",
+    )
+
     # last line to parse the args
     args = parser.parse_args()
     return args
@@ -120,6 +128,7 @@ def hyper_train_area(
     force_retrain: bool,
     use_validation: bool,
     dry_run: bool,
+    do_find_best_lr: bool,
 ) -> None:
     """MAKEDOC: what is hyper_train_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.hyper_train_area")
@@ -134,10 +143,10 @@ def hyper_train_area(
 
     ###### the net type
     nt = []
-    nt.append("SIM")
+    # nt.append("SIM")
     nt.append("AAN")
     # nt.append("ARN")
-    nt.append("VAN")
+    # nt.append("VAN")
     hypa_grid["net_type"] = nt
 
     ###### the words to train on
@@ -153,14 +162,14 @@ def hyper_train_area(
     # ds.extend(["mel04"])
     # ds.extend(["mela1"])
     # ds.extend(["aug07"])
-    # ds.extend(["aug14"])
+    ds.extend(["aug14"])
 
     # TODO auL6789 auL18901 on all net_type
     # TODO auA5678 on VAN (on LTnumLS)
     # TODO auA5678 with lr04 (on LTnumLS to complete lr03 is done)
     # MAYBE start removing ARN, too much time
     # ds.extend(["auA01", "auA02", "auA03", "auA04"])
-    ds.extend(["auA05", "auA06", "auA07", "auA08"])
+    # ds.extend(["auA05", "auA06", "auA07", "auA08"])
     # ds.extend(["auA04"])
 
     # TODO just the 3 best per architecture on noval
@@ -171,7 +180,7 @@ def hyper_train_area(
     lr = []
     # lr.extend(["01", "02"])  # fixed
     lr.extend(["03"])  # exp_decay_step_01
-    lr.extend(["04"])  # exp_decay_smooth_01
+    # lr.extend(["04"])  # exp_decay_smooth_01
     hypa_grid["learning_rate_type"] = lr
 
     ###### which optimizer to use
@@ -185,7 +194,8 @@ def hyper_train_area(
 
     ###### the number of epochs (the key is converted to int)
     en = []
-    en.extend(["15"])
+    # en.extend(["15"])
+    en.extend(["10"])
     hypa_grid["epoch_num_type"] = en
 
     ###### build the combinations
@@ -227,6 +237,13 @@ def hyper_train_area(
                 preprocess_spec(dn, wt)
             elif dn.startswith("aug"):
                 do_augmentation(dn, wt)
+
+    # useful to pick good values of lr
+    if do_find_best_lr:
+        hypa = the_grid[0]
+        logg.debug(f"\nSTARTING find_best_lr with hypa: {hypa}")
+        find_best_lr(hypa)
+        return
 
     ##########################################################
     #   Train all hypas
@@ -593,10 +610,16 @@ def find_best_lr(hypa: ty.Dict[str, str]) -> None:
     net_type = hypa["net_type"]
     if net_type == "ARN":
         model = AreaNet.build(**model_param)
-    elif net_type == "SIM":
-        model = SimpleNet.build(**model_param)
     elif net_type == "AAN":
         model = ActualAreaNet.build(**model_param)
+    elif net_type == "VAN":
+        model = VerticalAreaNet.build(**model_param)
+    elif net_type.startswith("SI"):
+        if net_type == "SIM":
+            sim_type = "1"
+        elif net_type == "SI2":
+            sim_type = "2"
+        model = SimpleNet.build(sim_type=sim_type, **model_param)
 
     # from hypa extract training param (epochs, batch, opt, ...)
     training_param = get_training_param_area(hypa, use_validation, model_path=None)
@@ -645,9 +668,11 @@ def find_best_lr(hypa: ty.Dict[str, str]) -> None:
     fig.savefig(plot_fol / fig_name.format("png"))
     fig.savefig(plot_fol / fig_name.format("pdf"))
 
-    # TODO: save the loss history
-    # lrs = self.lrs[skipBegin:-skipEnd]
-    # losses = self.losses[skipBegin:-skipEnd]
+    recap_loss = {}
+    recap_loss["lrs"] = [float(lr) for lr in lrf.lrs[:]]
+    recap_loss["losses"] = [float(loss) for loss in lrf.losses[:]]
+    loss_path = plot_fol / f"loss_{fig_title}.json"
+    loss_path.write_text(json.dumps(recap_loss, indent=4))
 
     plt.show()
 
@@ -662,9 +687,12 @@ def run_train_area(args: argparse.Namespace) -> None:
     use_validation = args.use_validation
     dry_run = args.dry_run
     force_retrain = args.force_retrain
+    do_find_best_lr = args.do_find_best_lr
 
     if training_type == "hypa_tune":
-        hyper_train_area(words_type, force_retrain, use_validation, dry_run)
+        hyper_train_area(
+            words_type, force_retrain, use_validation, dry_run, do_find_best_lr
+        )
 
 
 if __name__ == "__main__":
