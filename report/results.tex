@@ -4,7 +4,15 @@
 \label{sec:results}
 % Dazzling numerical results
 
+\subsection{Performance measure}
+
+\subsubsection{F-Score}
+
 TODO: what is the F-score
+
+Confusion matrix
+
+\subsubsection{Graphs}
 
 Throughout this section, several groups of graphs will be shown, that present
 at once the F-score value for combinations of up to four hyper-parameters.
@@ -13,9 +21,9 @@ with title
 ``paramA: valueA, paramB: [valuesB]
 grouped by paramC: [valuesC]
 grouped by paramD: [valuesD]''.
-This graph is part of a group of graphs, where the first parameter
-(valueA) is fixed in each sub graph.
-The other three vary within the subgraph:
+This graph is part of a group of graphs, where the value of the first parameter
+(valueA) is fixed for each sub-graph.
+The other three parameters vary within the sub-graph:
 % each packet of columns shows the variation of the parameter B,
 % whose values are shown in the legend.
 within each group of column the parameter B is changing,
@@ -51,11 +59,7 @@ A total of $130$ experiment were performed for the transfer learning approach.
 
 A total of $1389$ experiment were performed for the LSTM+attention model.
 
-
-%%%%%%%%%%%%%%%%%%%
-% Group by (conv, dropout, kernel, lstm, dense) to show difference in architecture
-% Group by query
-% Fscore_att2_dropout__conv__query__dense.pdf
+\subsubsection{Architecture performance comparison}
 
 \fig{fig:dropout_conv_query_dense} shows F-score values for 
 variation of 
@@ -67,15 +71,19 @@ the query style ($01$ and $05$ pick a single LSTM vector to compute the scores,
 $02$ and $03$ use convolutional layers connected to the LSTM outputs to extract
 the scores and $04$  use convolutional layers connected to the spectrograms).
 The results are very close but two conclusions can be tentatively reached:
-1) the query type does not influence
+
+\begin{itemize}
+    \item The query type does not influence
 % TODO influence suona male
 the results: within each packet of columns the values are very close to each
 other, within one standard deviation.
-2) the combination of dense 02 ($64$ units), conv 01 ($1$ layer) and dropout 01 ($0.2$)
+    \item The combination of dense 02 ($64$ units), conv 01 ($1$ layer) and dropout 01 ($0.2$)
 seems to be consistently better than the average.
-The best values might be found with other combinations of parameters,
-but those are less robust, as indicated by the higher standard deviation,
-and the quality is less assured when training that models for new datasets.
+The best values might be found with other combinations of parameters, but those
+combinations are less robust, as indicated by the higher standard deviation,
+and the quality of the model is less assured when training that combination for
+new datasets.
+\end{itemize}
 
 \begin{figure*}[t!]
     \centering
@@ -90,12 +98,73 @@ and the quality is less assured when training that models for new datasets.
     \label{fig:dropout_conv_query_dense}
 \end{figure*}
 
-%%%%%%%%%%%%%%%%%%%
+\subsubsection{Training parameter performance comparison}
+
 Group by (lr, batch, epoch)
+Optimizer is fixed
+TODO: Almost ready, finish last experiments
+
+\subsection{Data augmentation performance}
+
+% TODO: type 01 aug was tested but too long
+
+% TODO: combine 01 and 15 for the final augmentation
+
+TODO: move this in single section and aggregate by CNN/LSTM+attention
+because CNN performed a lot better with augmented.
+
+As explained in \secref{sec:data_augmentation}, several types of augmentation
+were performed on the dataset. The bulk of the investigation was to 
+determine which kind of augmentation performed better.
+
+Only barely outperformed the dataset mel04
 
 Group by dataset: not augmented, augmented
-
 Group by type of augmentation: along both, one, none axis
+
+\tab{tab:aug_values}, in the Appendix, shows the specific values used.
+
+\begin{table}[ht!]
+    \centering
+    % \caption{Comparison between regular and augmented datasets:}
+    \caption{Comparison between different types of augmentation:}
+    \label{tab:att_dataset_result_augmentation}
+    \begin{tabular}{|cc|c|}
+        \hline
+        Aug ID & Spec+Type & F-Score \\
+        \hline
+        % mel01   &  0.954 & 0.0073 \\
+        mel04   &  None & $0.963 \pm 0.0126$ \\
+        % mel05   & None &  $0.954 \pm 0.0184$ \\
+        % mela1   &  0.958 & 0.0155 \\
+        \hline
+        02,03,04,05 & mel\_02+big &  $0.929 \pm 0.0362$ \\
+        06,07,08,09 & mel\_01+big &  $0.939 \pm 0.0392$ \\
+        10,11,12,13 & mel\_03+big &  $0.932 \pm 0.0852$ \\
+        14,15,16,17 & mel\_03+small &  $0.964 \pm 0.0129$ \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[ht!]
+    \centering
+    \caption{Comparison between different styles of augmentation:}
+    \label{tab:att_augmentation_comparison}
+    \begin{tabular}{|c|c|}
+        \hline
+        Augmentation type & F-Score \\
+        \hline
+        Both axis & $0.9326 \pm 0.0615$ \\
+        Time      & $0.9448 \pm 0.0323$ \\
+        Frequency & $0.9355 \pm 0.0383$ \\
+        None      & $0.9311 \pm 0.0794$ \\
+        \hline
+    \end{tabular}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%
+
+\subsection{Extract loudest section performance}
 
 Group by dataset: 1 sec vs loud section
 
@@ -105,9 +174,9 @@ Show best and top 5 average
 
 Then aggregate table for cross architecture
 
-Pick the best 5 models per category
+Pick the best 5 models per category for each task
 
-Compare: CNN, Dense, Xception, EfficientB047, AreaNet, SimpleNet,
+Compare: CNN, Dense, Xception, EfficientB047, LSTM+attention, AreaNet, SimpleNet,
 VerticalAreaNet on num, all, LTnum, LTall, numLS, allLS
 
 Not every combination of everything

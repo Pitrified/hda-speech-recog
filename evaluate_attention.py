@@ -41,6 +41,7 @@ def parse_arguments():
         choices=[
             "results",
             "evaluate_batch_epoch",
+            "evaluate_augmentation",
             "attention_weights",
             "make_plots_hypa",
             "make_plots_clr",
@@ -477,6 +478,83 @@ def evaluate_attention_weights(
         plt.show()
 
 
+def evaluate_augmentation() -> None:
+    """MAKEDOC: what is evaluate_augmentation doing?"""
+    logg = logging.getLogger(f"c.{__name__}.evaluate_augmentation")
+    # logg.setLevel("INFO")
+    logg.debug("Start evaluate_augmentation")
+
+    results_df = build_att_results_df()
+
+    logg.debug(f"results_df['dataset'].unique(): {results_df['dataset'].unique()}")
+
+    word_list = ["k1", "LTnum", "LTnumLS"]
+    results_df = results_df[results_df["words"].isin(word_list)]
+
+    mels = ["mel01"], ["mel04"], ["mel05"], ["mela1"]
+    # mels = ["mel01", "mel04", "mel05", "mela1"]
+    aug2345 = ["aug02", "aug03", "aug04", "aug05"]
+    aug6789 = ["aug06", "aug07", "aug08", "aug09"]
+    aug0123 = ["aug10", "aug11", "aug12", "aug13"]
+    aug4567 = ["aug14", "aug15", "aug16", "aug17"]
+    # meLs = ["meL04", "meLa1", "meLa2", "meLa3", "meLa4"]
+
+    all_aug: ty.List[str] = []
+    all_aug.extend((*aug2345, *aug6789, *aug0123, *aug4567))
+    logg.debug(f"all_aug: {all_aug}")
+    # results_df = results_df[results_df["dataset"].isin(all_aug)]
+
+    aug_res: ty.Dict[str, ty.Dict[str, float]] = {}
+
+    for aug_type in (*mels, aug2345, aug6789, aug0123, aug4567):
+        logg.debug(f"\naug_type: {aug_type}")
+
+        df_f = results_df
+        logg.debug(f"res len(df_f): {len(df_f)}")
+
+        df_f = df_f[df_f["dataset"].isin(aug_type)]
+        logg.debug(f"len(df_f): {len(df_f)}")
+
+        # for dn in aug_type:
+        #     df_q = df_f.query(f"dataset == '{dn}'")
+        #     logg.debug(f"len(df_q): {len(df_q)}")
+        fscore_mean = df_f.fscore.mean()
+        logg.debug(f"fscore_mean: {fscore_mean}")
+        fscore_stddev = df_f.fscore.std()
+        logg.debug(f"fscore_stddev: {fscore_stddev}")
+
+        aug_key = "_".join(aug_type)
+        aug_res[aug_key] = {}
+        aug_res[aug_key]["mean"] = fscore_mean
+        aug_res[aug_key]["stddev"] = fscore_stddev
+
+    logg.debug(f"aug_res: {json.dumps(aug_res, indent=4)}")
+
+    dir_res: ty.Dict[str, ty.Dict[str, float]] = {}
+    for dir_type in zip(aug2345, aug6789, aug0123, aug4567):
+        logg.debug(f"\ndir_type: {dir_type}")
+
+        df_f = results_df
+        logg.debug(f"res len(df_f): {len(df_f)}")
+
+        df_f = df_f[df_f["dataset"].isin(dir_type)]
+        logg.debug(f"len(df_f): {len(df_f)}")
+
+        logg.debug(f"df_f.fscore.mean(): {df_f.fscore.mean()}")
+
+        fscore_mean = df_f.fscore.mean()
+        logg.debug(f"fscore_mean: {fscore_mean}")
+        fscore_stddev = df_f.fscore.std()
+        logg.debug(f"fscore_stddev: {fscore_stddev}")
+
+        dir_key = "_".join(dir_type)
+        dir_res[dir_key] = {}
+        dir_res[dir_key]["mean"] = fscore_mean
+        dir_res[dir_key]["stddev"] = fscore_stddev
+
+    logg.debug(f"dir_res: {json.dumps(dir_res, indent=4)}")
+
+
 def make_plots_hypa() -> None:
     """MAKEDOC: what is make_plots_hypa doing?"""
     logg = logging.getLogger(f"c.{__name__}.make_plots_hypa")
@@ -532,7 +610,7 @@ def make_plots_hypa() -> None:
     # hp_to_plot_names: ty.List[str] = []
 
     # a unique name for this filtering
-    filter_tag = "004"
+    filter_tag = "005"
 
     # clone the results
     df_f = results_df
@@ -633,6 +711,37 @@ def make_plots_hypa() -> None:
         ]
 
         sub_tag = "_".join(word_list)
+        min_lower_limit = 0.92
+
+    elif filter_tag == "005":
+        logg.debug(f"filter_tag: {filter_tag}")
+        hypa_grid = deepcopy(hypa_grid_all)
+
+        ds = []
+        # ds.extend(["mel01", "mel04", "mel05", "mela1"])
+        # ds.extend(["aug01"])
+        # ds.extend(["aug02", "aug03", "aug04", "aug05"])
+        # ds.extend(["aug06", "aug07", "aug08", "aug09"])
+        # ds.extend(["aug10", "aug11", "aug12", "aug13"])
+        # ds.extend(["aug14", "aug15", "aug16", "aug17"])
+        # ds.extend(["meL04", "meLa1", "meLa2", "meLa3", "meLa4"])
+
+        # hypa_grid["dataset"] = ds
+        # df_f = df_f[df_f["dataset"].isin(ds)]
+
+        word_list = ["k1", "LTnum", "LTnumLS"]
+        hypa_grid["words"] = word_list
+        df_f = df_f[df_f["words"].isin(word_list)]
+
+        hp_to_plot_names = [
+            "optimizer",
+            "dataset",
+            "lstm",
+            "words",
+        ]
+
+        sub_tag = "_".join(word_list)
+        # sub_tag = "nofilter"
         min_lower_limit = 0.92
 
     all_hp_to_plot = list(combinations(hp_to_plot_names, 4))
@@ -880,6 +989,8 @@ def run_evaluate_attention(args: argparse.Namespace) -> None:
         evaluate_batch_epoch()
     elif evaluation_type == "delete_bad_models":
         delete_bad_models_att()
+    elif evaluation_type == "evaluate_augmentation":
+        evaluate_augmentation()
 
 
 if __name__ == "__main__":

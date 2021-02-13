@@ -95,26 +95,42 @@ has the parameter \texttt{fmin}$=40$.}
         \hline
         & mel\_kwargs & n\_mel & n\_fft & hop\_length & fmin & fmax \\
         \hline
+        \hline
         & mel\_01 & 64 & 1024 & 256 & 40 & 8000  \\
         & mel\_02 & 128 & 2046 & 512 & 40 & 8000  \\
         & mel\_03 & 64 & 1024 & 256 & default & default  \\
+        & mel\_05 & 128 & 1024 & 128 & default & default  \\
         \hline
         \hline
         aug name & max\_time\_shifts & stretch\_rate & mel\_kwargs & num\_landmarks & max\_warp\_time & max\_warp\_freq\\
         \hline
+        \hline
         aug01 &  [1600, 3200] & [0.8, 1.2] & mel\_01 & 3 & 5 & 6 \\
+        \hline
         aug02 &  [] & [] & mel\_02 & 3 & 5 & 5 \\
         aug03 &  [] & [] & mel\_02 & 3 & 5 & 0 \\
         aug04 &  [] & [] & mel\_02 & 3 & 0 & 5 \\
         aug05 &  [] & [] & mel\_02 & 3 & 0 & 0 \\
+        \hline
         aug06 &  [] & [] & mel\_01 & 3 & 5 & 5 \\
         aug07 &  [] & [] & mel\_01 & 3 & 5 & 0 \\
         aug08 &  [] & [] & mel\_01 & 3 & 0 & 5 \\
         aug09 &  [] & [] & mel\_01 & 3 & 0 & 0 \\
+        \hline
         aug10 &  [] & [] & mel\_03 & 3 & 5 & 5 \\
         aug11 &  [] & [] & mel\_03 & 3 & 5 & 0 \\
         aug12 &  [] & [] & mel\_03 & 3 & 0 & 5 \\
         aug13 &  [] & [] & mel\_03 & 3 & 0 & 0 \\
+        \hline
+        aug14 &  [] & [] & mel\_03 & 4 & 2 & 2 \\
+        aug15 &  [] & [] & mel\_03 & 4 & 2 & 0 \\
+        aug16 &  [] & [] & mel\_03 & 4 & 0 & 2 \\
+        aug17 &  [] & [] & mel\_03 & 4 & 0 & 0 \\
+        \hline
+        aug18 &  [] & [] & mel\_05 & 3 & 5 & 5 \\
+        aug19 &  [] & [] & mel\_05 & 3 & 5 & 0 \\
+        aug20 &  [] & [] & mel\_05 & 3 & 0 & 5 \\
+        aug21 &  [] & [] & mel\_05 & 3 & 0 & 0 \\
         \hline
     \end{tabular}
 \end{table*}
