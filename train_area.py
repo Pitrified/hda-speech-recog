@@ -74,7 +74,10 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "-dr", "--dry_run", action="store_true", help="Do a dry run for the hypa grid",
+        "-dr",
+        "--dry_run",
+        action="store_true",
+        help="Do a dry run for the hypa grid",
     )
 
     # last line to parse the args
@@ -113,7 +116,10 @@ def train_model_area_dry(
 
 
 def hyper_train_area(
-    words_type: str, force_retrain: bool, use_validation: bool, dry_run: bool,
+    words_type: str,
+    force_retrain: bool,
+    use_validation: bool,
+    dry_run: bool,
 ) -> None:
     """MAKEDOC: what is hyper_train_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.hyper_train_area")
@@ -128,10 +134,10 @@ def hyper_train_area(
 
     ###### the net type
     nt = []
-    # nt.append("SIM")
+    nt.append("SIM")
     nt.append("AAN")
     # nt.append("ARN")
-    # nt.append("VAN")
+    nt.append("VAN")
     hypa_grid["net_type"] = nt
 
     ###### the words to train on
@@ -154,8 +160,8 @@ def hyper_train_area(
     # TODO auA5678 with lr04 (on LTnumLS to complete lr03 is done)
     # MAYBE start removing ARN, too much time
     # ds.extend(["auA01", "auA02", "auA03", "auA04"])
-    # ds.extend(["auA05", "auA06", "auA07", "auA08"])
-    ds.extend(["auA04"])
+    ds.extend(["auA05", "auA06", "auA07", "auA08"])
+    # ds.extend(["auA04"])
 
     # TODO just the 3 best per architecture on noval
 
@@ -165,7 +171,7 @@ def hyper_train_area(
     lr = []
     # lr.extend(["01", "02"])  # fixed
     lr.extend(["03"])  # exp_decay_step_01
-    # lr.extend(["04"])  # exp_decay_smooth_01
+    lr.extend(["04"])  # exp_decay_smooth_01
     hypa_grid["learning_rate_type"] = lr
 
     ###### which optimizer to use
@@ -276,7 +282,9 @@ def get_model_param_area(
 
 
 def get_training_param_area(
-    hypa: ty.Dict[str, str], use_validation: bool, model_path: ty.Optional[Path],
+    hypa: ty.Dict[str, str],
+    use_validation: bool,
+    model_path: ty.Optional[Path],
 ) -> ty.Dict[str, ty.Any]:
     """MAKEDOC: what is get_training_param_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_training_param_area")
@@ -334,7 +342,10 @@ def get_training_param_area(
     if lr_name.startswith("fixed") or lr_name.startswith("exp_decay"):
         metric_to_monitor = "val_loss" if use_validation else "loss"
         early_stop = EarlyStopping(
-            monitor=metric_to_monitor, patience=4, restore_best_weights=True, verbose=1,
+            monitor=metric_to_monitor,
+            patience=4,
+            restore_best_weights=True,
+            verbose=1,
         )
         callbacks.append(early_stop)
 
@@ -429,12 +440,16 @@ def train_area(
     net_type = hypa["net_type"]
     if net_type == "ARN":
         model = AreaNet.build(**model_param)
-    elif net_type == "SIM":
-        model = SimpleNet.build(**model_param)
     elif net_type == "AAN":
         model = ActualAreaNet.build(**model_param)
     elif net_type == "VAN":
         model = VerticalAreaNet.build(**model_param)
+    elif net_type.startswith("SI"):
+        if net_type == "SIM":
+            sim_type = "1"
+        elif net_type == "SI2":
+            sim_type = "2"
+        model = SimpleNet.build(sim_type=sim_type, **model_param)
 
     # from hypa extract training param (epochs, batch, opt, ...)
     training_param = get_training_param_area(hypa, use_validation, model_path)

@@ -11,6 +11,8 @@
 
 ##### FixMe
 
+* Pass label translations to plotter and use them, for outer parameter add on what you averaged
+
 * other ltts is not generated if it is missing the raw folder
 * All the documentation
 
