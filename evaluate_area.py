@@ -98,8 +98,8 @@ def build_area_results_df() -> pd.DataFrame:
     info_folder = Path("info") / "area"
 
     for model_folder in info_folder.iterdir():
-        model_name = model_folder.name
-        logg.debug(f"model_name: {model_name}")
+        # model_name = model_folder.name
+        # logg.debug(f"model_name: {model_name}")
 
         res_path = model_folder / "results_recap.json"
         if not res_path.exists():

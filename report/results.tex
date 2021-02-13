@@ -146,8 +146,8 @@ gentler
 warping leads to better results.
 For the LSTM+attention architecture, data augmentation does not increase
 the performance of the model,
-whereas for the convolutional architecture the mean F-Score value increases
-from $0.939$ to $0.960$.
+whereas for the convolutional architecture the mean F-Score value for the 
+\texttt{f1} 4-words task increases from $0.939$ to $0.960$.
 
 In \tab{tab:att_augmentation_comparison} the different types of
 augmentation are compared.
@@ -168,7 +168,7 @@ No particular type emerges as better than the others.
         \hline
         % \multicolumn{2}{c}{Multi-column}
         % LSTM+att & & (10 words) \\
-        \multicolumn{3}{|c|}{LSTM+att (10 words task)} \\
+        \multicolumn{3}{|c|}{LSTM+att (10-words task)} \\
         \hline
         % mel01   &  0.954 & 0.0073 \\
         mel04   &  None & $0.963 \pm 0.0126$ \\
@@ -182,7 +182,7 @@ No particular type emerges as better than the others.
         \hline
         % CNN & & (4 words)  \\
         % \multicolumn{2}{|c}{CNN} & (4 words) \\
-        \multicolumn{3}{|c|}{CNN (4 words task)} \\
+        \multicolumn{3}{|c|}{CNN (4-words task)} \\
         % \hline
         % \hline
         % Aug ID & Spec+Type & F-Score \\
@@ -229,7 +229,38 @@ No particular type emerges as better than the others.
 
 \subsection{Extract loudest section performance}
 
-Group by dataset: 1 sec vs loud section
+As an additional preprocessing step, the loudest $0.5$s section of the audio
+signal was selected.
+It might seem surprising, but both the LSTM+attention and the AreaNet
+architectures performed better on the full audio samples, 
+as shown in \tab{tab:comparison_loud_section}.
+This however could be explained by the fact that those are \textit{attention}
+architectures, so by design they will identify the relevant portion of the data.
+By only feeding important data to the networks, the attention mechanism has more
+difficulty to learn which sections to select, because all of them are useful.
+
+% TODO it makes sense that the attention models are LESS performing on reduced
+% input, as all of ti will be useful. Check if this is the case with ConvNets
+% SIM are ConvNets tho, and still LS suks
+
+\begin{table}[t!]
+    \centering
+    \caption{Comparison of the original dataset and the dataset that only
+    includes the loudest section of the audio samples.}
+    \label{tab:comparison_loud_section}
+    \begin{tabular}{|c|c|c|}
+        \hline
+        & LTnum & LTnumLS \\
+        \hline
+        CNN      & $0.967 \pm 0.000$ & $0.952 \pm 0.003$ \\
+        LSTM+att & $0.969 \pm 0.012$ & $0.953 \pm 0.012$ \\
+        AreaNet  & $0.977 \pm 0.011$ & $0.962 \pm 0.023$ \\
+        \hline
+        % & LSTM+att & AreaNet(s) \\
+        % LTnum   & $0.969 \pm 0.012$ & $0.977 \pm 0.011$ \\
+        % LTnumLS & $0.953 \pm 0.012$ & $0.962 \pm 0.023$ \\
+    \end{tabular}
+\end{table}
 
 \subsection{Architecture comparison}
 
@@ -259,8 +290,8 @@ can help understand which parts of the recording were relevant for the
 classification.
 \fig{fig:attention_weights_standard} shows the spectrograms, the attention
 weigths and the predictions for three sample words.
-Indeed, the attention weights show that some sections of the data is more important
-and is used to extract more information from the signal.
+Indeed, the attention weights show which some sections of the data is more important
+and is used to extract information from the signal.
 
 % ATT_ct02_dr01_ks01_lu01_qt05_dw01_opa1_lr03_bs02_en02_dsaug07_wLTnum_LTnum_train_data
 \begin{figure*}[t!]
@@ -287,7 +318,8 @@ of the spectrograms.
 \begin{figure}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{AAN_opa1_lr03_bs32_en15_dsaug14_wLTnum_0001.pdf}
-    \caption{AAN weights}%
+    \caption{AreaNet computes a $8 \times 8$ grid that is used to weigh the
+    original spectrogram.}%
     \label{fig:attention_weights_area}
 \end{figure}
 
@@ -296,7 +328,9 @@ TODO: Show VerticalAreaNet
 \begin{figure}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{VAN_opa1_lr04_bs32_en15_dsaug14_wLTall_0001.pdf}
-    \caption{VAN weights}%
+    \caption{VerticalAreaNet computes a $1 \times 16$ grid that is used to
+        weigh the original 
+    spectrogram.}%
     \label{fig:attention_weights_vertical}
 \end{figure}
 \subsection{Stream predictions}
