@@ -158,11 +158,11 @@ def hyper_train_attention(
     # ds.extend(["aug06", "aug07", "aug08", "aug09"])
     # ds.extend(["aug10", "aug11", "aug12", "aug13"])
     # ds.extend(["aug14", "aug15", "aug16", "aug17"])
-    # ds.extend(["mela1"])
-    # ds.extend(["mel04"])
+    ds.extend(["mela1"])
+    ds.extend(["mel04"])
     # ds.extend(["aug15"])
-    # ds.extend(["aug14"])
-    # ds.extend(["aug07"])
+    ds.extend(["aug14"])
+    ds.extend(["aug07"])
     # hypa_grid["dataset_name"] = ["mela1"]
     # hypa_grid["dataset_name"] = ["mel04"]
     # hypa_grid["dataset_name"] = ["aug01"]
@@ -173,7 +173,7 @@ def hyper_train_attention(
     # ds.extend(["meLa1"])
     # ds.extend(["meLa2"])
     # ds.extend(["meLa3"])
-    ds.extend(["meLa4"])
+    # ds.extend(["meLa4"])
     # ds.extend(["auL18", "auL19", "auL20", "auL21"])
     # ds.extend(["auL18"])
 
@@ -188,8 +188,8 @@ def hyper_train_attention(
     hypa_grid["dropout_type"] = ["01"]
 
     ###### the shape of the kernels in the conv layers
-    # hypa_grid["kernel_size_type"] = ["01", "02"]
-    hypa_grid["kernel_size_type"] = ["01"]
+    hypa_grid["kernel_size_type"] = ["01", "02"]
+    # hypa_grid["kernel_size_type"] = ["01"]
 
     ###### the dimension of the LSTM
     # hypa_grid["lstm_units_type"] = ["01", "02"]
@@ -198,9 +198,9 @@ def hyper_train_attention(
     ###### the query style type
     qs = []
     # hypa_grid["query_style_type"] = ["01", "02", "03", "04", "05"]
-    qs.extend(["01"])  # dense01
-    qs.extend(["03"])  # conv02 (LSTM)
-    qs.extend(["04"])  # conv03 (inputs)
+    # qs.extend(["01"])  # dense01
+    # qs.extend(["03"])  # conv02 (LSTM)
+    # qs.extend(["04"])  # conv03 (inputs)
     qs.extend(["05"])  # dense02
     hypa_grid["query_style_type"] = qs
 
@@ -211,11 +211,17 @@ def hyper_train_attention(
     ###### the learning rates for the optimizer
     lr = []
     # lr.extend(["01", "02"])  # fixed
+    lr.extend(["01"])  # fixed
+    # lr.extend(["02"])  # fixed
     lr.extend(["03"])  # exp_decay_step_01
     lr.extend(["04"])  # exp_decay_smooth_01
-    # lr.extend(["07"])  # clr_triangular2_03
-    # lr.extend(["09"])  # clr_triangular2_05
+    lr.extend(["05"])  # clr_triangular2_01
+    lr.extend(["06"])  # clr_triangular2_02
+    lr.extend(["07"])  # clr_triangular2_03
+    lr.extend(["08"])  # clr_triangular2_04
+    lr.extend(["09"])  # clr_triangular2_05
     lr.extend(["10"])  # exp_decay_smooth_02
+
     hypa_grid["learning_rate_type"] = lr
 
     ###### which optimizer to use
@@ -229,8 +235,8 @@ def hyper_train_attention(
     ###### the number of epochs
     en = []
     # en.extend(["01"])  # 15
-    en.extend(["02"])  # 30
-    # en.extend(["03", "04"])
+    # en.extend(["02"])  # 30
+    en.extend(["03", "04"])
     hypa_grid["epoch_num_type"] = en
 
     # the grid you are generating from (useful to recreate the training)

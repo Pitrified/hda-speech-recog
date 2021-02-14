@@ -189,6 +189,7 @@ def evaluate_results_attention() -> None:
         if col in ["model_name", "loss", "fscore", "recall", "precision", "cat_acc"]:
             continue
         logg.info(f"hypa_grid['{col}'] = {results_df[col].unique()}")
+        logg.info(f"hypa_grid['{col}'] = {results_df[col].value_counts()}")
 
     # all the results so far
     df_f = results_df
