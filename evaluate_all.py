@@ -1,11 +1,14 @@
+from pathlib import Path
 import argparse
 import logging
 import typing as ty
 import json
+import math
 
+from evaluate_area import build_area_results_df
 from evaluate_attention import build_att_results_df
 from evaluate_cnn import build_cnn_results_df
-from evaluate_area import build_area_results_df
+from evaluate_transfer import build_tra_results_df
 from utils import setup_logger
 
 
@@ -21,6 +24,7 @@ def parse_arguments() -> argparse.Namespace:
         choices=[
             "results",
             "evaluate_augmentation",
+            "evaluate_results_all",
             "evaluate_loud_section",
         ],
         help="Which evaluation to perform",
@@ -164,9 +168,9 @@ def evaluate_loud_section() -> None:
     logg.debug(f"res_area_df['words'].unique(): {res_area_df['words'].unique()}")
 
     res_df = {}
-    res_df['att'] = res_att_df
-    res_df['cnn'] = res_cnn_df
-    res_df['area'] = res_area_df
+    res_df["att"] = res_att_df
+    res_df["cnn"] = res_cnn_df
+    res_df["area"] = res_area_df
 
     word_list = ["LTnum", "LTnumLS"]
     # word_list += ["LTall", "LTallLS"]
@@ -225,6 +229,143 @@ def evaluate_results_all() -> None:
     # logg.setLevel("INFO")
     logg.debug("Start evaluate_results_all")
 
+    all_res_df = {}
+    all_res_df["area"] = build_area_results_df()
+    all_res_df["att"] = build_att_results_df()
+    all_res_df["cnn"] = build_cnn_results_df()
+    all_res_df["tra"] = build_tra_results_df()
+
+    # remove failed trainings
+    for arch in all_res_df:
+        all_res_df[arch] = all_res_df[arch].query("fscore > 0.5")
+        logg.debug(f"len(all_res_df[{arch}]): {len(all_res_df[arch])}")
+
+    word_lists = [["f1"], ["k1"], ["yn", "LTyn"], ["num", "LTnum"], ["all", "LTall"]]
+
+    type_per_arch: ty.Dict[str, ty.List[str]] = {}
+    type_per_arch["cnn"] = ["CNN"]
+    type_per_arch["tra"] = ["TRA", "TD1", "TB0", "TB4", "TB7"]
+    type_per_arch["att"] = ["ATT"]
+    type_per_arch["area"] = ["AAN", "ARN", "SIM", "SI2", "VAN"]
+
+    # mean
+    # stddev
+    # max
+    # min
+    # how many trained
+    # best 5, everything again
+
+    latex = ""
+    indent = "    "
+
+    header = indent * 2
+    header += "Arch & Mean $\\pm$ StdDev & Min & Max"
+    header += " \\\\\n"
+
+    hline = indent * 2
+    hline += "\\hline\n"
+
+    for wl in word_lists:
+        wl_str = ", ".join(wl)
+        # task_str = f"Task: {wl_str}"
+        task_str = "Task"
+        task_str += "s" if len(wl) > 1 else ""
+        task_str += f": {wl_str}"
+
+        latex += hline
+
+        latex += indent * 2
+        latex += f"\\multicolumn{{4}}{{|c|}}{{{task_str}}}"
+        latex += " \\\\\n"
+
+        latex += hline
+        latex += header
+
+        latex += hline
+
+        best_arch_name = "notfoundyet"
+        best_fscore_max = 0
+
+        all_fscores: ty.Dict[str, ty.Dict[str, float]] = {}
+
+        for arch in type_per_arch:
+            for arch_name in type_per_arch[arch]:
+                df_f = all_res_df[arch]
+                df_f = df_f[df_f["words"].isin(wl)]
+                df_f = df_f.query(f"model_name.str.startswith('{arch_name}')")
+
+                recap = f"{wl} {arch} {arch_name}"
+                recap += f" len(df_f): {len(df_f)}"
+                logg.debug(recap)
+
+                fscore_mean = df_f.fscore.mean()
+                fscore_stddev = df_f.fscore.std()
+                fscore_min = df_f.fscore.min()
+                fscore_max = df_f.fscore.max()
+
+                if not math.isnan(fscore_mean) and not math.isnan(fscore_stddev):
+                    all_fscores[arch_name] = {}
+                    all_fscores[arch_name]["mean"] = fscore_mean
+                    all_fscores[arch_name]["stddev"] = fscore_stddev
+                    all_fscores[arch_name]["min"] = fscore_min
+                    all_fscores[arch_name]["max"] = fscore_max
+
+                    if fscore_max > best_fscore_max:
+                        best_arch_name = arch_name
+                        best_fscore_max = fscore_max
+                    # latex += indent * 2
+                    # latex += f"{arch_name}"
+                    # latex += f" & ${fscore_mean:.3f} \\pm {fscore_stddev:.3f}$"
+                    # latex += f" & ${fscore_min:.3f}$"
+                    # latex += f" & ${fscore_max:.3f}$"
+                    # latex += " \\\\\n"
+
+        for arch_name in all_fscores:
+            fscore_mean = all_fscores[arch_name]["mean"]
+            fscore_stddev = all_fscores[arch_name]["stddev"]
+            fscore_min = all_fscores[arch_name]["min"]
+            fscore_max = all_fscores[arch_name]["max"]
+
+            latex += indent * 2
+            latex += f"{arch_name}"
+            latex += f" & ${fscore_mean:.3f} \\pm {fscore_stddev:.3f}$"
+            latex += f" & ${fscore_min:.3f}$"
+
+            latex += " & $"
+            latex += "\\bf{" if arch_name == best_arch_name else ""
+            latex += f"{fscore_max:.3f}"
+            latex += "}" if arch_name == best_arch_name else ""
+            latex += "$"
+
+            latex += " \\\\\n"
+
+        latex += hline
+
+    logg.debug(f"{latex}")
+
+    this_file_folder = Path(__file__).parent.absolute()
+    report_folder = this_file_folder / "report"
+    output_file = report_folder / "megacomparison_auto.tex"
+    template_table = ""
+    template_table += "% Autogenerated by"
+    template_table += " python evaluate_all.py -et evaluate_results_all"
+    template_table += "\n"
+    template_table += r"\begin{{table*}}[t!]"
+    template_table += "\n"
+    template_table += r"    \centering"
+    template_table += "\n"
+    template_table += r"    \caption{{Mega comparison}}"
+    template_table += "\n"
+    template_table += r"    \label{{tab:mega_comparison}}"
+    template_table += "\n"
+    template_table += r"    \begin{{tabular}}{{|c|ccc|}}"
+    template_table += "\n"
+    template_table += "{}"
+    template_table += r"    \end{{tabular}}"
+    template_table += "\n"
+    template_table += r"\end{{table*}}"
+    output_file.write_text(template_table.format(latex))
+
 
 def run_evaluate_all(args: argparse.Namespace) -> None:
     """TODO: What is evaluate_all doing?"""
@@ -239,6 +380,8 @@ def run_evaluate_all(args: argparse.Namespace) -> None:
         evaluate_augmentation()
     elif evaluation_type == "evaluate_loud_section":
         evaluate_loud_section()
+    elif evaluation_type == "evaluate_results_all":
+        evaluate_results_all()
 
 
 if __name__ == "__main__":

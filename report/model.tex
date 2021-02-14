@@ -242,17 +242,21 @@ landmarks.}%
 
 The training was done using the tensorflow library \cite{tensorflow2015-whitepaper}.
 
-TODO: intro to this section.
-% Several training parameters were tweaked during the experiments to maximize the models' performance.
-% A brief overview of each parameter follows.
+% TODO: intro to this section.
+
+Several training details can be adjusted to achieve optimal performance.
+An overview of the parameters tweaked during the experiments is provided in
+this section.
 
 \subsection{Learning rate}
 
 During the experiments, different values of learning rate and different
-schedules were used.
-The details are described in this section.
+schedules were used:
+% TODO: de novo?
+% The details are described in this section.
 
 \subsubsection{Finding optimal LR values}
+\label{sec:lr_sweep}
 
 For a model to learn, an optimizer computes the error gradient for the current
 model using a batch of training samples, then uses the back-propagation
@@ -266,15 +270,16 @@ converge.
 
 To find proper values for the learning rate, a technique that sweeps all
 possible values was used \cite{PYISlearningsweep}.
-The algorithm starts learning with an extremely low value for the learning rate ($1e-9$),
-then exponentially increases this value after each batch update. The training
-continues until the learning rate reaches $1$ or the loss diverges too much.
+The algorithm starts learning with an extremely low value for the learning rate
+($1e-9$), then exponentially increases this value after each batch update. The
+training continues until the learning rate reaches $1$ or the loss diverges too
+much.
 The loss value for each learning rate value is logged and the results are shown
 in \fig{fig:LR_sweep_bs16_en15}.
 From the plot the optimal range for the learning rate can be easily inferred:
-the model started learning at $1e-5$ and the training started to diverge at $1e-3$.
-The latter value can be chosen as initial learning rate and the former to tune
-the learning rate decay.
+the model started learning at $1e-5$ and the training started to diverge at
+$1e-3$. The latter value can be chosen as initial learning rate and the former
+to tune the learning rate decay.
 
 % https://latexdraw.com/how-to-annotate-an-image-in-latex/
 \begin{figure}[t!]
@@ -302,8 +307,9 @@ Different schedules for the learning rate can be used, to set a specific learnin
 
 \paragraph{Fixed}
 
-The simplest schedule is a constant function that keeps the value fixed
-(e.g. \texttt{lr}$=1e-3$, \texttt{lr}$=1e-4$).
+The simplest schedule consist in a constant function that keeps the value fixed
+(e.g. \texttt{lr}$=1e-3$).
+% , \texttt{lr}$=1e-4$).
 
 \paragraph{Exponential decay}
 
@@ -338,13 +344,13 @@ The two different schedules are compared in \fig{fig:lr_step_smooth}.
 \begin{figure}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{lr_step_smooth.pdf}
-    \caption{Learning rate schedules exponential decay step and smooth.
+    \caption{Learning rate schedules: exponential decay, step and smooth.
         Parameters:
         \texttt{initial\_lr} $=0.001$,
         \texttt{drop} $=0.4$,
         \texttt{epochs\_drop} $=5$,
         \texttt{min\_lr} $=4e-5$.
-        The minimum value that is reached at epoch $19$.}%
+        The minimum value is reached at epoch $19$.}%
     \label{fig:lr_step_smooth}
 \end{figure}
 
@@ -360,19 +366,16 @@ GitHub \cite{bckenstlerCLR}.
 An example of the \texttt{triangular2} policy is shown by
 \fig{fig:cyclic_lr_example}: a sharp initial drop in loss can be seen, as the
 learning rate covers the optimal range of values found by sweeping, as
-described previously. A small increase in loss corresponds to the peak of the
-second cycle. Finally with the last two cycles the model converges.
+described in \secref{sec:lr_sweep}. A small increase in loss corresponds to the
+peak of the second cycle. Finally with the last two cycles the model converges.
 
 \begin{figure}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{ATT_ct02_dr01_ks01_lu01_qt04_dw01_opa1_lr07_bs02_en01_dsmela1_wk1_fscore_loss_clr.pdf}
-    \caption{Cyclic learning rate example: $4$ cycles, with relative F-score and loss.}%
+    \caption{Cyclic learning rate schedule example with $4$ cycles.
+    The top plot shows the relative F-score and loss of the model.}%
     \label{fig:cyclic_lr_example}
 \end{figure}
-
-\subsection{Optimizer}
-Adam \cite{kingma2017adam}.
-TODO or todont?
 
 \subsection{Regularization and Batch Normalization}
 TODO or todont?
@@ -400,10 +403,16 @@ During the experiments, early stopping with patience 4 was used.
 
 TODO: Show a plot
 
-\subsection{Epochs number and batch size}
+\subsection{Optimizer, epochs number and batch size}
 TODO or todont?
 
+Adam \cite{kingma2017adam}.
+
 Epoche/batch, tempo di computazione
+
+In each epoch, every sample in the dataset is seen once.
+A batch is a set of samples that is used by the optimizer 
+algorithm to TODO.
 
 \subsection{Hyper-parameter tuning}
 
@@ -495,7 +504,7 @@ input shape of the spectrogram, five parameters can be set:
     \item Dropout rates after the convolutional modules.
     \item Width of the dense classifier layers.
 \end{enumerate}
-The possible values for the hyper-parameters are:
+The possible values for the model hyper-parameters are:
 \begin{itemize}
     \item dense\_width = [16, 32, 64, 128]
     \item filters = [10, 20, 32, 64, 128]
@@ -503,17 +512,15 @@ The possible values for the hyper-parameters are:
     \item kernel\_size = [[(2,2), (2,2), (2,2)], [(5,1), (3,3), (3,3)]]
     \item pool\_size = [[(2,2), (2,2), (2,2)], [(2,1), (2,2), (2,2)]]
 \end{itemize}
-
-% hypa_grid['dataset'] = ['mfcc01' 'aug13' 'mel01' 'aug02' 'mfcc03' 'aug07' 'aug04' 'mel03'
-%  'mfcc04' 'mfcc02' 'mel04' 'aug10' 'aug03' 'mel02' 'aug06' 'aug05' 'mela1'
-%  'aug09' 'aug08' 'aug12' 'aug11' 'aug14' 'aug15']
-% hypa_grid['words'] = ['f1' 'num' 'k1' 'w2' 'f2' 'all' 'dir']
-
-% hypa_grid['batch_size'] = [128  32  64]
-% hypa_grid['epoch_num'] = [ 60  15  16  30  59  58  61  31  62 101]
-% hypa_grid['lr'] = ['default' '01' '03' '02' '06' '04' '05' 'e1']
-% hypa_grid['opt'] = ['adam' 'a1' 'r1']
-
+TODO:
+The possible values for the training hyper-parameters are:
+\begin{itemize}
+    \item batch\_size = [32, 64, 128]
+    \item epoch\_num = [15, 30, 60, 100]
+    \item lr = ["fixed01", "fixed02", "fixed03",
+        "exp\_decay\_step\_01", "exp\_decay\_smooth\_01",
+    "exp\_decay\_smooth\_02"]
+\end{itemize}
 
 \section{Transfer Learning Approach}
 \label{sec:transfer_learning}
@@ -650,7 +657,6 @@ Where a value of $0$ means that the layer is skipped.
 
 The key idea behind the Attention mechanism is the assumption that not all of
 the data that is available carries the same amount of information.
-% Indeed, when processing a large amount of information we focus on few relevant details.
 The attention mechanism allows to focus on few relevant details when presented
 with large amount of data.
 This approach was used effectively in the field of Neural Machine Translation
@@ -660,8 +666,8 @@ to produce image captions with the Show, Attend and Tell approach
 
 In the paper by Douglas et al. \cite{2018arXiv180808929C}, the attention
 mechanism is used for speech command recognition.
-The ouput shapes of each layers are reported to track along which axis the dot
-multiplications are done.
+The ouput shapes of each layers are reported to better track along which axis
+the dot multiplications are done.
 As a first step, the mel spectrogram
 (shape [spec\_len, nMel])
 is computed from the input audio
@@ -669,7 +675,8 @@ is computed from the input audio
 A 2D convolution is performed, only along the time axis to extract local
 correlations in the spectrogram
 (shape [spec\_len, nMel, n\_filters]).
-A final 2D convolution, with just one filter, condenses the information back to a 2D image
+A final 2D convolution, with just one filter, condenses the information back to
+a 2D image
 (shape [spec\_len, nMel, 1])
 and the last dimension is squeezed away
 (shape [spec\_len, nMel]).
@@ -739,18 +746,17 @@ The possible values for the hyper-parameters are:
     \item kernel\_size = [[(5,1), (5,1), (5,1)], [(3,3), (3,3), (3,3)]]
     \item lstm\_units = [[64, 64], [64, 0]]
     \item query\_style = ["dense01", "dense02", "conv01", "conv02", "conv03"]
-    % \item query\_style = [\texttt{dense01}, \texttt{dense02},
-    % \texttt{conv01}, \texttt{conv02}, \texttt{conv03}]
     \item dense\_width = [32, 64]
 \end{itemize}
 
 TODO: hyper-parameter for training (e.g. lr)
 
-\section{AreaNet and SimpleNet}
+\section{SimpleNet, AreaNet and VerticalAreaNet}
 % Dream a dream
 
 TODO
 
-Explain SimpleNet structure, conv modules, GlobalAveragePooling2D instead of flattening
+Explain SimpleNet structure, conv modules, GlobalAveragePooling2D instead of
+flattening
 
 Explain how to extract attention weights for the grid, maxpooling then upsampling
