@@ -511,8 +511,12 @@ def make_plots_hypa() -> None:
     hypa_grid_all["dense"] = ["01", "02"]
     hypa_grid_all["lr"] = ["01", "03", "04", "05", "06", "07", "08", "09", "10"]
     hypa_grid_all["optimizer"] = ["a1"]
-    hypa_grid_all["batch"] = ["01", "02"]
-    hypa_grid_all["epoch"] = ["01", "02", "03", "04"]
+    hypa_grid_all["batch"] = ["02", "01"]
+    hypa_grid_all["epoch"] = ["03", "04", "01", "02"]
+
+    hypa_labels: ty.Dict[str, ty.Dict[str, str]] = {}
+    hypa_labels["epoch"] = {"01": "15", "02": "30", "03": "2", "04": "4"}
+    hypa_labels["batch"] = {"01": "32", "02": "16"}
 
     hp_to_plot_names_all = [
         "words",
@@ -532,7 +536,7 @@ def make_plots_hypa() -> None:
     # hp_to_plot_names: ty.List[str] = []
 
     # a unique name for this filtering
-    filter_tag = "005"
+    filter_tag = "004"
 
     # clone the results
     df_f = results_df
@@ -606,7 +610,7 @@ def make_plots_hypa() -> None:
 
         hypa_grid = deepcopy(hypa_grid_all)
         # hypa_grid["words"] = ["k1", "w2", "f2"]
-        # hypa_grid["words"] = ["k1"]
+        hypa_grid["words"] = ["k1"]
         word_list = ["k1"]
         df_f = df_f[df_f["words"].isin(word_list)]
 
@@ -691,9 +695,11 @@ def make_plots_hypa() -> None:
         png_split_fol,
         pdf_grid_fol,
         png_grid_fol,
-        do_single_images=True,
+        # do_single_images=True,
+        do_single_images=False,
         min_at_zero=False,
         min_lower_limit=min_lower_limit,
+        hypa_labels=hypa_labels,
     )
 
 

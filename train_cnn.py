@@ -145,19 +145,20 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     # hypa_grid_big["batch_size"] = [16, 32, 64]
     hypa_grid_big["batch_size"] = [32]
     ds = []
-    # ds.extend(["mel01", "mel04", "mela1"])
+    ds.extend(["mel01", "mel04", "mela1"])
     # ds.extend(["mel01", "mel02", "mel03", "mel04"])
     # ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
     # ds.extend(["aug02", "aug03", "aug04", "aug05"])
     # ds.extend(["aug06", "aug07", "aug08", "aug09"])
     # ds.extend(["aug10", "aug11", "aug12", "aug13"])
     # ds.extend(["aug14", "aug15", "aug16", "aug17"])
+    ds.extend(["aug14", "aug15", "aug16"])
     # ds.extend(["aug07"])
-    ds.extend(["meL04"])
-    ds.extend(["mel05"])
-    ds.extend(["auL06", "auL07", "auL08", "auL09"])
-    ds.extend(["auL18", "auL19", "auL20", "auL21"])
-    ds.extend(["aug18", "aug19", "aug20", "aug21"])
+    # ds.extend(["meL04"])
+    # ds.extend(["mel05"])
+    # ds.extend(["auL06", "auL07", "auL08", "auL09"])
+    # ds.extend(["auL18", "auL19", "auL20", "auL21"])
+    # ds.extend(["aug18", "aug19", "aug20", "aug21"])
     hypa_grid_big["dataset"] = ds
     # hypa_grid_big["dropout_type"] = ["01", "02"]
     hypa_grid_big["dropout_type"] = ["01"]
@@ -176,7 +177,8 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     # lr.extend(["06"])  # exp_decay_smooth_02
     hypa_grid_big["learning_rate_type"] = lr
     hypa_grid_big["optimizer_type"] = ["a1"]
-    hypa_grid_big["words"] = [words_type]
+    # hypa_grid_big["words"] = [words_type]
+    hypa_grid_big["words"] = ["LTnum", "LTnumLS"]
     # hypa_grid_big["words"] = ["f2", "f1", "num", "dir", "k1", "w2", "all"]
 
     # tiny grid
@@ -211,21 +213,6 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     # hypa_grid = hypa_grid_tiny
     # hypa_grid = hypa_grid_best
     hypa_grid = hypa_grid_big
-
-    hypa_grid = {
-        "base_dense_width": [32],
-        "base_filters": [32],
-        "batch_size": [32],
-        "dataset": ["meL04"],
-        "dropout_type": ["01"],
-        "epoch_num": [15],
-        "kernel_size_type": ["02"],
-        "learning_rate_type": ["04"],
-        "optimizer_type": ["a1"],
-        "pool_size_type": ["01"],
-        "words": ["LTnumLS"],
-    }
-
     logg.debug(f"hypa_grid = {hypa_grid}")
 
     the_grid = list(ParameterGrid(hypa_grid))
@@ -248,7 +235,7 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
             if dn.startswith("me"):
                 logg.debug(f"Preprocess! {wt} {dn}")
                 preprocess_spec(dn, wt)
-            elif dn.startswith("auL"):
+            elif dn.startswith("au"):
                 do_augmentation(dn, wt)
 
     for i, hypa in enumerate(the_grid):

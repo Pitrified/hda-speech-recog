@@ -230,6 +230,7 @@ def plot_triple_data(
     max_all: float = None,
     min_all: float = None,
     min_lower_limit: float = 0,
+    hypa_labels: ty.Dict[str, ty.Dict[str, str]] = None,
 ):
     """Plot groups of groups of columns
 
@@ -249,25 +250,62 @@ def plot_triple_data(
     |xxx xxx xxx xxx    xxx xxx xxx xxx
     .----------------------------------->
     """
-    # logg = logging.getLogger(f"c.{__name__}.plot_triple_data")
+    logg = logging.getLogger(f"c.{__name__}.plot_triple_data")
     # logg.setLevel("INFO")
-    # logg.debug("Start plot_triple_data")
-    # logg.debug(f"f_mean.shape: {f_mean.shape}")
+    logg.debug("Start plot_triple_data")
+    logg.debug(f"f_mean.shape: {f_mean.shape}")
+    logg.debug(f"outer_value: {outer_value} outer_label {outer_label}")
+    logg.debug(f"lab_names: {lab_names}")
+    logg.debug(f"lab_values: {lab_values}")
+    logg.debug(f"hypa_labels: {hypa_labels}")
+
+    if outer_label is not None and outer_value is not None:
+        if hypa_labels is not None:
+            lab_values_disp = []
+            for il, this_lab_values in enumerate(lab_values):
+                this_lab_name = lab_names[il]
+                new_disp_values = []
+                for this_lab_value in this_lab_values:
+
+                    # if I know how to translate
+                    if this_lab_name in hypa_labels:
+                        disp_lab_value = hypa_labels[this_lab_name][this_lab_value]
+                        logg.debug(f"disp_lab_value: {disp_lab_value}")
+
+                    # use the current available label, no translation
+                    else:
+                        disp_lab_value = this_lab_value
+
+                    new_disp_values.append(disp_lab_value)
+
+                lab_values_disp.append(new_disp_values)
+
+            # translate the outer label if you have the translation available
+            if outer_label in hypa_labels:
+                outer_value_disp = hypa_labels[outer_label][outer_value]
+            else:
+                outer_value_disp = outer_value
+
+        else:
+            lab_values_disp = lab_values
+            outer_value_disp = outer_label
+    logg.debug(f"lab_values_disp: {lab_values_disp}")
+    logg.debug(f"outer_value_disp: {outer_value_disp}")
 
     title = ""
     if outer_label is not None and outer_value is not None:
         title += f"{outer_label}"
-        # title += f": \\textbf{{{outer_value}}}"
-        title += f": $\\bf{{{outer_value}}}$"
+        # title += f": \\textbf{{{outer_value_disp}}}"
+        title += f": $\\bf{{{outer_value_disp}}}$"
         title += "\n"
     title += f"{lab_names[0]}"
-    title += f": {lab_values[0]}"
+    title += f": {lab_values_disp[0]}"
     title += "\n"
     title += f" grouped by {lab_names[1]}"
-    title += f": {lab_values[1]}"
+    title += f": {lab_values_disp[1]}"
     title += "\n"
     title += f" grouped by {lab_names[2]}"
-    title += f": {lab_values[2]}"
+    title += f": {lab_values_disp[2]}"
     ax.set_title(title, fontsize=14)
 
     lab_fontsize = 14
@@ -323,7 +361,7 @@ def plot_triple_data(
         # where to put the ticks
         this_ticks = x_inner_ticks + shift_group
         all_x_ticks = np.hstack((all_x_ticks, this_ticks))
-        this_labels = [f"{vy} ({lab_values[2][iz]})" for vy in lab_values[1]]
+        this_labels = [f"{vy} ({lab_values_disp[2][iz]})" for vy in lab_values_disp[1]]
         all_xticklabels.extend(this_labels)
 
         # reset the cycler
@@ -355,7 +393,7 @@ def plot_triple_data(
             y_f = f_mean[ix, :, iz]
 
             # only put the label for the first z slice
-            the_label = lab_values[0][ix] if iz == 0 else None
+            the_label = lab_values_disp[0][ix] if iz == 0 else None
 
             # plot the bars
             ax.bar(
@@ -435,11 +473,12 @@ def quad_plotter(
     do_single_images: bool = True,
     min_at_zero: bool = False,
     min_lower_limit: float = 0,
+    hypa_labels: ty.Dict[str, ty.Dict[str, str]] = None,
 ) -> None:
     """MAKEDOC: what is quad_plotter doing?"""
     logg = logging.getLogger(f"c.{__name__}.quad_plotter")
     # logg.setLevel("INFO")
-    # logg.debug("Start quad_plotter")
+    logg.debug("Start quad_plotter")
 
     for hp_to_plot in tqdm(all_hp_to_plot):
         outer_hp: str = hp_to_plot[-1]
@@ -496,6 +535,7 @@ def quad_plotter(
 
         # then we plot them
         for iv, outer_value in enumerate(outer_values):
+            logg.debug(f"iv: {iv} outer_value {outer_value}")
             # plot on the outer grid
             plot_triple_data(
                 flat_ax[iv],
@@ -511,6 +551,7 @@ def quad_plotter(
                 f_max.max(),
                 f_min_all,
                 min_lower_limit,
+                hypa_labels,
             )
 
             if do_single_images:
@@ -533,6 +574,7 @@ def quad_plotter(
                     f_max.max(),
                     f_min_all,
                     min_lower_limit,
+                    hypa_labels,
                 )
 
                 # save and close the single image
