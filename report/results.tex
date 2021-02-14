@@ -82,7 +82,7 @@ A total of $1389$ experiment were performed for the LSTM+attention model.
 
 \subsubsection{Architecture performance comparison}
 
-\fig{fig:dropout_conv_query_dense} shows F-score values for 
+\fig{fig:att_dropout_conv_query_dense} shows F-score values for 
 variation of 
 the width of the dense classifier ($32$ or $64$),
 the dropout rate ($0.2$ or $0$) after the initial convolutional layers,
@@ -117,14 +117,45 @@ new datasets.
         Averaged on 20 and 35 words task, solved by the LSTM+attention architecture.
         % TODO should also average on non ugmented dataset
         }%
-    \label{fig:dropout_conv_query_dense}
+    \label{fig:att_dropout_conv_query_dense}
 \end{figure*}
 
 \subsubsection{Training parameter performance comparison}
 
-Group by (lr, batch, epoch)
-Optimizer is fixed
-TODO: Almost ready, finish last experiments
+% Optimizer is fixed
+
+\fig{fig:att_epoch_batch_lr_words} shows F-score values for 
+variation of 
+the number of training epochs ($2$, $4$, $15$ and $30$),
+the batch size ($16$ or $32$),
+and the learning rate
+when the LSTM+attention model solves the task \texttt{k1}
+on non-augmented datasets.
+Two main conclusions can be reached:
+\begin{itemize}
+    \item
+        The training gets more stable as the epoch number increases, and when
+        using a larger batch size. For $30$ and $32$ respectively the results
+        are quite consistent across the different learning rate types.
+    \item
+        The learning rate schedule \texttt{clr\_tri2\_04} (a cyclic learning
+        rate with triangular 2 shape), when using enough epochs and a large
+        batch size, is the one that performs the best.
+\end{itemize}
+
+\begin{figure*}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Fscore_att2_epoch__batch__lr__words.pdf}
+    \caption{F-score for varying
+        epoch num,
+        batch size,
+        learning rate type,
+        words type.
+        Averaged on non-augmented datasets.
+        Solved by the LSTM+attention architecture.
+        }%
+    \label{fig:att_epoch_batch_lr_words}
+\end{figure*}
 
 \subsection{AreaNet and SimpleNet performance}
 

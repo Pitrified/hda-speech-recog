@@ -1,6 +1,7 @@
 from copy import deepcopy
 from itertools import combinations
 from itertools import product
+from itertools import permutations
 from pathlib import Path
 import argparse
 import json
@@ -241,6 +242,17 @@ def evaluate_results_attention() -> None:
 
     # df['a'].value_counts()
     logg.info(f"results_df['conv'].value_count(): {results_df['conv'].value_counts()}")
+
+    df_f = results_df
+    df_f = df_f.query("use_val == True")
+    df_f = df_f.query("words == 'k1'")
+    df_f = df_f.query("lr == '08'")
+    epoch_list = ["01", "02"]
+    df_f = df_f[df_f["epoch"].isin(epoch_list)]
+    batch_list = ["01", "02"]
+    df_f = df_f[df_f["batch"].isin(batch_list)]
+    df_f = df_f.sort_values("fscore", ascending=False)
+    logg.info(f"{df_f.head(100)}")
 
 
 def evaluate_batch_epoch() -> None:
@@ -658,7 +670,7 @@ def make_plots_hypa() -> None:
     hypa_grid_all["lstm"] = ["01"]
     hypa_grid_all["query"] = ["01", "02", "03", "04", "05"]
     hypa_grid_all["dense"] = ["01", "02"]
-    hypa_grid_all["lr"] = ["01", "03", "04", "05", "06", "07", "08", "09", "10"]
+    hypa_grid_all["lr"] = ["01", "03", "04", "10", "05", "06", "07", "08", "09"]
     hypa_grid_all["optimizer"] = ["a1"]
     hypa_grid_all["batch"] = ["02", "01"]
     hypa_grid_all["epoch"] = ["03", "04", "01", "02"]
@@ -666,6 +678,18 @@ def make_plots_hypa() -> None:
     hypa_labels: ty.Dict[str, ty.Dict[str, str]] = {}
     hypa_labels["epoch"] = {"01": "15", "02": "30", "03": "2", "04": "4"}
     hypa_labels["batch"] = {"01": "32", "02": "16"}
+
+    hypa_labels["lr"] = {}
+    hypa_labels["lr"]["01"] = "fixed01"
+    hypa_labels["lr"]["02"] = "fixed02"
+    hypa_labels["lr"]["03"] = "exp_step_01"
+    hypa_labels["lr"]["04"] = "exp_smooth_01"
+    hypa_labels["lr"]["05"] = "clr_tri2_01"
+    hypa_labels["lr"]["06"] = "clr_tri2_02"
+    hypa_labels["lr"]["07"] = "clr_tri2_03"
+    hypa_labels["lr"]["08"] = "clr_tri2_04"
+    hypa_labels["lr"]["09"] = "clr_tri2_05"
+    hypa_labels["lr"]["10"] = "exp_smooth_02"
 
     hp_to_plot_names_all = [
         "words",
@@ -763,20 +787,10 @@ def make_plots_hypa() -> None:
         word_list = ["k1"]
         df_f = df_f[df_f["words"].isin(word_list)]
 
-        # this to highlight lr
-        # hp_to_plot_names = [
-        #     "lr",
-        #     "epoch",
-        #     "batch",
-        #     "words",
-        # ]
-
-        # hp_to_plot_names = [
-        #     "epoch",
-        #     "lr",
-        #     "batch",
-        #     "words",
-        # ]
+        ds = []
+        ds.extend(["mel01", "mel04", "mel05", "mela1"])
+        hypa_grid["dataset"] = ds
+        df_f = df_f[df_f["dataset"].isin(ds)]
 
         hp_to_plot_names = [
             "batch",
@@ -821,6 +835,15 @@ def make_plots_hypa() -> None:
 
     all_hp_to_plot = list(combinations(hp_to_plot_names, 4))
     logg.debug(f"len(all_hp_to_plot): {len(all_hp_to_plot)}")
+
+    all_hp_to_plot = []
+    perm = list(permutations(hp_to_plot_names[:3]))
+    logg.debug(f"perm: {perm}")
+    for p in perm:
+        hp_to_plot = p[0], p[1], p[2], hp_to_plot_names[3]
+        logg.debug(f"hp_to_plot: {hp_to_plot}")
+        all_hp_to_plot.append(hp_to_plot)
+    logg.debug(f"all_hp_to_plot: {all_hp_to_plot}")
 
     # add additional combinations if needed
     # all_hp_to_plot.append(("epoch", "dataset", "batch", "query"))
