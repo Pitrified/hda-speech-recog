@@ -276,8 +276,8 @@ def setup_logger(logLevel="DEBUG"):
     # log_format_module = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     # log_format_module = "%(name)s - %(levelname)s: %(message)s"
     # log_format_module = '%(levelname)s: %(message)s'
-    log_format_module = '%(name)s: %(message)s'
-    # log_format_module = "%(message)s"
+    # log_format_module = "%(name)s: %(message)s"
+    log_format_module = "%(message)s"
 
     formatter = logging.Formatter(log_format_module)
     module_console_handler.setFormatter(formatter)
@@ -438,3 +438,17 @@ def get_val_test_list(dataset_path: Path) -> ty.Tuple[ty.List[str], ty.List[str]
     # logg.debug(f"testing_names: {testing_names[:10]}")
 
     return validation_names, testing_names
+
+
+def pr2fscore(precision, recall) -> np.ndarray:
+    """MAKEDOC: what is pr2fscore doing?"""
+    logg = logging.getLogger(f"c.{__name__}.pr2fscore")
+    # logg.setLevel("INFO")
+    logg.debug("Start pr2fscore")
+
+    pr_prod = 2 * precision * recall
+    pr_sum = precision + recall
+    fscore = np.zeros_like(pr_prod)
+    np.divide(pr_prod, pr_sum, out=fscore, where=pr_sum > 0)
+
+    return fscore

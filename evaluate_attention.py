@@ -23,6 +23,7 @@ from preprocess_data import load_processed
 from preprocess_data import wav2mel
 from train_attention import build_attention_name
 from utils import compute_permutation
+from utils import pr2fscore
 from utils import record_audios
 from utils import setup_gpus
 from utils import setup_logger
@@ -46,6 +47,7 @@ def parse_arguments():
             "make_plots_clr",
             "audio",
             "delete_bad_models",
+            "compare_augmentation",
         ],
         help="Which evaluation to perform",
     )
@@ -476,6 +478,152 @@ def evaluate_attention_weights(
 
     if num_rec_words <= 6:
         plt.show()
+
+
+def compare_augmentation() -> None:
+    """MAKEDOC: what is compare_augmentation doing?"""
+    logg = logging.getLogger(f"c.{__name__}.compare_augmentation")
+    # logg.setLevel("INFO")
+    logg.debug("Start compare_augmentation")
+
+    res_att_df = build_att_results_df()
+    res_att_df = res_att_df.query("fscore > 0.5")
+    res_att_df = res_att_df.query("words == 'k1'")
+    logg.debug(f"res_att_df['dataset'].unique(): {res_att_df['dataset'].unique()}")
+
+    # aug2345 = ["aug02", "aug03", "aug04", "aug05"]
+    # aug6789 = ["aug06", "aug07", "aug08", "aug09"]
+    # aug0123 = ["aug10", "aug11", "aug12", "aug13"]
+    # aug4567 = ["aug14", "aug15", "aug16", "aug17"]
+    aug4567 = ["aug14", "aug15", "aug16"]
+    # all_aug = (*aug2345, *aug6789, *aug0123, *aug4567)
+    all_aug = aug4567
+    logg.debug(f"all_aug: {all_aug}")
+
+    mels = ["mel01", "mel04", "mel05", "mela1"]
+    # meLs = ["meL04", "meLa1", "meLa2", "meLa3", "meLa4"]
+    # all_mels = (*mels, *meLs)
+    all_mels = mels
+    logg.debug(f"all_mels: {all_mels}")
+
+    data_names = ["mel", "aug"]
+    for ep in ["01", "03", "04"]:
+        recap = f"{ep}"
+        for i, data in enumerate((mels, all_aug)):
+            logg.debug(f"{data_names[i]} ep: {ep}")
+            df_f = res_att_df
+            df_f = df_f[df_f["dataset"].isin(data)]
+            df_f = df_f.query(f"epoch == '{ep}'")
+            df_f = df_f.sort_values("fscore", ascending=False)
+            # logg.info(f"{df_f.head(5)}")
+            fscore_mean = df_f.fscore.mean()
+            logg.debug(f"fscore_mean: {fscore_mean:.3f}")
+            fscore_stddev = df_f.fscore.std()
+            # logg.debug(f"fscore_stddev: {fscore_stddev:.3f}")
+
+            recap += f" & ${fscore_mean:.3f} \\pm {fscore_stddev:.3f}$"
+        recap += " \\\\"
+        logg.debug(f"{recap}")
+
+    # df_f = res_att_df
+    # # df_f = df_f[df_f["dataset"].isin(all_aug)]
+    # df_f = df_f[df_f["dataset"].isin(all_mels)]
+    # df_f = df_f.query("epoch == '04'")
+    # df_f = df_f.sort_values("fscore", ascending=False)
+    # # logg.info(f"{df_f.head(5)}")
+    # fscore_mean = df_f.fscore.mean()
+    # logg.debug(f"fscore_mean: {fscore_mean}")
+
+    df_f = res_att_df
+    # df_f = df_f[df_f["dataset"].isin(all_mels)]
+    df_f = df_f[df_f["dataset"].isin(all_aug)]
+    df_f = df_f.query("words == 'k1'")
+    df_f = df_f.query("epoch == '01' or epoch == '02'")
+    df_f = df_f.sort_values("fscore", ascending=False)
+    # logg.info(f"{df_f.head(5)}")
+    fscore_mean = df_f.fscore.mean()
+    logg.debug(f"fscore_mean: {fscore_mean}")
+
+    ##########################################################################
+    #   Plot learning
+    ##########################################################################
+
+    info_folder = Path("info") / "attention"
+
+    # ATT_ct02_dr01_ks02_lu01_qt05_dw01_opa1_lr07_bs02_en02_dsmel04_wk1
+    # ATT_ct02_dr01_ks02_lu01_qt05_dw01_opa1_lr07_bs02_en01_dsmel04_wk1
+    # NOT augmented, lr 07, en 02
+    # model_name_mel = "ATT_ct02_dr01_ks02_lu01_qt05_dw01_opa1_lr07_bs02_en02_dsmel04_wk1"
+    # model_name_mel = "ATT_ct02_dr01_ks02_lu01_qt05_dw01_opa1_lr07_bs02_en01_dsmel04_wk1"
+    model_name_mel = "ATT_ct02_dr01_ks01_lu01_qt04_dw01_opa1_lr03_bs01_en01_dsmel04_wk1"
+    res_path_mel = info_folder / model_name_mel / "results_recap.json"
+    res_mel = json.loads(res_path_mel.read_text())
+    logg.debug(f"res_mel.keys(): {res_mel.keys()}")
+
+    # compute F-Score
+    mel_prec_val = np.array(res_mel["history_val"]["val_precision"])
+    mel_recall_val = np.array(res_mel["history_val"]["val_recall"])
+    mel_fscore_val = pr2fscore(mel_prec_val, mel_recall_val)
+    logg.debug(f"mel_fscore_val: {mel_fscore_val}")
+    mel_prec_train = np.array(res_mel["history_train"]["precision"])
+    mel_recall_train = np.array(res_mel["history_train"]["recall"])
+    mel_fscore_train = pr2fscore(mel_prec_train, mel_recall_train)
+    logg.debug(f"mel_fscore_train: {mel_fscore_train}")
+
+    mel_loss_val = np.array(res_mel["history_val"]["val_loss"])
+    mel_loss_train = np.array(res_mel["history_train"]["loss"])
+
+    # ATT_ct02_dr01_ks02_lu01_qt05_dw01_opa1_lr06_bs02_en04_dsaug14_wk1
+    # augmented, lr 06, en 04
+    model_name_aug = "ATT_ct02_dr01_ks02_lu01_qt05_dw01_opa1_lr06_bs02_en04_dsaug14_wk1"
+    res_path_aug = info_folder / model_name_aug / "results_recap.json"
+    res_aug = json.loads(res_path_aug.read_text())
+    logg.debug(f"res_aug.keys(): {res_aug.keys()}")
+
+    # compute F-Score
+    aug_prec_val = np.array(res_aug["history_val"]["val_precision"])
+    aug_recall_val = np.array(res_aug["history_val"]["val_recall"])
+    aug_fscore_val = pr2fscore(aug_prec_val, aug_recall_val)
+    logg.debug(f"aug_fscore_val: {aug_fscore_val}")
+    aug_prec_train = np.array(res_aug["history_train"]["precision"])
+    aug_recall_train = np.array(res_aug["history_train"]["recall"])
+    aug_fscore_train = pr2fscore(aug_prec_train, aug_recall_train)
+    logg.debug(f"aug_fscore_train: {aug_fscore_train}")
+
+    aug_loss_val = np.array(res_aug["history_val"]["val_loss"])
+    aug_loss_train = np.array(res_aug["history_train"]["loss"])
+
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(10, 5))
+    fig.suptitle("Comparison of learning speed for regular/augmented data", fontsize=18)
+
+    x_aug = np.arange(len(aug_fscore_val)) + 1
+    x_mel = np.arange(len(mel_fscore_val)) + 1
+    ax[0].plot(x_mel, mel_fscore_train, label="Standard train F-Score")
+    ax[0].plot(x_mel, mel_fscore_val, label="Standard val F-Score")
+    ax[0].plot(x_aug, aug_fscore_train, label="Augmented train F-Score")
+    ax[0].plot(x_aug, aug_fscore_val, label="Augmented val F-Score")
+    ax[0].set_xlabel("Epoch number", fontsize=15)
+    ax[0].set_ylabel("F-Score", fontsize=15)
+
+    ax[1].plot(x_mel, mel_loss_train, label="Standard train loss")
+    ax[1].plot(x_mel, mel_loss_val, label="Standard val loss")
+    ax[1].plot(x_aug, aug_loss_train, label="Augmented train loss")
+    ax[1].plot(x_aug, aug_loss_val, label="Augmented val loss")
+    ax[1].set_xlabel("Epoch number", fontsize=15)
+    ax[1].set_ylabel("Loss", fontsize=15)
+
+    ax[0].legend()
+    ax[1].legend()
+    fig.tight_layout()
+
+    fig_name = "comparison_augmentation.{}"
+    plot_folder = Path("plot_results")
+    results_path = plot_folder / fig_name.format("png")
+    fig.savefig(results_path)
+    results_path = plot_folder / fig_name.format("pdf")
+    fig.savefig(results_path)
+
+    plt.show()
 
 
 def make_plots_hypa() -> None:
@@ -918,6 +1066,8 @@ def run_evaluate_attention(args: argparse.Namespace) -> None:
         evaluate_batch_epoch()
     elif evaluation_type == "delete_bad_models":
         delete_bad_models_att()
+    elif evaluation_type == "compare_augmentation":
+        compare_augmentation()
 
 
 if __name__ == "__main__":

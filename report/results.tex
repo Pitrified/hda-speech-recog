@@ -154,6 +154,8 @@ In \tab{tab:att_augmentation_comparison} the different types of
 augmentation are compared.
 No particular type emerges as better than the others.
 
+TODO: describe learning speed differences
+
 \begin{table}[t!]
     \centering
     % \caption{Comparison between regular and augmented datasets:}
@@ -225,6 +227,28 @@ No particular type emerges as better than the others.
         \hline
     \end{tabular}
 \end{table}
+
+\begin{table}[t!]
+    \centering
+    \caption{Comparison of learning speed}
+    \label{tab:augmentation_learning_speed}
+    \begin{tabular}{|c|c|c|}
+        \hline
+        Epoch num & Mel & Aug \\
+        \hline
+        2 & $0.923 \pm 0.034$ & $0.941 \pm 0.019$ \\
+        4 & $0.948 \pm 0.016$ & $0.958 \pm 0.011$ \\
+        15 & $0.959 \pm 0.013$ & $0.962 \pm 0.014$ \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{comparison_augmentation.pdf}
+    \caption{Comparison of the learning speed on regular vs. augmented data.}%
+    \label{fig:comparison_augmentation}
+\end{figure}
 
 %%%%%%%%%%%%%%%%%%%
 
