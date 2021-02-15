@@ -288,7 +288,7 @@ def plot_triple_data(
 
         else:
             lab_values_disp = lab_values
-            outer_value_disp = outer_label
+            outer_value_disp = outer_value
     logg.debug(f"lab_values_disp: {lab_values_disp}")
     logg.debug(f"outer_value_disp: {outer_value_disp}")
 

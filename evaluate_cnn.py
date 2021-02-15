@@ -1,4 +1,6 @@
+from copy import deepcopy
 from itertools import combinations
+from itertools import permutations
 from pathlib import Path
 import argparse
 import json
@@ -37,7 +39,14 @@ def parse_arguments() -> argparse.Namespace:
         "--evaluation_type",
         type=str,
         default="results",
-        choices=["results", "model", "audio", "delete_bad_models", "make_plots"],
+        choices=[
+            "results",
+            "model",
+            "audio",
+            "delete_bad_models",
+            "make_plots_hypa",
+            "make_plots",
+        ],
         help="Which evaluation to perform",
     )
 
@@ -165,11 +174,15 @@ def build_cnn_results_df() -> pd.DataFrame:
                     pandito["lr"].append(recap["hypa"]["learning_rate_type"])
                     pandito["opt"].append(recap["hypa"]["optimizer_type"])
                 else:
-                    pandito["lr"].append("default")
-                    pandito["opt"].append("adam")
+                    # pandito["lr"].append("default")
+                    # pandito["opt"].append("adam")
+                    pandito["lr"].append("01")
+                    pandito["opt"].append("a1")
         else:
-            pandito["lr"].append("default")
-            pandito["opt"].append("adam")
+            # pandito["lr"].append("default")
+            # pandito["opt"].append("adam")
+            pandito["lr"].append("01")
+            pandito["opt"].append("a1")
 
     df = pd.DataFrame(pandito)
     return df
@@ -707,6 +720,196 @@ def delete_bad_models_cnn(args) -> None:
     logg.debug(f"recreated: {recreated}")
 
 
+def make_plots_hypa() -> None:
+    """MAKEDOC: what is make_plots_hypa doing?"""
+    logg = logging.getLogger(f"c.{__name__}.make_plots_hypa")
+    # logg.setLevel("INFO")
+    logg.debug("Start make_plots_hypa")
+
+    results_df = build_cnn_results_df()
+
+    # print all unique values to get an idea of what is inside the dataframe
+    for col in results_df:
+        if col in ["model_name", "loss", "fscore", "recall", "precision", "cat_acc"]:
+            continue
+        logg.debug(f"hypa_grid['{col}'] = {results_df[col].unique()}")
+        logg.debug(f"frequencies\n{results_df[col].value_counts()}")
+
+    hypa_grid_all: ty.Dict[str, ty.Union[ty.List[str], ty.List[int]]] = {}
+
+    ds = []
+    ds.extend(["aug02", "aug03", "aug04", "aug05"])
+    ds.extend(["aug06", "aug07", "aug08", "aug09"])
+    ds.extend(["aug10", "aug11", "aug12", "aug13"])
+    ds.extend(["aug14", "aug15", "aug16", "aug17"])
+    ds.extend(["mel01", "mel02", "mel03", "mel04", "mela1"])
+    ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
+    hypa_grid_all["dataset"] = ds
+
+    wds = []
+    wds.extend(["f1"])
+    wds.extend(["dir", "k1", "w2", "f2"])
+    wds.extend(["all", "LTall"])
+    wds.extend(["num", "LTnumLS", "LTnum", "numLS", "FJnum"])
+    hypa_grid_all["words"] = wds
+
+    hypa_grid_all["dense_width"] = [16, 32, 64, 128]
+    hypa_grid_all["filters"] = [10, 20, 30, 32, 64, 128]
+    hypa_grid_all["batch_size"] = [32, 64, 128]
+    hypa_grid_all["dropout"] = ["01", "02"]
+    hypa_grid_all["epoch_num"] = [15, 30, 60]
+    hypa_grid_all["kernel_size"] = ["01", "02"]
+    hypa_grid_all["pool_size"] = ["01", "02"]
+    hypa_grid_all["lr"] = ["01", "02", "03", "04", "05", "06"]
+    hypa_grid_all["opt"] = ["a1", "r1"]
+
+    results_df = results_df[
+        results_df["kernel_size"].isin(hypa_grid_all["kernel_size"])
+    ]
+
+    hypa_labels: ty.Dict[str, ty.Dict[str, str]] = {}
+    hypa_labels["lr"] = {}
+    hypa_labels["lr"]["01"] = "fixed01"
+    hypa_labels["lr"]["02"] = "fixed02"
+    hypa_labels["lr"]["03"] = "fixed03"
+    hypa_labels["lr"]["04"] = "exp_step_01"
+    hypa_labels["lr"]["05"] = "exp_smooth_01"
+    hypa_labels["lr"]["06"] = "exp_smooth_02"
+
+    hp_to_plot_names_all = [
+        "dataset",
+        "words",
+        "dense_width",
+        "filters",
+        "batch_size",
+        "dropout",
+        "epoch_num",
+        "kernel_size",
+        "pool_size",
+        "lr",
+        "opt",
+    ]
+    logg.debug(f"hp_to_plot_names_all: {hp_to_plot_names_all}")
+
+    # a unique name for this filtering
+    filter_tag = "002"
+
+    # clone the results
+    df_f = results_df
+
+    # remove failed trainings
+    df_f = df_f[df_f["fscore"] > 0.5]
+
+    # in each tag overwrite the hypas to reduce
+    # and set which hp to plot
+    hypa_grid: ty.Dict[str, ty.Union[ty.List[str], ty.List[int]]] = {}
+    # hypa_grid: ty.Dict[str, ty.List[str]] = deepcopy(hypa_grid_all)
+
+    if filter_tag == "001":
+        hypa_grid = deepcopy(hypa_grid_all)
+        min_lower_limit = 0.60
+
+        wd_filter = ["f1"]
+        hypa_grid["words"] = wd_filter
+        df_f = df_f[df_f["words"].isin(wd_filter)]
+
+        en_filter = [15]
+        hypa_grid["epoch_num"] = en_filter
+        df_f = df_f[df_f["epoch_num"].isin(en_filter)]
+
+        ds = []
+        # ds.extend(["aug02", "aug03", "aug04", "aug05"])
+        # ds.extend(["aug06", "aug07", "aug08", "aug09"])
+        # ds.extend(["aug10", "aug11", "aug12", "aug13"])
+        ds.extend(["aug14", "aug15", "aug16", "aug17"])
+        ds.extend(["mel01", "mel02", "mel03", "mel04", "mela1"])
+        ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
+        hypa_grid["dataset"] = ds
+        df_f = df_f[df_f["dataset"].isin(ds)]
+
+        hp_to_plot_names = [
+            "dataset",
+            "epoch_num",
+            "lr",
+            "words",
+        ]
+
+        sub_tag = "nofilter"
+
+    elif filter_tag == "002":
+        hypa_grid = deepcopy(hypa_grid_all)
+        min_lower_limit = 0.50
+
+        # en_filter = [15]
+        # hypa_grid["epoch_num"] = en_filter
+        # df_f = df_f[df_f["epoch_num"].isin(en_filter)]
+
+        wd_filter = ["f1"]
+        hypa_grid["words"] = wd_filter
+        df_f = df_f[df_f["words"].isin(wd_filter)]
+
+        nf_filter = [10, 20, 32, 64, 128]
+        hypa_grid["filters"] = nf_filter
+        df_f = df_f[df_f["filters"].isin(nf_filter)]
+
+        ds = []
+        # ds.extend(["aug02", "aug03", "aug04", "aug05"])
+        # ds.extend(["aug06", "aug07", "aug08", "aug09"])
+        # ds.extend(["aug10", "aug11", "aug12", "aug13"])
+        # ds.extend(["aug14", "aug15", "aug16", "aug17"])
+        ds.extend(["mel01", "mel02", "mel03", "mel04", "mela1"])
+        # ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
+        hypa_grid["dataset"] = ds
+        df_f = df_f[df_f["dataset"].isin(ds)]
+
+        hp_to_plot_names = [
+            "dense_width",
+            "filters",
+            "kernel_size",
+            "pool_size",
+        ]
+
+        sub_tag = "nofilter"
+
+    # all_hp_to_plot = list(combinations(hp_to_plot_names, 4))
+    # logg.debug(f"len(all_hp_to_plot): {len(all_hp_to_plot)}")
+
+    all_hp_to_plot = []
+    perm = list(permutations(hp_to_plot_names[:3]))
+    logg.debug(f"perm: {perm}")
+    for p in perm:
+        hp_to_plot = p[0], p[1], p[2], hp_to_plot_names[3]
+        logg.debug(f"hp_to_plot: {hp_to_plot}")
+        all_hp_to_plot.append(hp_to_plot)
+    logg.debug(f"all_hp_to_plot: {all_hp_to_plot}")
+
+    # the output folders
+    plot_fol = Path("plot_results") / "cnn"
+    filter_fol = plot_fol / filter_tag / sub_tag
+    pdf_split_fol = filter_fol / "pdf_split"
+    pdf_grid_fol = filter_fol / "pdf_grid"
+    png_split_fol = filter_fol / "png_split"
+    png_grid_fol = filter_fol / "png_grid"
+    for f in pdf_split_fol, pdf_grid_fol, png_split_fol, png_grid_fol:
+        if not f.exists():
+            f.mkdir(parents=True, exist_ok=True)
+
+    quad_plotter(
+        all_hp_to_plot[:],
+        ty.cast(ty.Dict[str, ty.List[str]], hypa_grid),
+        df_f,
+        pdf_split_fol,
+        png_split_fol,
+        pdf_grid_fol,
+        png_grid_fol,
+        # do_single_images=True,
+        do_single_images=False,
+        min_at_zero=False,
+        min_lower_limit=min_lower_limit,
+        hypa_labels=hypa_labels,
+    )
+
+
 def run_evaluate_cnn(args: argparse.Namespace) -> None:
     """MAKEDOC: What is evaluate_cnn doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate_cnn")
@@ -729,6 +932,8 @@ def run_evaluate_cnn(args: argparse.Namespace) -> None:
         evaluate_audio_cnn(args)
     elif evaluation_type == "delete_bad_models":
         delete_bad_models_cnn(args)
+    elif evaluation_type == "make_plots_hypa":
+        make_plots_hypa()
 
 
 if __name__ == "__main__":
