@@ -792,7 +792,7 @@ def make_plots_hypa() -> None:
     logg.debug(f"hp_to_plot_names_all: {hp_to_plot_names_all}")
 
     # a unique name for this filtering
-    filter_tag = "002"
+    filter_tag = "001"
 
     # clone the results
     df_f = results_df

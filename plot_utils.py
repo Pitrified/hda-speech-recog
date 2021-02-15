@@ -460,6 +460,7 @@ def plot_triple_data(
         horizontalalignment=xticklabels_ha,
     )
     ax.legend(title=f"{lab_names[0]}", title_fontsize=lab_fontsize)
+    # ax.legend(title=f"{lab_names[0]}", title_fontsize=lab_fontsize, loc="lower right")
 
 
 def quad_plotter(
