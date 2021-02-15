@@ -754,9 +754,69 @@ TODO: hyper-parameter for training (e.g. lr)
 \section{SimpleNet, AreaNet and VerticalAreaNet}
 % Dream a dream
 
-TODO
+\subsubsection{SimpleNet}
 
-Explain SimpleNet structure, conv modules, GlobalAveragePooling2D instead of
-flattening
+While developing the AreaNet architecture, a regular convolutional neural
+network was used to extract the attention scores and classify the weighted
+inputs.
+Due to an error in the first implementation of the softmax layer, the weights
+used were all equal to one, cutting off the key part of the network that was
+used to apply the attention mechanism.
+However, the classifier achieved a very good performance even without weighing
+the input, so it was upgraded from being just a building block of the AreaNet
+to one of the proposed solutions to the problem, and referenced as SimpleNet.
 
-Explain how to extract attention weights for the grid, maxpooling then upsampling
+The main difference with the convolutional architechture proposed in
+\secref{sec:convolutional_arch} is in the classifier structure:
+instead of flattening the last feature maps obtained
+(shape $(batch\_size, height, width, num\_filters)$),
+a GlobalAvgPool2D layer was used.
+This layer computes the mean in every feature map, obtaining a single value per
+map (shape $(batch\_size, num\_filters)$).
+These values are directly connected to a Dense layer used to predict the classes,
+using a softmax activation layer.
+
+\subsubsection{AreaNet and VerticalAreaNet}
+
+The driving idea behind AreaNet and VerticalAreaNet is to score the original
+spectrogram image with a grid of attention scores.
+AreaNet builds a $8 \times 8$ grid to weigh the input data,
+(\fig{fig:attention_weights_area}),
+while
+VerticalAreaNet builds a $1 \times 16$ grid to weigh the input data,
+(\fig{fig:attention_weights_vertical}).
+By using a one dimensional grid, VerticalAreaNet only weighs the input along
+the time axis.
+
+To compute the grid weights, the input image is fed into a convolutional network,
+that includes several MaxPooling layers that downsample the feature maps generated.
+For AreaNet, in the last layer of the weight extractor the mean along the depth
+axis is computed to reduce the $num\_filter$ feature maps to a single image,
+then the scores are converted into a valid probability distribution using a
+softmax activation function, and finally the weights are upsampled back to the
+original shape of the input.
+For VerticalAreaNet, the mean is also computed along the time axis to obtain
+a one dimensional vector, that is then upsampled.
+
+For both architectures, the weighted spectrogram is then used as input for a
+SimpleNet, used to classify the audio sample.
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{AAN_opa1_lr03_bs32_en15_dsaug14_wLTnum_0001.pdf}
+    \caption{AreaNet computes a $8 \times 8$ grid that is used to weigh the
+    original spectrogram.
+    It can be seen that the model focuses on the lowest frequencies aligned
+    with the portion of utterance where the word is actually being spoken,
+    correctly extracting the relevant portion of the spectrograms. }%
+    \label{fig:attention_weights_area}
+\end{figure}
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{VAN_opa1_lr04_bs32_en15_dsaug14_wLTall_0001.pdf}
+    \caption{VerticalAreaNet computes a $1 \times 16$ grid that is used to
+        weigh the original 
+    spectrogram.}%
+    \label{fig:attention_weights_vertical}
+\end{figure}

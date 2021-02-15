@@ -18,6 +18,7 @@
 
 ##### Improvements
 
+* Train of FSDD to check training performances on small datasets
 * Add audiogenerator already with files save in batches of 16
 * Multiple training of the same hypas to check consistency, build model name takes a param and finds the first `_00x` free
 * Top one error as metric (described in the Google dataset paper)

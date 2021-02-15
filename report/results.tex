@@ -394,33 +394,6 @@ and is used to extract information from the signal.
     \label{fig:attention_weights_standard}
 \end{figure*}
 
-\subsubsection{AreaNet}
-
-The driving idea behind AreaNet is to score the original spectrogram with a
-grid of attention scores. Two examples of the weights computed by AreaNet are
-shown in \fig{fig:attention_weights_area}, and it can be seen that the model
-focuses on the lowest frequencies aligned with the portion of utterance where
-the word is actually being spoken, correctly extracting the relevant portion 
-of the spectrograms.
-
-\begin{figure}[t!]
-    \centering
-    \includegraphics[width=0.9\linewidth]{AAN_opa1_lr03_bs32_en15_dsaug14_wLTnum_0001.pdf}
-    \caption{AreaNet computes a $8 \times 8$ grid that is used to weigh the
-    original spectrogram.}%
-    \label{fig:attention_weights_area}
-\end{figure}
-
-TODO: Show VerticalAreaNet
-
-\begin{figure}[t!]
-    \centering
-    \includegraphics[width=0.9\linewidth]{VAN_opa1_lr04_bs32_en15_dsaug14_wLTall_0001.pdf}
-    \caption{VerticalAreaNet computes a $1 \times 16$ grid that is used to
-        weigh the original 
-    spectrogram.}%
-    \label{fig:attention_weights_vertical}
-\end{figure}
 \subsection{Stream predictions}
 
 Compare normal vs loud
