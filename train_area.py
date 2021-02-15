@@ -141,15 +141,15 @@ def hyper_train_area(
 
     ###### the net type
     nt = []
-    # nt.append("SIM")
+    nt.append("SIM")
+    nt.append("SI2")
     nt.append("AAN")
-    # nt.append("ARN")
-    # nt.append("VAN")
+    nt.append("VAN")
     hypa_grid["net_type"] = nt
 
     ###### the words to train on
-    hypa_grid["words_type"] = [words_type]
-    # hypa_grid["words_type"] = ["LTnum", "LTall"]
+    # hypa_grid["words_type"] = [words_type]
+    hypa_grid["words_type"] = ["LTnum", "LTall", "yn"]
 
     ###### the dataset to train on
     ds = []
@@ -157,10 +157,11 @@ def hyper_train_area(
     # TODO VAN on LTall
     # TODO AAN/SIM/VAN on LTnum
     # TODO AAN on LTnum for all datasets, only one lr
-    # ds.extend(["mel04"])
-    # ds.extend(["mela1"])
-    # ds.extend(["aug07"])
+    ds.extend(["mel04"])
+    ds.extend(["mela1"])
+    ds.extend(["aug07"])
     ds.extend(["aug14"])
+    ds.extend(["aug15"])
 
     # TODO auL6789 auL18901 on all net_type
     # TODO auA5678 on VAN (on LTnumLS)
@@ -178,7 +179,9 @@ def hyper_train_area(
     lr = []
     # lr.extend(["01", "02"])  # fixed
     lr.extend(["03"])  # exp_decay_step_01
-    # lr.extend(["04"])  # exp_decay_smooth_01
+    lr.extend(["04"])  # exp_decay_smooth_01
+    lr.extend(["05"])  # clr_triangular2_01
+    lr.extend(["06"])  # clr_triangular2_02
     hypa_grid["learning_rate_type"] = lr
 
     ###### which optimizer to use
@@ -192,8 +195,8 @@ def hyper_train_area(
 
     ###### the number of epochs (the key is converted to int)
     en = []
-    # en.extend(["15"])
-    en.extend(["10"])
+    en.extend(["15"])
+    # en.extend(["10"])
     hypa_grid["epoch_num_type"] = en
 
     ###### build the combinations
@@ -284,9 +287,9 @@ def get_model_param_area(
     hypa: ty.Dict[str, str], num_labels: int, input_shape: ty.Tuple[int, int, int]
 ) -> ty.Dict[str, ty.Any]:
     """MAKEDOC: what is get_model_param_area doing?"""
-    logg = logging.getLogger(f"c.{__name__}.get_model_param_area")
+    # logg = logging.getLogger(f"c.{__name__}.get_model_param_area")
     # logg.setLevel("INFO")
-    logg.debug("Start get_model_param_area")
+    # logg.debug("Start get_model_param_area")
 
     model_param: ty.Dict[str, ty.Any] = {}
 
@@ -305,7 +308,7 @@ def get_training_param_area(
     """MAKEDOC: what is get_training_param_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_training_param_area")
     # logg.setLevel("INFO")
-    logg.debug("Start get_training_param_area")
+    # logg.debug("Start get_training_param_area")
 
     # TODO extract epoch/batch/opt/lr
     training_param: ty.Dict[str, ty.Any] = {}
@@ -380,6 +383,9 @@ def get_training_param_area(
             base_lr = 1e-6
             max_lr = 1e-3
 
+        logg.debug(f"target_cycles: {target_cycles}")
+        logg.debug(f"it_per_epoch: {it_per_epoch}")
+        logg.debug(f"total_iterations: {total_iterations}")
         logg.debug(f"num_samples: {num_samples}")
         logg.debug(f"CLR is using step_size: {step_size}")
 
@@ -387,8 +393,10 @@ def get_training_param_area(
         cyclic_lr = CyclicLR(base_lr, max_lr, step_size, mode)
         callbacks.append(cyclic_lr)
 
+    # which metric to monitor for early_stop and model_checkpoint
+    metric_to_monitor = "val_loss" if use_validation else "loss"
+
     if lr_name.startswith("fixed") or lr_name.startswith("exp_decay"):
-        metric_to_monitor = "val_loss" if use_validation else "loss"
         early_stop = EarlyStopping(
             monitor=metric_to_monitor, patience=4, restore_best_weights=True, verbose=1,
         )
