@@ -21,6 +21,7 @@ from area_model import AreaNet
 from area_model import SimpleNet
 from area_model import VerticalAreaNet
 from augment_data import do_augmentation
+from clr_callback import CyclicLR
 from lr_finder import LearningRateFinder
 from plot_utils import plot_confusion_matrix
 from preprocess_data import load_processed
@@ -74,10 +75,7 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "-dr",
-        "--dry_run",
-        action="store_true",
-        help="Do a dry run for the hypa grid",
+        "-dr", "--dry_run", action="store_true", help="Do a dry run for the hypa grid",
     )
 
     parser.add_argument(
@@ -302,6 +300,7 @@ def get_training_param_area(
     hypa: ty.Dict[str, str],
     use_validation: bool,
     model_path: ty.Optional[Path],
+    num_samples: int,
 ) -> ty.Dict[str, ty.Any]:
     """MAKEDOC: what is get_training_param_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.get_training_param_area")
@@ -330,6 +329,8 @@ def get_training_param_area(
         "02": "fixed02",
         "03": "exp_decay_step_01",
         "04": "exp_decay_smooth_01",
+        "05": "clr_triangular2_01",
+        "06": "clr_triangular2_02",
     }
     learning_rate_type = hypa["learning_rate_type"]
     lr_name = learning_rate_types[learning_rate_type]
@@ -356,13 +357,40 @@ def get_training_param_area(
         lrate = LearningRateScheduler(exp_decay_part)
         callbacks.append(lrate)
 
+    # setup cyclic learning rate
+    elif lr_name.startswith("clr_triangular2"):
+
+        # target_cycles = the number of cycles we want in those epochs
+        # it_per_epoch = num_samples // batch_size
+        # total_iterations = it_per_epoch * epoch_num
+        # step_size = total_iterations // target_cycles
+
+        if lr_name == "clr_triangular2_01":
+            target_cycles = 2
+            it_per_epoch = num_samples // training_param["batch_size"]
+            total_iterations = it_per_epoch * training_param["epochs"]
+            step_size = total_iterations // (target_cycles * 2)
+            base_lr = 1e-5
+            max_lr = 1e-3
+        elif lr_name == "clr_triangular2_02":
+            target_cycles = 8
+            it_per_epoch = num_samples // training_param["batch_size"]
+            total_iterations = it_per_epoch * training_param["epochs"]
+            step_size = total_iterations // (target_cycles * 2)
+            base_lr = 1e-6
+            max_lr = 1e-3
+
+        logg.debug(f"num_samples: {num_samples}")
+        logg.debug(f"CLR is using step_size: {step_size}")
+
+        mode = "triangular2"
+        cyclic_lr = CyclicLR(base_lr, max_lr, step_size, mode)
+        callbacks.append(cyclic_lr)
+
     if lr_name.startswith("fixed") or lr_name.startswith("exp_decay"):
         metric_to_monitor = "val_loss" if use_validation else "loss"
         early_stop = EarlyStopping(
-            monitor=metric_to_monitor,
-            patience=4,
-            restore_best_weights=True,
-            verbose=1,
+            monitor=metric_to_monitor, patience=4, restore_best_weights=True, verbose=1,
         )
         callbacks.append(early_stop)
 
@@ -468,8 +496,13 @@ def train_area(
             sim_type = "2"
         model = SimpleNet.build(sim_type=sim_type, **model_param)
 
+    num_samples = x.shape[0]
+    logg.debug(f"num_samples: {num_samples}")
+
     # from hypa extract training param (epochs, batch, opt, ...)
-    training_param = get_training_param_area(hypa, use_validation, model_path)
+    training_param = get_training_param_area(
+        hypa, use_validation, model_path, num_samples
+    )
 
     # a few metrics to track
     metrics = [
@@ -621,8 +654,13 @@ def find_best_lr(hypa: ty.Dict[str, str]) -> None:
             sim_type = "2"
         model = SimpleNet.build(sim_type=sim_type, **model_param)
 
+    num_samples = x.shape[0]
+    logg.debug(f"num_samples: {num_samples}")
+
     # from hypa extract training param (epochs, batch, opt, ...)
-    training_param = get_training_param_area(hypa, use_validation, model_path=None)
+    training_param = get_training_param_area(
+        hypa, use_validation, model_path=None, num_samples=num_samples
+    )
 
     # a few metrics to track
     metrics = [
