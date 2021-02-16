@@ -72,6 +72,74 @@ blue line tells the standard deviation around the mean.
 
 A total of $4664$ experiment were performed for the convolutional architecture.
 
+\subsubsection{Model parameters performance comparison}
+
+The effects of tweaking the parameters of the model structure are shown in
+\fig{fig:cnn_comparison_kernel_filter_dense_pool}.
+The graph sums up the F-Score values for variation of
+a)
+the number of convolutional filters learned,
+b)
+the shape of the filters ($01$ for square kernel sizes, $02$ for a vertical
+filter followed by two square filters),
+c)
+the shape of the pooling window ($01$ for square, $02$ for a rectangular
+window followed by two square ones)
+and
+d)
+the number of units in the dense classifier.
+% clear see kernel
+% clear see dense
+% pool vague
+% filter useless
+% Fscore__kernel_size__filters__dense_width__pool_size.png
+Several insights can be extrapolated, in order of clarity:
+\begin{itemize}
+    \item The vertical kernel helps extract information along the frequency axis,
+        and provides a clear increase in performance.
+    \item A larger dense classifier leads to better performance,
+        that saturates at $64$, and further increase does not help.
+    \item A high number of filter is not needed to achieve a good performance,
+        any value larger than $10$ performed equally well, from $20$ to $128$.
+    \item Square pool windows perform slightly better than the rectangular ones.
+\end{itemize}
+
+\begin{figure*}[h!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Fscore_CNN_kernel_size__filters__dense_width__pool_size.pdf}
+    \caption{Comparison CNN model}%
+    \label{fig:cnn_comparison_kernel_filter_dense_pool}
+\end{figure*}
+
+\subsubsection{Training parameters performance comparison}
+
+\fig{fig:cnn_comparison_epoch_lr_dataset} shows F-Score values for
+variation of
+the dataset used (MFCC spectrogams, mel sectrograms, agumented mel spectrogams)
+and the learning rate used (fixed or with exponential decay).
+Two main conclusions can be reached:
+\begin{itemize}
+    \item 
+        Mel Frequency Cepstral Coefficients are clearly outperformed by mel
+        spectrograms, as expected, considering that the MFCC are built to be composed
+        by uncorrelated vectors, so interpreting the input as an image is not
+        recommended.
+        The benefit of augmentation are less clear, more details are provided
+        in \secref{sec:augmentation_performance} and
+        \tab{tab:augmentation_comparison_performance}.
+    \item 
+        The first three packets of columns correspond to fixed learning rate values,
+        while the last three correspond to an exponential decay schedule.
+        An increase in performance is achieved with the exponential schedules.
+\end{itemize}
+
+\begin{figure*}[h!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{Fscore_CNN_epoch_num__lr__dataset__words.pdf}
+    \caption{Comparison CNN}%
+    \label{fig:cnn_comparison_epoch_lr_dataset}
+\end{figure*}
+
 \subsection{Hyper-parameter analysis: Transfer}
 
 A total of $130$ experiment were performed for the transfer learning approach.
@@ -84,13 +152,19 @@ A total of $1389$ TODO experiment were performed for the LSTM+attention model.
 
 \fig{fig:att_dropout_conv_query_dense} shows F-score values for 
 variation of 
+a)
 the width of the dense classifier ($32$ or $64$),
-the dropout rate ($0.2$ or $0$) after the initial convolutional layers,
+b)
+the dropout rate
+after the initial convolutional layers
+($0.2$ or $0$),
+c)
 the number of initial convolutional layers ($1$ or $2$)
 and
+d)
 the query style ($01$ and $05$ pick a single LSTM vector to compute the scores,
 $02$ and $03$ use convolutional layers connected to the LSTM outputs to extract
-the scores and $04$  use convolutional layers connected to the spectrograms).
+the scores and $04$  uses convolutional layers connected to the spectrograms).
 The results are very close but two conclusions can be tentatively reached:
 
 \begin{itemize}
@@ -162,6 +236,7 @@ Two main conclusions can be reached:
 So good!
 
 \subsection{Data augmentation performance}
+\label{sec:augmentation_performance}
 
 % TODO: type 01 aug was tested but too long
 % TODO: combine 01 and 15 for the final augmentation
@@ -185,7 +260,8 @@ while for the ``small'' type, $4$ landmarks are shifted by at most $2$ units.
 % The main differences in augmentation can be seen
 % between the ``big'' and ``small'' types.
 This leads to the largest difference in augmentation performance:
-\tab{tab:att_dataset_result_augmentation} shows that the ``small'' augmentation
+\tab{tab:augmentation_comparison_performance} shows that the ``small'' augmentation
+% TODO incomprensibile
 type leads to an increase in F-Score value from $0.015$ to $0.03$ relative to
 the ``big'' augmentation, both when training the convolutional architecture
 (\secref{sec:convolutional_arch}) on a 4-words task, and when using the
@@ -194,7 +270,7 @@ This makes sense: the spectrograms used for augmentation have shape $(64, 64)$,
 so moving a landmark by $5$ changes too sharply the image.
 A more uniform augmentation, with more landmarks but with 
 gentler
-% TODO what
+% TODO do not go gentle into that good night
 warping leads to better results.
 For the convolutional architecture the mean F-Score value for the 
 \texttt{f1} 4-words task increases from $0.939$ to $0.960$,
@@ -214,7 +290,7 @@ compared to $10$ to $15$ epochs when using non-augmented data.
     for the 10-words task solved by LSTM+attention architecture and a
     4-words task solved by the convolutional architecture.
     A reference non-augmented, well performing dataset is added.}
-    \label{tab:att_dataset_result_augmentation}
+    \label{tab:augmentation_comparison_performance}
     \begin{tabular}{|cc|c|}
         \hline
         Aug ID & Spec+Type & F-Score \\

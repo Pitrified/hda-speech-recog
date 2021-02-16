@@ -355,7 +355,12 @@ def train_model(hypa, force_retrain):
     kernel_size_types = {"01": [(2, 2), (2, 2), (2, 2)], "02": [(5, 1), (3, 3), (3, 3)]}
     model_param["kernel_sizes"] = kernel_size_types[hypa["kernel_size_type"]]
 
-    pool_size_types = {"01": [(2, 2), (2, 2), (2, 2)], "02": [(2, 1), (2, 2), (2, 2)]}
+    # TODO test ps 03
+    pool_size_types = {
+        "01": [(2, 2), (2, 2), (2, 2)],
+        "02": [(2, 1), (2, 2), (2, 2)],
+        "03": [(1, 2), (2, 2), (2, 2)],
+    }
     model_param["pool_sizes"] = pool_size_types[hypa["pool_size_type"]]
 
     dropout_types = {"01": [0.03, 0.01], "02": [0.3, 0.1]}
