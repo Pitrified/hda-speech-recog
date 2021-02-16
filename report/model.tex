@@ -63,8 +63,10 @@ the performances on fresh data.
 
 \subsubsection{LibriTTS}
 
-To evaluate the model in a streaming setting, a section of LibriTTS was used
-\cite{zen2019libritts}.
+% The performances of the models were also measured with a audio streaming task.
+% Instead of using as inputs 
+To evaluate the models in a streaming setting,
+a part of the LibriTTS dataset was used \cite{zen2019libritts}.
 This dataset contains approximately $585$ hours of English speech, aligned at
 sentence level.
 Both original and normalized text is included (e.g. ``June $9$, $1872$'' is
@@ -75,41 +77,53 @@ available, but was not needed in this project.
 The dataset is released under the Creative Commons Attribution $4.0$
 International (CC~BY~$4.0$) License \cite{ccby4}.
 
-TODO: split in sentences that have or not the words.
+To extract the audio samples, the original signal is simply split in $1$ or
+$0.5$ seconds intervals: this is considered a good approximation of random
+background conversations.
+The sentences in the dataset were split by checking whether or not
+one of the training word was used in the sentece.
 
-\subsection{Tasks definition}
+TODO: dev-clean was used
 
-Smaller tasks were used to evaluate the performance of the various
-architectures, and to perform the hyper-parameter search.
-The set of tasks and the identifier key for GSCD is as follows:
-Two $4$ words task are composed by the words
-\texttt{f1}: [\texttt{happy}, \texttt{learn}, \texttt{wow}, \texttt{visual}],
-\texttt{f2}: [\texttt{backward}, \texttt{eight}, \texttt{go}, \texttt{yes}].
-A $6$ words task contains the direction words:
-\texttt{dir}: [\texttt{up}, \texttt{down}, \texttt{forward}, \texttt{backward},
-\texttt{left}, \texttt{right}]
-Two $10$ words task contains the number utterances:
-\texttt{num}: [\texttt{zero}, \texttt{one}, \texttt{two}, \texttt{three}, \texttt{four},
-\texttt{five}, \texttt{six}, \texttt{seven}, \texttt{eight}, \texttt{nine}]
-and the words from a Kaggle competition aimed at solving this task:
-\texttt{k1}: [\texttt{yes}, \texttt{no}, \texttt{up}, \texttt{down}, \texttt{left},
-\texttt{right}, \texttt{on}, \texttt{off}, \texttt{stop}, \texttt{go}].
-A $20$ words task (\texttt{w2}) is composed by the numbers and the Kaggle list, and
-a $35$ words task (\texttt{all}) uses the entire dataset.
+\subsection{Problem definition}
 
-For FSDD, each number is prefixed with \texttt{fsdd\_}, and the set of words is
-referred as \texttt{fsdd\_num}.
+\subsubsection{Keyword recognition}
 
-For LibriTTS, in addition to these categories, another word label is added:
-\texttt{\_other\_ltts}. This category is used to discriminate a conversation
-that does not contain the $35$ command words.
-Each task for GSCD is expanded by adding this category, and is referred as
-\texttt{LT\_\{task\_key\}}.
-
+The keyword recognition problem consists in identifying which word is spoken in
+a given $1$ second audio sample.
+The Speech Commands dataset provides $35$ classes of words, that were grouped
+in smaller tasks to perform the hyper-parameter search and to evaluate the
+performance of the various architectures.
+The sub-tasks contain $4$, $6$, $10$, $20$ and $35$ words.
+Appendix \tab{tab:task_word_composition} lists the composition of each
+task.
+Another word class (\texttt{\_other\_ltts}) is added, containing the audio
+samples extracted from the LibriTTS dataset.
+This category is used to discriminate a conversation that does not contain any
+of the $35$ command words.
+Each task for GSCD is expanded by adding the \texttt{\_other\_ltts} category,
+and is referred as \texttt{LT\_\{task\_key\}}.
+For the Free Spoken Digit Dataset, the number label is prefixed with
+\texttt{fsdd\_} to track the different origin of the recording.
+% while testing
+% the performance of a model trained on the number classes of GSCD.
 For the shortened utterances extracted from GSCD, each word is prefixed with
 \texttt{loudest\_}, and
 the set of words is referred as
 \texttt{\{task\_key\}\_LS}.
+An additional \texttt{\_other\_ltts\_loud} class also exists for audio samples
+from the LibriTTS dataset with sample length compatible with the shortened
+version of the dataset.
+
+\subsubsection{Streaming setting}
+
+The models were also evaluated in a streaming setting, by feeding
+a sentence and trying to predict at which point one of the known words is spoken.
+From the LibriTTS dataset, one sentence that contains one of the known words is
+analysed by computing the predictions for overlapping one second samples,
+extracted every $100$ ms.
+Most of the predictions should be \texttt{\_other\_ltts}, except for
+the sections of sentence corresponding to the known words.
 
 \subsection{Mel spectrogram and Mel-frequency Cepstral Coefficients}
 
@@ -180,6 +194,8 @@ spectrograms are labeled as Hz, but this is only to read more easily the plot
 and understand to which frequencies the important bins correspond to. }%
     \label{fig:happy_specs}
 \end{figure}
+
+% TODO show spectrogams with different ftt win lenght to show smoothing effect
 
 \begin{figure}[t!]
     \centering

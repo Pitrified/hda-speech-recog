@@ -1,6 +1,72 @@
 \section{Appendix}
 \label{sec:appendix}
 
+% https://stackoverflow.com/a/15221702/2237151
+% find . -type d -print0 | while read -d '' -r dir; do files=("$dir"/*); printf "%s & %d\n" "$dir" "${#files[@]}"; done
+
+\begin{table}[h!]
+    \centering
+    \caption{Task composition.
+    Each task is expanded by adding the
+    \texttt{\_other\_ltts}
+    category,
+    and is referred as
+    \texttt{LT\_\{task\_key\}}.
+    The second column shows the number of samples for that word.
+    }
+    \label{tab:task_word_composition}
+    \begin{tabular}{|c|c|ccccccc|}
+        \hline
+        Words & $\#$          &f1 &f2 &dir&num&k1 &w2 &all \\
+        \hline
+        backward & 1664       &   & x & x &   &   &   & x  \\
+        bed & 2014            &   &   &   &   &   &   & x  \\
+        bird & 2064           &   &   &   &   &   &   & x  \\
+        cat & 2031            &   &   &   &   &   &   & x  \\
+        \hline
+        dog & 2128            &   &   &   &   &   &   & x  \\
+        down & 3917           &   &   & x &   & x & x & x  \\
+        eight & 3787          &   & x &   & x &   & x & x  \\
+        five & 4052           &   &   &   & x &   & x & x  \\
+        \hline
+        follow & 1579         &   &   &   &   &   &   & x  \\
+        forward & 1557        &   &   & x &   &   &   & x  \\
+        four & 3728           &   &   &   & x &   & x & x  \\
+        go & 3880             &   & x &   &   & x & x & x  \\
+        \hline
+        happy & 2054          & x &   &   &   &   &   & x  \\
+        house & 2113          &   &   &   &   &   &   & x  \\
+        learn & 1575          & x &   &   &   &   &   & x  \\
+        left & 3801           &   &   & x &   & x & x & x  \\
+        \hline
+        marvin & 2100         &   &   &   &   &   &   & x  \\
+        nine & 3934           &   &   &   & x &   & x & x  \\
+        no & 3941             &   &   &   &   & x & x & x  \\
+        off & 3745            &   &   &   &   & x & x & x  \\
+        \hline
+        on & 3845             &   &   &   &   & x & x & x  \\
+        one & 3890            &   &   &   & x &   & x & x  \\
+        right & 3778          &   &   & x &   & x & x & x  \\
+        seven & 3998          &   &   &   & x &   & x & x  \\
+        \hline
+        sheila & 2022         &   &   &   &   &   &   & x  \\
+        six & 3860            &   &   &   & x &   & x & x  \\
+        stop & 3872           &   &   &   &   & x & x & x  \\
+        three & 3727          &   &   &   & x &   & x & x  \\
+        \hline
+        tree & 1759           &   &   &   &   &   &   & x  \\
+        two & 3880            &   &   &   & x &   & x & x  \\
+        up & 3723             &   &   & x &   & x & x & x  \\
+        visual & 1592         & x &   &   &   &   &   & x  \\
+        \hline
+        wow & 2123            & x &   &   &   &   &   & x  \\
+        yes & 4044            &   & x &   &   & x & x & x  \\
+        zero & 4052           &   &   &   & x &   & x & x  \\
+        \_other\_ltts & 4954  &   &   &   &   &   &   &    \\
+        \hline
+    \end{tabular}
+\end{table}
+
 % \begin{table}[h!]
 \begin{table}[H]
     \centering

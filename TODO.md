@@ -12,9 +12,17 @@
 ##### FixMe
 
 * Pass label translations to plotter and use them, for outer parameter add on what you averaged
-
 * other ltts is not generated if it is missing the raw folder
 * All the documentation
+
+##### Demo
+
+* Constantly compute predictions in the demo
+* Show inference time for each one
+* Show spectrograms
+
+* https://python-sounddevice.readthedocs.io/en/0.3.15/examples.html#plot-microphone-signal-s-in-real-time
+* https://python-sounddevice.readthedocs.io/en/0.3.15/api/streams.html
 
 ##### Improvements
 
