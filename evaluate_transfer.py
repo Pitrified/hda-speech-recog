@@ -1,3 +1,5 @@
+from copy import deepcopy
+from itertools import permutations
 from pathlib import Path
 import argparse
 import json
@@ -7,10 +9,12 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 import tensorflow as tf  # type: ignore
+import typing as ty
 
 from plot_utils import plot_pred
 from plot_utils import plot_spec
 from plot_utils import plot_waveform
+from plot_utils import quad_plotter
 from preprocess_data import get_spec_dict
 from preprocess_data import wav2mel
 from train_transfer import build_transfer_name
@@ -19,8 +23,6 @@ from utils import record_audios
 from utils import setup_gpus
 from utils import setup_logger
 from utils import words_types
-
-import typing as ty
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -32,7 +34,7 @@ def parse_arguments() -> argparse.Namespace:
         "--evaluation_type",
         type=str,
         default="results",
-        choices=["results", "audio", "delete_bad_models"],
+        choices=["results", "audio", "delete_bad_models", "make_plots_hypa"],
         help="Which evaluation to perform",
     )
 
@@ -101,6 +103,7 @@ def build_tra_results_df() -> pd.DataFrame:
         "recall": [],
         "fscore": [],
         "model_name": [],
+        "arch_name": [],
     }
     info_folder = Path("info") / "transfer"
 
@@ -143,6 +146,7 @@ def build_tra_results_df() -> pd.DataFrame:
         pandito["fscore"].append(res_full["fscore"])
 
         pandito["model_name"].append(res_full["model_name"])
+        pandito["arch_name"].append(res_full["model_name"][:3])
 
     pd.set_option("max_colwidth", 100)
     df = pd.DataFrame(pandito)
@@ -395,6 +399,197 @@ def evaluate_audio_transfer(train_words_type: str, rec_words_type: str) -> None:
         plt.show()
 
 
+def make_plots_hypa() -> None:
+    """MAKEDOC: what is make_plots_hypa doing?"""
+    logg = logging.getLogger(f"c.{__name__}.make_plots_hypa")
+    # logg.setLevel("INFO")
+    logg.debug("Start make_plots_hypa")
+
+    results_df = build_tra_results_df()
+
+    # print all unique values to get an idea of what is inside the dataframe
+    for col in results_df:
+        if col in ["model_name", "loss", "fscore", "recall", "precision", "cat_acc"]:
+            continue
+        logg.debug(f"hypa_grid['{col}'] = {results_df[col].unique()}")
+        # logg.debug(f"frequencies\n{results_df[col].value_counts()}")
+
+    hypa_grid_all: ty.Dict[str, ty.List[str]] = {}
+    hypa_grid_all["dense_width"] = ["01", "02", "03", "04"]
+    hypa_grid_all["dropout"] = ["01", "03"]
+    hypa_grid_all["batch_size"] = ["02", "01"]
+    hypa_grid_all["epoch_num"] = ["01", "02"]
+    hypa_grid_all["learning_rate"] = ["01", "02", "03", "04"]
+    hypa_grid_all["optimizer"] = ["r1", "a1"]
+    hypa_grid_all["datasets"] = ["01", "02", "03", "04", "05"]
+    hypa_grid_all["words"] = ["f1", "k1", "num", "all", "f2", "dir"]
+    hypa_grid_all["arch_name"] = ["TRA", "TD1", "TB0", "TB4", "TB7"]
+
+    results_df = results_df[results_df["epoch_num"].isin(hypa_grid_all["epoch_num"])]
+
+    hp_to_plot_names_all = [
+        "dense_width",
+        "dropout",
+        "batch_size",
+        "epoch_num",
+        "learning_rate",
+        "optimizer",
+        "datasets",
+        "words",
+    ]
+    logg.debug(f"hp_to_plot_names_all: {hp_to_plot_names_all}")
+
+    hypa_labels: ty.Dict[str, ty.Dict[str, str]] = {}
+    hypa_labels["epoch_num"] = {"01": "[20, 10]", "02": "[40, 20]", "03": "[1, 1]"}
+    hypa_labels["batch_size"] = {"01": "[32, 32]", "02": "[16, 16]"}
+    hypa_labels["lr"] = {}
+    hypa_labels["lr"]["01"] = "fixed01"
+    hypa_labels["lr"]["02"] = "fixed02"
+    hypa_labels["lr"]["03"] = "exp_step_01"
+    hypa_labels["lr"]["04"] = "exp_smooth_01"
+    hypa_labels["datasets"] = {}
+    hypa_labels["datasets"]["01"] = "[mel05, mel09, mel10]"
+    hypa_labels["datasets"]["02"] = "[mel05, mel10, mfcc07]"
+    hypa_labels["datasets"]["03"] = "[mfcc06, mfcc07, mfcc08]"
+    hypa_labels["datasets"]["04"] = "[mel05, mfcc06, melc1]"
+    hypa_labels["datasets"]["05"] = "[melc1, melc2, melc4]"
+
+    # a unique name for this filtering
+    filter_tag = "003"
+
+    # clone the results
+    df_f = results_df
+
+    # remove failed trainings
+    df_f = df_f[df_f["fscore"] > 0.5]
+
+    hypa_grid: ty.Dict[str, ty.List[str]] = deepcopy(hypa_grid_all)
+
+    if filter_tag == "001":
+        # nice batch epoch dense comparison
+        hypa_grid = deepcopy(hypa_grid_all)
+
+        wd_filter = ["f1"]
+        hypa_grid["words"] = wd_filter
+        df_f = df_f[df_f["words"].isin(wd_filter)]
+
+        an_filter = ["TRA"]
+        hypa_grid["arch_name"] = an_filter
+        df_f = df_f[df_f["arch_name"].isin(an_filter)]
+
+        logg.debug(f"len(df_f): {len(df_f)}")
+
+        hp_to_plot_names = [
+            "batch_size",
+            "epoch_num",
+            "dense_width",
+            "words",
+        ]
+
+        sub_tag = "__".join(hp_to_plot_names)
+        min_lower_limit = 0.60
+
+    elif filter_tag == "002":
+        # nice arch_type comparison
+
+        hypa_grid = deepcopy(hypa_grid_all)
+
+        wd_filter = ["f1"]
+        hypa_grid["words"] = wd_filter
+        df_f = df_f[df_f["words"].isin(wd_filter)]
+
+        en_filter = ["02"]
+        hypa_grid["epoch_num"] = en_filter
+        df_f = df_f[df_f["epoch_num"].isin(en_filter)]
+
+        ds_filter = ["01"]
+        hypa_grid["datasets"] = ds_filter
+        df_f = df_f[df_f["datasets"].isin(ds_filter)]
+
+        logg.debug(f"len(df_f): {len(df_f)}")
+
+        hp_to_plot_names = [
+            "arch_name",
+            "datasets",
+            "epoch_num",
+            "words",
+        ]
+
+        sub_tag = "__".join(hp_to_plot_names)
+        min_lower_limit = 0.60
+
+    elif filter_tag == "003":
+        # nice arch_type comparison
+
+        hypa_grid = deepcopy(hypa_grid_all)
+
+        wd_filter = ["f1"]
+        hypa_grid["words"] = wd_filter
+        df_f = df_f[df_f["words"].isin(wd_filter)]
+
+        en_filter = ["01"]
+        hypa_grid["epoch_num"] = en_filter
+        df_f = df_f[df_f["epoch_num"].isin(en_filter)]
+
+        bs_filter = ["01"]
+        hypa_grid["batch_size"] = bs_filter
+        df_f = df_f[df_f["batch_size"].isin(bs_filter)]
+
+        an_filter = ["TRA"]
+        hypa_grid["arch_name"] = an_filter
+        df_f = df_f[df_f["arch_name"].isin(an_filter)]
+
+        logg.debug(f"len(df_f): {len(df_f)}")
+
+        hp_to_plot_names = [
+            "arch_name",
+            "datasets",
+            "epoch_num",
+            "words",
+        ]
+
+        sub_tag = "__".join(hp_to_plot_names)
+        min_lower_limit = 0.60
+
+    # all_hp_to_plot = list(combinations(hp_to_plot_names, 4))
+    # logg.debug(f"len(all_hp_to_plot): {len(all_hp_to_plot)}")
+
+    all_hp_to_plot = []
+    perm = list(permutations(hp_to_plot_names[:3]))
+    logg.debug(f"perm: {perm}")
+    for p in perm:
+        hp_to_plot = p[0], p[1], p[2], hp_to_plot_names[3]
+        logg.debug(f"hp_to_plot: {hp_to_plot}")
+        all_hp_to_plot.append(hp_to_plot)
+    logg.debug(f"all_hp_to_plot: {all_hp_to_plot}")
+
+    # the output folders
+    plot_fol = Path("plot_results") / "tra"
+    filter_fol = plot_fol / filter_tag / sub_tag
+    pdf_split_fol = filter_fol / "pdf_split"
+    pdf_grid_fol = filter_fol / "pdf_grid"
+    png_split_fol = filter_fol / "png_split"
+    png_grid_fol = filter_fol / "png_grid"
+    for f in pdf_split_fol, pdf_grid_fol, png_split_fol, png_grid_fol:
+        if not f.exists():
+            f.mkdir(parents=True, exist_ok=True)
+
+    quad_plotter(
+        all_hp_to_plot[:],
+        ty.cast(ty.Dict[str, ty.List[str]], hypa_grid),
+        df_f,
+        pdf_split_fol,
+        png_split_fol,
+        pdf_grid_fol,
+        png_grid_fol,
+        # do_single_images=True,
+        do_single_images=False,
+        min_at_zero=False,
+        min_lower_limit=min_lower_limit,
+        hypa_labels=hypa_labels,
+    )
+
+
 def run_evaluate_transfer(args: argparse.Namespace) -> None:
     """MAKEDOC: What is evaluate_transfer doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate_transfer")
@@ -412,6 +607,8 @@ def run_evaluate_transfer(args: argparse.Namespace) -> None:
         evaluate_audio_transfer(train_words_type, rec_words_type)
     elif evaluation_type == "delete_bad_models":
         delete_bad_models_transfer(args)
+    elif evaluation_type == "make_plots_hypa":
+        make_plots_hypa()
 
 
 if __name__ == "__main__":
