@@ -141,10 +141,10 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     ###########################################################################
     hypa_grid_big = {}
 
-    # hypa_grid_big["base_dense_width"] = [16, 32, 64]
+    hypa_grid_big["base_dense_width"] = [16, 32, 64]
     # hypa_grid_big["base_dense_width"] = [16, 32, 64, 128]
     # hypa_grid_big["base_dense_width"] = [128]
-    hypa_grid_big["base_dense_width"] = [32]
+    # hypa_grid_big["base_dense_width"] = [32]
 
     # hypa_grid_big["base_filters"] = [10, 20, 30, 32, 64, 128]
     hypa_grid_big["base_filters"] = [20, 32]
@@ -155,14 +155,14 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     ds = []
     # ds.extend(["mel01", "mel04", "mela1"])
     # ds.extend(["mel04", "mela1"])
-    # ds.extend(["mel04"])
-    ds.extend(["mela1"])
-    ds.extend(["mel01", "mel02", "mel03", "mel04"])
-    ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
+    ds.extend(["mel04"])
+    # ds.extend(["mela1"])
+    # ds.extend(["mel01", "mel02", "mel03", "mel04"])
+    # ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
     # ds.extend(["aug02", "aug03", "aug04", "aug05"])
     # ds.extend(["aug06", "aug07", "aug08", "aug09"])
     # ds.extend(["aug10", "aug11", "aug12", "aug13"])
-    ds.extend(["aug14", "aug15", "aug16", "aug17"])
+    # ds.extend(["aug14", "aug15", "aug16", "aug17"])
     # ds.extend(["aug14", "aug15", "aug16"])
     # ds.extend(["aug07"])
     # ds.extend(["aug14"])
@@ -180,18 +180,18 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     hypa_grid_big["epoch_num"] = [15]
     # hypa_grid_big["epoch_num"] = [15, 30]
 
-    # hypa_grid_big["kernel_size_type"] = ["01", "02"]
-    hypa_grid_big["kernel_size_type"] = ["02"]
+    hypa_grid_big["kernel_size_type"] = ["01", "02", "03"]
+    # hypa_grid_big["kernel_size_type"] = ["02"]
 
-    # hypa_grid_big["pool_size_type"] = ["01", "02"]
-    hypa_grid_big["pool_size_type"] = ["01"]
+    hypa_grid_big["pool_size_type"] = ["01", "02", "03"]
+    # hypa_grid_big["pool_size_type"] = ["03"]
 
     lr = []
-    lr.extend(["01", "02", "03"])  # fixed
+    # lr.extend(["01", "02", "03"])  # fixed
     # lr.extend(["e1"])  # exp_decay_keras_01
     lr.extend(["04"])  # exp_decay_step_01
     lr.extend(["05"])  # exp_decay_smooth_01
-    lr.extend(["06"])  # exp_decay_smooth_02
+    # lr.extend(["06"])  # exp_decay_smooth_02
     hypa_grid_big["learning_rate_type"] = lr
 
     hypa_grid_big["optimizer_type"] = ["a1"]
@@ -352,10 +352,14 @@ def train_model(hypa, force_retrain):
     model_param["base_dense_width"] = hypa["base_dense_width"]
 
     # translate types to actual values
-    kernel_size_types = {"01": [(2, 2), (2, 2), (2, 2)], "02": [(5, 1), (3, 3), (3, 3)]}
+
+    kernel_size_types = {
+        "01": [(2, 2), (2, 2), (2, 2)],
+        "02": [(5, 1), (3, 3), (3, 3)],
+        "03": [(1, 5), (3, 3), (3, 3)],
+    }
     model_param["kernel_sizes"] = kernel_size_types[hypa["kernel_size_type"]]
 
-    # TODO test ps 03
     pool_size_types = {
         "01": [(2, 2), (2, 2), (2, 2)],
         "02": [(2, 1), (2, 2), (2, 2)],

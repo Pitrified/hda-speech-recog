@@ -70,7 +70,7 @@ blue line tells the standard deviation around the mean.
 % Hypa comparison
 % First specific hypas
 
-A total of $4664$ experiment were performed for the convolutional architecture.
+A total of $4664$ TODO experiment were performed for the convolutional architecture.
 
 \subsubsection{Model parameters performance comparison}
 
@@ -103,6 +103,8 @@ Several insights can be extrapolated, in order of clarity:
         any value larger than $10$ performed equally well, from $20$ to $128$.
     \item Square pool windows perform slightly better than the rectangular ones.
 \end{itemize}
+
+TODO: on what is averaged
 
 \begin{figure*}[h!]
     \centering
@@ -140,9 +142,92 @@ Two main conclusions can be reached:
     \label{fig:cnn_comparison_epoch_lr_dataset}
 \end{figure*}
 
-\subsection{Hyper-parameter analysis: Transfer}
+\subsection{Hyper-parameter analysis: Transfer learning}
 
-A total of $130$ experiment were performed for the transfer learning approach.
+A total of $130$ TODO experiment were performed for the transfer learning approach.
+
+TODO: on what are you averaging
+
+\subsubsection{Model and training parameters performance comparison}
+
+\fig{fig:tra_comparison_batch_epoch_dense} shows the effects of tuning
+a)
+the number of training epochs
+b)
+the number of samples per batch
+c)
+the shape of the final classifier built on top of the Xception model.
+% Fscore__batch_size__epoch_num__dense_width__words.png
+Using a combination of $[40, 20]$ epochs and $[16, 16]$ as batch sizes seems to
+achieve the best performance, while the shape of the classifier does not
+influence the training.
+
+% Fscore_TRA_batch_size__epoch_num__dense_width__words.pdf
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Fscore_TRA_batch_size__epoch_num__dense_width__words.pdf}
+    \caption{TRA comparison batch epoch dense}%
+    \label{fig:tra_comparison_batch_epoch_dense}
+\end{figure}
+
+\subsubsection{Dataset performance comparison}
+
+\fig{fig:tra_comparison_dataset}
+
+TODO: what are you averaging?
+
+The different ways used to stack the spectrograms to obtain a 3-channels image
+are compared in \fig{fig:tra_comparison_dataset}.
+Stacking 128x128 mel spectrograms works quite well, as expected.
+Similarly, stacking three mel spectrograms obtained by composing two 128x64
+spectrograms each, can lead to similar results.
+The MFCC spectrograms do not work as well, just as seen with the small
+convolutional networks.
+All these images had uniform structure across the depth dimension, as they were
+obtained by stacking spectrograms with the same shape and type.
+However, reasonably good results are also obtained by stacking spectrograms of
+different kinds: both stacking 2 mel and 1 MFCC and stacking 1 mel, 1 MFCC and
+1 composed.
+In these last two types, there is little cross-channel correlation.
+Considering that the base model used is Xception, that learns independently the
+spatial and cross-channel correlations, it makes sense that the results are
+decent, as the model learns to exploit the spatial correlations, but some
+performance is lost as there is no information to be extracted by the
+cross-channel correlations between different types of spectrograms.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Fscore_TRA_dataset_comparison.pdf}
+    \caption{Dataset TRA comparison}%
+    \label{fig:tra_comparison_dataset}
+\end{figure}
+
+\subsubsection{Architecture performance comparison}
+
+
+\fig{fig:tra_comparison_arch} shows the performances of different base models:
+The best model architectures are DenseNet121 and EfficientNetB7.
+It is worth noting that the latter is a far larger network, as DenseNet121 only
+has 7M parameters compared to the 66M of EfficientNetB7.
+EfficientNetB4 also achieves very good results, using only 19M parameters,
+outperformimg by a little Xception, with 22.8M parameters.
+EfficientNetB0, with 5.3M parameters, cannot reach the same results.
+
+TODO: EfficientNet exactly like in the paper the nice curve precision vs number params
+
+% 7M DenseNet121
+% 22.8M Xception
+% 5.3M B0
+% 19M B4
+% 66M B7
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Fscore_TRA_arch_comparison.pdf}
+    \caption{Architecture TRA comparison}%
+    \label{fig:tra_comparison_arch}
+\end{figure}
 
 \subsection{Hyper-parameter analysis: Attention}
 
@@ -444,7 +529,7 @@ Test all on that, MAYBE merge with architecture comparision
 
 \subsection{Attention weights}
 
-\subsubsection{Attention model}
+% \subsubsection{Attention model}
 
 % Show attention weights for Att model
 
@@ -469,6 +554,9 @@ and is used to extract information from the signal.
     and, with some small uncertainty, the word is indeed recognized as ``other''.}%
     \label{fig:attention_weights_standard}
 \end{figure*}
+
+An example of the weights computed by AreaNet and VerticalAreaNet were already shown 
+in \fig{fig:attention_weights_area} and \fig{fig:attention_weights_vertical}.
 
 \subsection{Stream predictions}
 

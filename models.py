@@ -197,7 +197,9 @@ def TRAmodel(
     # load weights pre-trained on ImageNet
     # do not include the ImageNet classifier at the top
     base_model = pretrained_model(
-        weights="imagenet", input_shape=input_shape, include_top=False,
+        weights="imagenet",
+        input_shape=input_shape,
+        include_top=False,
     )
 
     # freeze the base_model
@@ -275,5 +277,30 @@ def test_attention_model():
     U.plot_model(attention_model, model_pic_name, show_shapes=True, dpi=400)
 
 
+def test_tra_model() -> None:
+    """MAKEDOC: what is test_tra_model doing?"""
+
+    net_type = "TD1"
+    input_shape = (128, 128, 3)
+    num_labels = 10
+    dense_widths = [0, 0]
+    dropout = 0.2
+    data_mean = 0
+    data_variance = 1
+
+    model, base_model = TRAmodel(
+        num_labels,
+        input_shape,
+        net_type,
+        dense_widths,
+        dropout,
+        data_mean,
+        data_variance,
+    )
+    model.summary(line_length=120)
+    base_model.summary(line_length=120)
+
+
 if __name__ == "__main__":
-    test_attention_model()
+    # test_attention_model()
+    test_tra_model()

@@ -470,7 +470,7 @@ def make_plots_hypa() -> None:
     hypa_grid: ty.Dict[str, ty.List[str]] = deepcopy(hypa_grid_all)
 
     # a unique name for this filtering
-    filter_tag = "001"
+    filter_tag = "003"
 
     if filter_tag == "001":
         # nice batch epoch dense comparison
@@ -542,7 +542,7 @@ def make_plots_hypa() -> None:
         min_lower_limit = 0.60
 
     elif filter_tag == "003":
-        # nice epoch/batch comparison, only on TRA
+        # nice dataset comparison, only on TRA
 
         hypa_grid = deepcopy(hypa_grid_all)
 
@@ -561,6 +561,9 @@ def make_plots_hypa() -> None:
         grid_filter = ["TRA"]
         hypa_grid["arch_name"] = grid_filter
         df_f = df_f[df_f["arch_name"].isin(grid_filter)]
+
+        # hypa_grid["datasets"] = ["01", "02", "03", "04", "05"]
+        hypa_grid["datasets"] = ["03", "01", "05", "02", "04"]
 
         logg.debug(f"len(df_f): {len(df_f)}")
 

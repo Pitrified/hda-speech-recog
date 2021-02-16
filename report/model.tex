@@ -541,7 +541,7 @@ The possible values for the training hyper-parameters are:
 \section{Transfer Learning Approach}
 \label{sec:transfer_learning}
 
-\subsection{Transfer learning}
+\subsection{Transfer learning and fine tuning}
 
 Transfer learning is a technique where a model developed and trained for a task
 is modified slightly and used as a starting point for a different task.
@@ -558,15 +558,33 @@ supercomputers with dozens of top of the line graphics cards.
 Adapting the networks for a new task, on the other hand, is a matter of roughly
 half an hour on a single GPU.
 
+The complete pipeline used to train a model using transfer learning is as
+follows:
+\begin{enumerate}
+    \item Load a pre-trained model, without the final classifier.
+    \item Freeze the base model weights, to avoid destroying the information they
+        contain.
+    \item Add a classifier at the end of the base model.
+    \item Train the classifier, using a reasonably high learning rate.
+    \item Un-freeze the base model weights.
+    \item Train the model again, with a very small learning rate, to fine tune
+        the feature extractor to the current dataset.
+\end{enumerate}
+
+The first four steps are the transfer learning part, followed by the fine
+tuning steps five and six.
+
+\subsection{Base model used}
+
 As spectrograms can be interpreted as images, starting from an image classifier
 makes perfect sense. The three architecture used are
-DenseNet
-\cite{huang2018densely},
 Xception 
 \cite{chollet2017xception},
-and
 EfficientNet
-\cite{tan2020efficientnet}.
+\cite{tan2020efficientnet},
+and
+DenseNet
+\cite{huang2018densely}.
 
 \subsubsection{Xception structure}
 
@@ -615,27 +633,10 @@ as input to all the subsequent layers.
 With this topology, a network with $L$ layers has roughly $L^2$ connections.
 % Features are composed by concatenating them.
 
-\subsection{Transfer learning and fine tuning}
-
-The pipeline to train a model using transfer learning is as follows:
-\begin{enumerate}
-    \item Load a previously trained base model, without the final classifier.
-    \item Freeze the base model weights, to avoid destroying the information they
-        contain.
-    \item Add a classifier on top of the base model.
-    \item Train the classifier, using a reasonably high learning rate.
-    \item Un-freeze the base model weights.
-    \item Train the model again, with a very small learning rate, to fine tune
-        the feature extractor to the current dataset.
-\end{enumerate}
-
-The first four steps are the transfer learning part, followed by the fine
-tuning steps five and six.
-
 \subsection{Model building and hyper-parameters}
 
-The inputs to the pre-trained Xception and EfficientNet models have to be
-square images with three channels.
+The inputs to the pre-trained Xception, DenseNet and EfficientNet models have
+to be square images with three channels.
 To appropriatley shape the input data, three square spectrograms were stacked
 along the depth dimension.
 On top of that, to obtain square inputs, two rectangular spectrograms were
@@ -651,7 +652,14 @@ averages the values in each feature extracted, followed by some dense layers
 (according to the hyper-parameters selected) and finally a softmax layer to
 compute the predictions.
 
-TODO: specify which models were used
+TODO: specify which model version were used (121, B047)
+
+TODO: model sizes
+7M DenseNet121
+22.8M Xception
+5.3M B0
+19M B4
+66M B7
 
 TODO: specify labels for models
 
