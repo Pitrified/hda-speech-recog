@@ -75,7 +75,10 @@ def parse_arguments() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "-dr", "--dry_run", action="store_true", help="Do a dry run for the hypa grid",
+        "-dr",
+        "--dry_run",
+        action="store_true",
+        help="Do a dry run for the hypa grid",
     )
 
     parser.add_argument(
@@ -149,7 +152,8 @@ def hyper_train_area(
 
     ###### the words to train on
     # hypa_grid["words_type"] = [words_type]
-    hypa_grid["words_type"] = ["LTnum", "LTall", "yn"]
+    # hypa_grid["words_type"] = ["LTnum", "LTall", "yn"]
+    hypa_grid["words_type"] = ["LTnum", "yn"]
 
     ###### the dataset to train on
     ds = []
@@ -398,7 +402,10 @@ def get_training_param_area(
 
     if lr_name.startswith("fixed") or lr_name.startswith("exp_decay"):
         early_stop = EarlyStopping(
-            monitor=metric_to_monitor, patience=4, restore_best_weights=True, verbose=1,
+            monitor=metric_to_monitor,
+            patience=4,
+            restore_best_weights=True,
+            verbose=1,
         )
         callbacks.append(early_stop)
 
