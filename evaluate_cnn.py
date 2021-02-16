@@ -147,6 +147,7 @@ def build_cnn_results_df() -> pd.DataFrame:
 
         cm = np.array(results_recap["cm"])
         fscore = analyze_confusion(cm, recap["words"])
+        logg.debug(f"fscore: {fscore}")
 
         categorical_accuracy = results_recap["categorical_accuracy"]
         logg.debug(f"categorical_accuracy: {categorical_accuracy}")
@@ -163,7 +164,8 @@ def build_cnn_results_df() -> pd.DataFrame:
         pandito["cat_acc"].append(results_recap["categorical_accuracy"])
         pandito["loss"].append(results_recap["loss"])
         pandito["model_name"].append(results_recap["model_name"])
-        pandito["fscore"].append(fscore)
+        # pandito["fscore"].append(fscore)
+        pandito["fscore"].append(categorical_accuracy)
 
         if "version" in recap:
             if recap["version"] == "001":
@@ -791,9 +793,6 @@ def make_plots_hypa() -> None:
     ]
     logg.debug(f"hp_to_plot_names_all: {hp_to_plot_names_all}")
 
-    # a unique name for this filtering
-    filter_tag = "001"
-
     # clone the results
     df_f = results_df
 
@@ -805,6 +804,9 @@ def make_plots_hypa() -> None:
     hypa_grid: ty.Dict[str, ty.Union[ty.List[str], ty.List[int]]] = {}
     # hypa_grid: ty.Dict[str, ty.List[str]] = deepcopy(hypa_grid_all)
 
+    # a unique name for this filtering
+    filter_tag = "001"
+
     if filter_tag == "001":
         hypa_grid = deepcopy(hypa_grid_all)
         min_lower_limit = 0.60
@@ -813,19 +815,43 @@ def make_plots_hypa() -> None:
         hypa_grid["words"] = wd_filter
         df_f = df_f[df_f["words"].isin(wd_filter)]
 
-        en_filter = [15]
-        hypa_grid["epoch_num"] = en_filter
-        df_f = df_f[df_f["epoch_num"].isin(en_filter)]
-
         ds = []
         # ds.extend(["aug02", "aug03", "aug04", "aug05"])
         # ds.extend(["aug06", "aug07", "aug08", "aug09"])
         # ds.extend(["aug10", "aug11", "aug12", "aug13"])
-        ds.extend(["aug14", "aug15", "aug16", "aug17"])
-        ds.extend(["mel01", "mel02", "mel03", "mel04", "mela1"])
         ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
+        ds.extend(["mel01", "mel02", "mel03", "mel04", "mela1"])
+        ds.extend(["aug14", "aug15", "aug16", "aug17"])
         hypa_grid["dataset"] = ds
         df_f = df_f[df_f["dataset"].isin(ds)]
+
+        dw_filter = [32]
+        hypa_grid["dense_width"] = dw_filter
+        df_f = df_f[df_f["dense_width"].isin(dw_filter)]
+
+        nf_filter = [20, 32]
+        hypa_grid["filters"] = nf_filter
+        df_f = df_f[df_f["filters"].isin(nf_filter)]
+
+        bs_filter = [32]
+        hypa_grid["batch_size"] = bs_filter
+        df_f = df_f[df_f["batch_size"].isin(bs_filter)]
+
+        dr_filter = ["01"]
+        hypa_grid["dropout"] = dr_filter
+        df_f = df_f[df_f["dropout"].isin(dr_filter)]
+
+        en_filter = [15]
+        hypa_grid["epoch_num"] = en_filter
+        df_f = df_f[df_f["epoch_num"].isin(en_filter)]
+
+        ks_filter = ["02"]
+        hypa_grid["kernel_size"] = ks_filter
+        df_f = df_f[df_f["kernel_size"].isin(ks_filter)]
+
+        op_filter = ["a1"]
+        hypa_grid["opt"] = op_filter
+        df_f = df_f[df_f["opt"].isin(op_filter)]
 
         hp_to_plot_names = [
             "dataset",
@@ -834,7 +860,7 @@ def make_plots_hypa() -> None:
             "words",
         ]
 
-        sub_tag = "nofilter"
+        sub_tag = "__".join(hp_to_plot_names)
 
     elif filter_tag == "002":
         hypa_grid = deepcopy(hypa_grid_all)
@@ -852,12 +878,29 @@ def make_plots_hypa() -> None:
         hypa_grid["filters"] = nf_filter
         df_f = df_f[df_f["filters"].isin(nf_filter)]
 
+        en_filter = [15]
+        hypa_grid["epoch_num"] = en_filter
+        df_f = df_f[df_f["epoch_num"].isin(en_filter)]
+
+        bs_filter = [32]
+        hypa_grid["batch_size"] = bs_filter
+        df_f = df_f[df_f["batch_size"].isin(bs_filter)]
+
+        dr_filter = ["01"]
+        hypa_grid["dropout"] = dr_filter
+        df_f = df_f[df_f["dropout"].isin(dr_filter)]
+
+        lr_filter = ["04", "05"]
+        hypa_grid["lr"] = lr_filter
+        df_f = df_f[df_f["lr"].isin(lr_filter)]
+
         ds = []
         # ds.extend(["aug02", "aug03", "aug04", "aug05"])
         # ds.extend(["aug06", "aug07", "aug08", "aug09"])
         # ds.extend(["aug10", "aug11", "aug12", "aug13"])
         # ds.extend(["aug14", "aug15", "aug16", "aug17"])
-        ds.extend(["mel01", "mel02", "mel03", "mel04", "mela1"])
+        # ds.extend(["mel01", "mel02", "mel03", "mel04", "mela1"])
+        ds.extend(["mel04", "mela1"])
         # ds.extend(["mfcc01", "mfcc02", "mfcc03", "mfcc04"])
         hypa_grid["dataset"] = ds
         df_f = df_f[df_f["dataset"].isin(ds)]
@@ -869,7 +912,7 @@ def make_plots_hypa() -> None:
             "pool_size",
         ]
 
-        sub_tag = "nofilter"
+        sub_tag = "__".join(hp_to_plot_names)
 
     # all_hp_to_plot = list(combinations(hp_to_plot_names, 4))
     # logg.debug(f"len(all_hp_to_plot): {len(all_hp_to_plot)}")

@@ -412,7 +412,7 @@ def make_plots_hypa() -> None:
         if col in ["model_name", "loss", "fscore", "recall", "precision", "cat_acc"]:
             continue
         logg.debug(f"hypa_grid['{col}'] = {results_df[col].unique()}")
-        # logg.debug(f"frequencies\n{results_df[col].value_counts()}")
+        logg.debug(f"frequencies\n{results_df[col].value_counts()}")
 
     hypa_grid_all: ty.Dict[str, ty.List[str]] = {}
     hypa_grid_all["dense_width"] = ["01", "02", "03", "04"]
@@ -453,9 +453,12 @@ def make_plots_hypa() -> None:
     hypa_labels["datasets"]["03"] = "[mfcc06, mfcc07, mfcc08]"
     hypa_labels["datasets"]["04"] = "[mel05, mfcc06, melc1]"
     hypa_labels["datasets"]["05"] = "[melc1, melc2, melc4]"
-
-    # a unique name for this filtering
-    filter_tag = "003"
+    hypa_labels["arch_name"] = {}
+    hypa_labels["arch_name"]["TRA"] = "Xception"
+    hypa_labels["arch_name"]["TD1"] = "DenseNet121"
+    hypa_labels["arch_name"]["TB0"] = "EfficientNetB0"
+    hypa_labels["arch_name"]["TB4"] = "EfficientNetB4"
+    hypa_labels["arch_name"]["TB7"] = "EfficientNetB7"
 
     # clone the results
     df_f = results_df
@@ -464,6 +467,9 @@ def make_plots_hypa() -> None:
     df_f = df_f[df_f["fscore"] > 0.5]
 
     hypa_grid: ty.Dict[str, ty.List[str]] = deepcopy(hypa_grid_all)
+
+    # a unique name for this filtering
+    filter_tag = "001"
 
     if filter_tag == "001":
         # nice batch epoch dense comparison
@@ -490,7 +496,7 @@ def make_plots_hypa() -> None:
         min_lower_limit = 0.60
 
     elif filter_tag == "002":
-        # nice arch_type comparison
+        # nice arch_type comparison, on only one dataset
 
         hypa_grid = deepcopy(hypa_grid_all)
 
@@ -519,7 +525,7 @@ def make_plots_hypa() -> None:
         min_lower_limit = 0.60
 
     elif filter_tag == "003":
-        # nice arch_type comparison
+        # nice epoch/batch comparison, only on TRA
 
         hypa_grid = deepcopy(hypa_grid_all)
 
