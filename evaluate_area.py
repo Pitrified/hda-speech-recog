@@ -15,14 +15,6 @@ from utils import compute_permutation
 from utils import setup_logger
 from utils import words_types
 
-# from plot_utils import plot_pred
-# from plot_utils import plot_spec
-# from random import seed as rseed
-# from timeit import default_timer as timer
-# from utils import analyze_confusion
-# from utils import compute_permutation
-# from utils import pred_hot_2_cm
-
 
 def parse_arguments() -> argparse.Namespace:
     """Setup CLI interface"""
@@ -40,7 +32,7 @@ def parse_arguments() -> argparse.Namespace:
             # "make_plots_hypa",
             # "make_plots_clr",
             # "audio",
-            # "delete_bad_models",
+            "delete_bad_models",
         ],
         help="Which evaluation to perform",
     )
@@ -351,6 +343,77 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     plt.show()
 
 
+def delete_bad_models_area() -> None:
+    """MAKEDOC: what is delete_bad_models_area doing?"""
+    logg = logging.getLogger(f"c.{__name__}.delete_bad_models_area")
+    # logg.setLevel("INFO")
+    logg.debug("Start delete_bad_models_area")
+
+    train_type_tag = "area"
+    info_folder = Path("info") / train_type_tag
+    trained_folder = Path("trained_models") / train_type_tag
+    deleted = 0
+    recreated = 0
+    bad_models = 0
+    good_models = 0
+
+    for model_folder in info_folder.iterdir():
+        # logg.debug(f"model_folder: {model_folder}")
+
+        model_name = model_folder.name
+        model_path = trained_folder / f"{model_name}.h5"
+        placeholder_path = trained_folder / f"{model_name}.txt"
+
+        res_recap_path = model_folder / "results_recap.json"
+        if not res_recap_path.exists():
+            logg.warn(f"Skipping {res_recap_path}, not found")
+            continue
+        results_recap = json.loads(res_recap_path.read_text())
+
+        recap_path = model_folder / "recap.json"
+        recap = json.loads(recap_path.read_text())
+
+        # load info
+        words_type = recap["hypa"]["words_type"]
+        fscore = results_recap["fscore"]
+
+        if "all" in words_type:
+            f_tresh = 0.96
+        elif "f1" in words_type:
+            f_tresh = 0.985
+        elif "yn" in words_type:
+            f_tresh = 0.998
+        elif "num" in words_type:
+            f_tresh = 0.985
+
+        if fscore < f_tresh:
+            bad_models += 1
+
+            if model_path.exists():
+                # manually uncomment this when ready
+                model_path.unlink()
+                deleted += 1
+                logg.debug(f"Deleting model_path: {model_path}")
+                logg.debug(f"\tfscore: {fscore}")
+
+            # check that a placeholder is there, you have info for this model
+            else:
+                if not placeholder_path.exists():
+                    placeholder_path.write_text("Deleted")
+                    logg.debug(f"Recreating placeholder_path: {placeholder_path}")
+                    recreated += 1
+
+        else:
+            # logg.debug(f"Good model_path {model_path} {words_type}")
+            # logg.debug(f"\tfscore: {fscore}")
+            good_models += 1
+
+    logg.info(f"bad_models: {bad_models}")
+    logg.info(f"good_models: {good_models}")
+    logg.info(f"deleted: {deleted}")
+    logg.info(f"recreated: {recreated}")
+
+
 def run_evaluate_area(args: argparse.Namespace) -> None:
     """MAKEDOC: What is evaluate_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate_area")
@@ -366,6 +429,8 @@ def run_evaluate_area(args: argparse.Namespace) -> None:
         evaluate_results_area()
     elif evaluation_type == "attention_weights":
         evaluate_attention_weights(train_words_type)
+    elif evaluation_type == "delete_bad_models":
+        delete_bad_models_area()
 
 
 if __name__ == "__main__":

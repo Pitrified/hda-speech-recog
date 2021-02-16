@@ -189,7 +189,7 @@ def evaluate_results_transfer(args: argparse.Namespace) -> None:
 def delete_bad_models_transfer(args: argparse.Namespace) -> None:
     """MAKEDOC: what is delete_bad_models_transfer doing?"""
     logg = logging.getLogger(f"c.{__name__}.delete_bad_models_transfer")
-    logg.setLevel("INFO")
+    # logg.setLevel("INFO")
     logg.debug("Start delete_bad_models_transfer")
 
     info_folder = Path("info") / "transfer"
@@ -209,7 +209,7 @@ def delete_bad_models_transfer(args: argparse.Namespace) -> None:
 
         res_full_path = model_folder / "results_full_recap.json"
         if not res_full_path.exists():
-            logg.info(f"Skipping res_full_path: {res_full_path}")
+            logg.warn(f"Skipping {res_full_path}, not found")
             continue
         res_full = json.loads(res_full_path.read_text())
 
@@ -219,17 +219,17 @@ def delete_bad_models_transfer(args: argparse.Namespace) -> None:
         words_type = recap["hypa"]["words_type"]
         fscore = res_full["fscore"]
 
-        if words_type == "all":
+        if "all" in words_type:
             f_tresh = 0.5
-        elif words_type == "f1":
+        elif "f1" in words_type:
             f_tresh = 0.97
-        elif words_type == "f2":
+        elif "f2" in words_type:
             f_tresh = 0.975
-        elif words_type == "dir":
+        elif "dir" in words_type:
             f_tresh = 0.96
-        elif words_type == "num":
+        elif "num" in words_type:
             f_tresh = 0.95
-        elif words_type == "k1":
+        elif "k1" in words_type:
             f_tresh = 0.94
         else:
             logg.warn(f"Not specified f_tresh for words_type: {words_type}")
@@ -239,7 +239,8 @@ def delete_bad_models_transfer(args: argparse.Namespace) -> None:
             bad_models += 1
 
             if model_path.exists():
-                model_path.unlink()
+                # manually uncomment this when ready
+                # model_path.unlink()
                 deleted += 1
                 logg.debug(f"Deleting model_path: {model_path}")
                 logg.debug(f"\tfscore: {fscore}")
@@ -253,7 +254,7 @@ def delete_bad_models_transfer(args: argparse.Namespace) -> None:
 
         else:
             logg.debug(f"Good model_path {model_path} {words_type}")
-            logg.debug(f"\tfscore: {fscore}")
+            logg.debug(f"\t{model_name[:3]} fscore: {fscore}")
             good_models += 1
 
     logg.info(f"bad_models: {bad_models}")
@@ -475,13 +476,29 @@ def make_plots_hypa() -> None:
         # nice batch epoch dense comparison
         hypa_grid = deepcopy(hypa_grid_all)
 
-        wd_filter = ["f1"]
-        hypa_grid["words"] = wd_filter
-        df_f = df_f[df_f["words"].isin(wd_filter)]
+        grid_filter = ["f1"]
+        hypa_grid["words"] = grid_filter
+        df_f = df_f[df_f["words"].isin(grid_filter)]
 
-        an_filter = ["TRA"]
-        hypa_grid["arch_name"] = an_filter
-        df_f = df_f[df_f["arch_name"].isin(an_filter)]
+        grid_filter = ["TRA"]
+        hypa_grid["arch_name"] = grid_filter
+        df_f = df_f[df_f["arch_name"].isin(grid_filter)]
+
+        grid_filter = ["01"]
+        hypa_grid["dropout"] = grid_filter
+        df_f = df_f[df_f["dropout"].isin(grid_filter)]
+
+        # grid_filter = ["01"]
+        # hypa_grid["learning_rate"] = grid_filter
+        # df_f = df_f[df_f["learning_rate"].isin(grid_filter)]
+
+        grid_filter = ["a1"]
+        hypa_grid["optimizer"] = grid_filter
+        df_f = df_f[df_f["optimizer"].isin(grid_filter)]
+
+        grid_filter = ["01"]
+        hypa_grid["datasets"] = grid_filter
+        df_f = df_f[df_f["datasets"].isin(grid_filter)]
 
         logg.debug(f"len(df_f): {len(df_f)}")
 
@@ -500,17 +517,17 @@ def make_plots_hypa() -> None:
 
         hypa_grid = deepcopy(hypa_grid_all)
 
-        wd_filter = ["f1"]
-        hypa_grid["words"] = wd_filter
-        df_f = df_f[df_f["words"].isin(wd_filter)]
+        grid_filter = ["f1"]
+        hypa_grid["words"] = grid_filter
+        df_f = df_f[df_f["words"].isin(grid_filter)]
 
-        en_filter = ["02"]
-        hypa_grid["epoch_num"] = en_filter
-        df_f = df_f[df_f["epoch_num"].isin(en_filter)]
+        grid_filter = ["02"]
+        hypa_grid["epoch_num"] = grid_filter
+        df_f = df_f[df_f["epoch_num"].isin(grid_filter)]
 
-        ds_filter = ["01"]
-        hypa_grid["datasets"] = ds_filter
-        df_f = df_f[df_f["datasets"].isin(ds_filter)]
+        grid_filter = ["01"]
+        hypa_grid["datasets"] = grid_filter
+        df_f = df_f[df_f["datasets"].isin(grid_filter)]
 
         logg.debug(f"len(df_f): {len(df_f)}")
 
@@ -529,21 +546,21 @@ def make_plots_hypa() -> None:
 
         hypa_grid = deepcopy(hypa_grid_all)
 
-        wd_filter = ["f1"]
-        hypa_grid["words"] = wd_filter
-        df_f = df_f[df_f["words"].isin(wd_filter)]
+        grid_filter = ["f1"]
+        hypa_grid["words"] = grid_filter
+        df_f = df_f[df_f["words"].isin(grid_filter)]
 
-        en_filter = ["01"]
-        hypa_grid["epoch_num"] = en_filter
-        df_f = df_f[df_f["epoch_num"].isin(en_filter)]
+        grid_filter = ["01"]
+        hypa_grid["epoch_num"] = grid_filter
+        df_f = df_f[df_f["epoch_num"].isin(grid_filter)]
 
-        bs_filter = ["01"]
-        hypa_grid["batch_size"] = bs_filter
-        df_f = df_f[df_f["batch_size"].isin(bs_filter)]
+        grid_filter = ["01"]
+        hypa_grid["batch_size"] = grid_filter
+        df_f = df_f[df_f["batch_size"].isin(grid_filter)]
 
-        an_filter = ["TRA"]
-        hypa_grid["arch_name"] = an_filter
-        df_f = df_f[df_f["arch_name"].isin(an_filter)]
+        grid_filter = ["TRA"]
+        hypa_grid["arch_name"] = grid_filter
+        df_f = df_f[df_f["arch_name"].isin(grid_filter)]
 
         logg.debug(f"len(df_f): {len(df_f)}")
 

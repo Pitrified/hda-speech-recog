@@ -251,7 +251,7 @@ def plot_triple_data(
     .----------------------------------->
     """
     logg = logging.getLogger(f"c.{__name__}.plot_triple_data")
-    # logg.setLevel("INFO")
+    logg.setLevel("INFO")
     logg.debug("Start plot_triple_data")
     logg.debug(f"f_mean.shape: {f_mean.shape}")
     logg.debug(f"outer_value: {outer_value} outer_label {outer_label}")
@@ -478,7 +478,7 @@ def quad_plotter(
 ) -> None:
     """MAKEDOC: what is quad_plotter doing?"""
     logg = logging.getLogger(f"c.{__name__}.quad_plotter")
-    # logg.setLevel("INFO")
+    logg.setLevel("INFO")
     logg.debug("Start quad_plotter")
 
     for hp_to_plot in tqdm(all_hp_to_plot):

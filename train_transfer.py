@@ -182,10 +182,10 @@ def hyper_train_transfer(
 
     ###### the dense width of the classifier
     dw = []
-    # dw.extend(["01"])  # [4, 0]
-    # dw.extend(["02"])  # [16, 16]
+    dw.extend(["01"])  # [4, 0]
+    dw.extend(["02"])  # [16, 16]
     dw.extend(["03"])  # [0, 0]
-    # dw.extend(["04"])  # [64, 64]
+    dw.extend(["04"])  # [64, 64]
     hypa_grid["dense_width_type"] = dw
 
     ###### the dropout to use
@@ -197,13 +197,13 @@ def hyper_train_transfer(
 
     ###### the batch sizes to use
     bs = []
-    # bs.extend(["01"])  # [32, 32]
+    bs.extend(["01"])  # [32, 32]
     bs.extend(["02"])  # [16, 16]
     hypa_grid["batch_size_type"] = bs
 
     ###### the number of epochs
     en = []
-    # en.extend(["01"])  # [20, 10]
+    en.extend(["01"])  # [20, 10]
     en.extend(["02"])  # [40, 20]
     # en.extend(["03"])  # [1, 1]
     hypa_grid["epoch_num_type"] = en
@@ -211,8 +211,9 @@ def hyper_train_transfer(
     ###### the learning rates for the optimizer
     lr = []
     # lr.extend(["01", "02"])  # fixed
+    # lr.extend(["01"])  # fixed
     lr.extend(["03"])  # exp_decay_step_01
-    lr.extend(["04"])  # exp_decay_smooth_01
+    # lr.extend(["04"])  # exp_decay_smooth_01
     hypa_grid["learning_rate_type"] = lr
 
     ###### which optimizer to use

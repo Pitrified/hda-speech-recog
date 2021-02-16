@@ -270,7 +270,7 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     for dn in hypa_grid["dataset"]:
         for wt in hypa_grid["words"]:
             logg.debug(f"\nwt: {wt} dn: {dn}\n")
-            if dn.startswith("me"):
+            if dn.startswith("me") or dn.startswith("mfcc"):
                 logg.debug(f"Preprocess! {wt} {dn}")
                 preprocess_spec(dn, wt)
             elif dn.startswith("au"):

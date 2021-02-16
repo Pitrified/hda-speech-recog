@@ -1025,13 +1025,17 @@ def delete_bad_models_att() -> None:
         words_type = recap["hypa"]["words_type"]
         fscore = results_recap["fscore"]
 
-        if words_type == "all":
+        if "all" in words_type:
             # TODO
-            f_tresh = 0.8
-        elif words_type == "w2":
+            f_tresh = 0.94
+        elif "w2" in words_type:
             f_tresh = 0.965
-        elif words_type == "k1":
+        elif "k1" in words_type:
             f_tresh = 0.972
+        elif "num" in words_type:
+            f_tresh = 0.975
+        elif "f2" in words_type:
+            f_tresh = 0.98
         else:
             logg.warn(f"Not specified f_tresh for words_type: {words_type}")
             f_tresh = 0.8
@@ -1040,7 +1044,8 @@ def delete_bad_models_att() -> None:
             bad_models += 1
 
             if model_path.exists():
-                model_path.unlink()
+                # manually uncomment this when ready
+                # model_path.unlink()
                 deleted += 1
                 logg.debug(f"Deleting model_path: {model_path}")
                 logg.debug(f"\tfscore: {fscore}")
@@ -1057,10 +1062,10 @@ def delete_bad_models_att() -> None:
             logg.debug(f"\tfscore: {fscore}")
             good_models += 1
 
-    logg.debug(f"bad_models: {bad_models}")
-    logg.debug(f"good_models: {good_models}")
-    logg.debug(f"deleted: {deleted}")
-    logg.debug(f"recreated: {recreated}")
+    logg.info(f"bad_models: {bad_models}")
+    logg.info(f"good_models: {good_models}")
+    logg.info(f"deleted: {deleted}")
+    logg.info(f"recreated: {recreated}")
 
 
 def run_evaluate_attention(args: argparse.Namespace) -> None:

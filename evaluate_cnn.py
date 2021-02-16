@@ -650,6 +650,7 @@ def delete_bad_models_cnn(args) -> None:
 
         res_recap_path = model_folder / "results_recap.json"
         if not res_recap_path.exists():
+            logg.warn(f"Skipping {res_recap_path}, not found")
             continue
         results_recap = json.loads(res_recap_path.read_text())
 
@@ -667,25 +668,25 @@ def delete_bad_models_cnn(args) -> None:
         categorical_accuracy = results_recap["categorical_accuracy"]
         # logg.debug(f"categorical_accuracy: {categorical_accuracy}")
 
-        if words_type == "all":
-            f_tresh = 0.89
-            ca_tresh = 0.89
-        elif words_type == "f1":
-            f_tresh = 0.97
-            ca_tresh = 0.97
-        elif words_type == "f2":
-            f_tresh = 0.97
-            ca_tresh = 0.97
-        elif words_type == "dir":
-            f_tresh = 0.96
-            ca_tresh = 0.96
-        elif words_type == "num":
-            f_tresh = 0.94
-            ca_tresh = 0.94
-        elif words_type == "k1":
+        if "all" in words_type:
             f_tresh = 0.9
             ca_tresh = 0.9
-        elif words_type == "w2":
+        elif "f1" in words_type:
+            f_tresh = 0.975
+            ca_tresh = 0.975
+        elif "f2" in words_type:
+            f_tresh = 0.97
+            ca_tresh = 0.97
+        elif "dir" in words_type:
+            f_tresh = 0.97
+            ca_tresh = 0.97
+        elif "num" in words_type:
+            f_tresh = 0.965
+            ca_tresh = 0.965
+        elif "k1" in words_type:
+            f_tresh = 0.9
+            ca_tresh = 0.9
+        elif "w2" in words_type:
             f_tresh = 0.85
             ca_tresh = 0.85
         else:
@@ -697,7 +698,8 @@ def delete_bad_models_cnn(args) -> None:
             bad_models += 1
 
             if model_path.exists():
-                model_path.unlink()
+                # manually uncomment this when ready
+                # model_path.unlink()
                 deleted += 1
                 logg.debug(f"Deleting model_path: {model_path}")
                 logg.debug(f"\tfscore: {fscore}")
@@ -711,9 +713,9 @@ def delete_bad_models_cnn(args) -> None:
                     recreated += 1
 
         else:
-            logg.debug(f"Good model_path {model_path} {words_type}")
-            logg.debug(f"\tfscore: {fscore}")
-            logg.debug(f"\tcategorical_accuracy: {categorical_accuracy}")
+            # logg.debug(f"Good model_path {model_path} {words_type}")
+            # logg.debug(f"\tfscore: {fscore}")
+            # logg.debug(f"\tcategorical_accuracy: {categorical_accuracy}")
             good_models += 1
 
     logg.debug(f"bad_models: {bad_models}")
