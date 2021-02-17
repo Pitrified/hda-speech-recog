@@ -3,11 +3,16 @@ from timeit import default_timer as timer
 import argparse
 import logging
 import queue
+import typing as ty
 
+import librosa  # type: ignore
 from matplotlib.animation import FuncAnimation  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 import sounddevice as sd  # type: ignore
+
+from preprocess_data import get_spec_dict
+from preprocess_data import get_spec_shape_dict
 
 
 class Demo:
@@ -16,13 +21,13 @@ class Demo:
     class implementation of
     https://python-sounddevice.readthedocs.io/en/0.3.15/examples.html#plot-microphone-signal-s-in-real-time
     """
+
     def __init__(
         self,
         device,
         window,
         interval,
-        samplerate,
-        downsample,
+        samplerate_input,
         channels,
     ) -> None:
         """MAKEDOC: what is __init__ doing?"""
@@ -33,42 +38,61 @@ class Demo:
         self.device = device
         self.window = window
         self.interval = interval
-        self.samplerate = int(samplerate)
-        self.downsample = downsample
+        self.samplerate_input = int(samplerate_input)
         self.channels = channels
         self.mapping = [c - 1 for c in self.channels]  # Channel numbers start with 1
+
+        self.plot_downsample = 1
+        self.samplerate_train = 16000
+        # self.which_dataset = "mela1"
+        self.which_dataset = "mel04"
+
+        spec_dict = get_spec_dict()
+        self.mel_kwargs = spec_dict[self.which_dataset]
+        self.p2d_kwargs = {"ref": np.max}
+
+        spec_shape_dict = get_spec_shape_dict()
+        self.spec_shape = spec_shape_dict[self.which_dataset]
+        self.spec = np.zeros(self.spec_shape)
+        logg.debug(f"self.spec.shape: {self.spec.shape}")
+        logg.debug(f"self.spec_shape: {self.spec_shape}")
 
         self.stream = sd.InputStream(
             device=self.device,
             channels=max(self.channels),
-            samplerate=self.samplerate,
+            samplerate=self.samplerate_input,
             callback=self.audio_callback,
         )
 
-        # just a timer
-        self.last_update = timer()
-
-        # the audio signal to be plotted
-        self.length = int(self.window * self.samplerate / (1000 * self.downsample))
+        # the audio signal to be plotted, not filtered
+        self.length = int(self.window * self.samplerate_input / 1000)
         self.audio_signal = np.zeros((self.length, len(self.channels)))
 
         # this is filled by sounddevice and emptied by matplotlib
         self.audio_queue: queue.Queue[np.ndarray] = queue.Queue()
 
-        # the figs and artists
+        # the figs and axis
         self.fig, self.axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 12))
+
+        # the waveform ax
         ax_wave = self.axes[0][0]
-        self.lines_wave = ax_wave.plot(self.audio_signal)
-        ax_wave.axis((0, len(self.audio_signal), -1, 1))
+        self.lines_wave = ax_wave.plot(self.audio_signal[:: self.plot_downsample, 0])
+        ax_wave.axis((0, len(self.audio_signal // self.plot_downsample), -1, 1))
         ax_wave.set_yticks([0])
         ax_wave.yaxis.grid(True)
 
-        # self.fig.tight_layout(pad=0)
+        # the spectrogram ax
+        ax_spec = self.axes[1][0]
+        self.spec_im = ax_spec.imshow(self.spec, origin="lower", vmin=-80, vmax=-10)
+
         self.fig.tight_layout()
 
-        # the animation
-        self.animation = FuncAnimation(
-            self.fig, self.update_plot, interval=self.interval, blit=True
+        # setup the animations
+        self.animation_waveform = FuncAnimation(
+            self.fig, self.update_plot_waveform, interval=self.interval, blit=True
+        )
+        self.animation_spectrogram = FuncAnimation(
+            self.fig, self.update_plot_spectrogram, interval=self.interval, blit=True
         )
 
     def audio_callback(self, indata, frames, time, status) -> None:
@@ -89,14 +113,16 @@ class Demo:
         # recap += f"   indata.shape: {indata.shape}"
         # logg.debug(recap)
 
-        self.audio_queue.put(indata[:: self.downsample, self.mapping])
+        # self.audio_queue.put(indata[:: self.downsample, self.mapping])
+        self.audio_queue.put(indata[::, self.mapping])
 
-    def update_plot(self, frame) -> None:
-        """MAKEDOC: what is update_plot doing?"""
-        # logg = logging.getLogger(f"c.{__name__}.update_plot")
-        # logg.setLevel("INFO")
-        # logg.debug("Start update_plot")
+    def update_plot_waveform(self, frame) -> None:
+        """MAKEDOC: what is update_plot_waveform doing?"""
+        logg = logging.getLogger(f"c.{__name__}.update_plot_waveform")
+        logg.setLevel("INFO")
+        # logg.debug("Start update_plot_waveform")
 
+        # aquire data from queue
         while True:
             try:
                 data = self.audio_queue.get_nowait()
@@ -109,8 +135,11 @@ class Demo:
             # logg.debug(f"data.shape: {data.shape}")
             # logg.debug(f"data: {data}")
 
+        # plot but not everything
         for column, line in enumerate(self.lines_wave):
-            line.set_ydata(self.audio_signal[:, column])
+            # logg.debug(f"setting {line} {column}")
+            # logg.debug(f"self.audio_signal.shape: {self.audio_signal.shape}")
+            line.set_ydata(self.audio_signal[:: self.plot_downsample, column])
 
         # logg.debug(f"self.audio_signal: {self.audio_signal.T}")
         # logg.debug(f"self.audio_signal.shape: {self.audio_signal.shape}")
@@ -118,6 +147,46 @@ class Demo:
         # logg.debug(f"self.audio_signal.max(): {self.audio_signal.max()}")
 
         return self.lines_wave
+
+    def update_plot_spectrogram(self, frame) -> ty.Any:
+        """MAKEDOC: what is update_plot_spectrogram doing?
+
+        https://stackoverflow.com/a/17837600/2237151
+        http://jakevdp.github.io/blog/2012/08/18/matplotlib-animation-tutorial/
+        https://stackoverflow.com/a/57259405/2237151
+        """
+        logg = logging.getLogger(f"c.{__name__}.update_plot_spectrogram")
+        # logg.setLevel("INFO")
+        logg.debug("Start update_plot_spectrogram")
+
+        start_update = timer()
+
+        sig_16k = librosa.resample(
+            self.audio_signal[:, 0], self.samplerate_input, self.samplerate_train
+        )
+
+        mel = librosa.feature.melspectrogram(
+            sig_16k, sr=self.samplerate_train, **self.mel_kwargs
+        )
+        log_mel = librosa.power_to_db(mel, **self.p2d_kwargs)
+
+        requested_length = self.spec_shape[1]
+        pad_needed = requested_length - log_mel.shape[1]
+        pad_needed = max(0, pad_needed)
+        pad_width = ((0, 0), (0, pad_needed))
+        padded_log_mel = np.pad(log_mel, pad_width=pad_width)
+        self.spec = padded_log_mel
+
+        self.spec_im.set_data(self.spec)
+
+        end_update = timer()
+        recap = f"self.spec.shape: {self.spec.shape}"
+        recap += f" self.spec.min() {self.spec.min()}"
+        recap += f" self.spec.max() {self.spec.min()}"
+        recap += f"    end_update-start_update: {end_update-start_update}"
+        logg.debug(recap)
+
+        return (self.spec_im,)
 
     def run(self) -> None:
         """MAKEDOC: what is run doing?"""
@@ -213,13 +282,13 @@ def run_demo(args: argparse.Namespace) -> None:
     device_info = sd.query_devices(device=device, kind="input")
     logg.debug(f"device_info: {device_info}")
 
-    # window = 1000
-    window = 200
+    window = 1000
+    # window = 200
     # interval = 1000
-    interval = 30
+    # interval = 30
+    interval = 100
     # blocksize = 0
-    samplerate = device_info["default_samplerate"]
-    downsample = 10
+    samplerate_input = device_info["default_samplerate"]
     channels = [1]
     # block_duration = 50
 
@@ -227,8 +296,7 @@ def run_demo(args: argparse.Namespace) -> None:
         device,
         window,
         interval,
-        samplerate,
-        downsample,
+        samplerate_input,
         channels,
     )
 
