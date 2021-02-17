@@ -195,21 +195,22 @@ def load_trained_model_att(override_hypa) -> models.Model:
     logg.debug(f"override_hypa: {override_hypa}")
 
     # default values for the hypas
-    hypa: ty.Dict[str, str] = {
+    hypa = {
         "batch_size_type": "02",
         "conv_size_type": "02",
-        "dataset_name": "meLa1",
+        # "dataset_name": "meL04",
         "dense_width_type": "01",
         "dropout_type": "01",
-        "epoch_num_type": "01",
+        "epoch_num_type": "02",
         "kernel_size_type": "01",
-        "learning_rate_type": "04",
+        "learning_rate_type": "03",
         "lstm_units_type": "01",
         "optimizer_type": "a1",
-        "query_style_type": "04",
-        "words_type": "LTnumLS",
+        "query_style_type": "01",
+        # "words_type": "LTnumLS",
+        # "words_type": "LTnum",
     }
-    use_validation = True
+    use_validation = False
 
     # override the values
     for hypa_name in override_hypa:
@@ -218,7 +219,8 @@ def load_trained_model_att(override_hypa) -> models.Model:
     model_name = build_attention_name(hypa, use_validation)
     logg.debug(f"model_name: {model_name}")
 
-    model_folder = Path("trained_models") / "attention"
+    # model_folder = Path("trained_models") / "attention"
+    model_folder = Path("saved_models") / "attention"
     model_path = model_folder / f"{model_name}.h5"
     if not model_path.exists():
         logg.error(f"Model not found at: {model_path}")
@@ -295,23 +297,30 @@ def plot_sentence_pred(
     train_words: ty.List[str],
     sentence_hop_length: int,
     split_length: int,
+    fig_name: str,
 ) -> None:
     """MAKEDOC: what is plot_sentence_pred doing?"""
     logg = logging.getLogger(f"c.{__name__}.plot_sentence_pred")
     # logg.setLevel("INFO")
     logg.debug("Start plot_sentence_pred")
 
-    fig, ax = plt.subplots(nrows=3, ncols=1, figsize=(12, 12))
+    fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(12, 12))
 
     end_pad = split_length // sentence_hop_length
     pad_width = ((0, end_pad + 1), (0, 0))
-    y_pred_padded = np.pad(y_pred, pad_width=pad_width)
+    # pad_width = ((0, end_pad - 1), (0, 0))
+
+    # end_pad = split_length // sentence_hop_length // 2
+    # end_pad = 0
+    # pad_width = ((0, end_pad), (0, 0))
+
+    y_pred_padded = np.pad(y_pred, pad_width=pad_width, mode="edge")
 
     ax[0].plot(sentence_sig)
     ax[1].imshow(y_pred_padded.T, cmap=plt.cm.viridis, aspect="auto")
-    ax[2].imshow(y_pred.T, cmap=plt.cm.viridis, aspect="auto")
+    # ax[2].imshow(y_pred.T, cmap=plt.cm.viridis, aspect="auto")
 
-    ax[0].set_title(norm_tra)
+    ax[0].set_title(norm_tra, fontsize=20)
     # norm_tra_list = norm_tra.split()
     # len_sentence_words = len(norm_tra_list)
     # x_tickpos = np.arange(len_sentence_words) * len(sentence_sig) / len_sentence_words
@@ -322,10 +331,17 @@ def plot_sentence_pred(
     y_tickpos = np.arange(len(train_words))
     ax[1].set_yticks(y_tickpos)
     ax[1].set_yticklabels(train_words)
-    ax[2].set_yticks(y_tickpos)
-    ax[2].set_yticklabels(train_words)
+    ax[1].set_title("Stream predictions", fontsize=20)
+    # ax[2].set_yticks(y_tickpos)
+    # ax[2].set_yticklabels(train_words)
 
     fig.tight_layout()
+
+    plot_folder = Path("plot_stream")
+    if not plot_folder.exists():
+        plot_folder.mkdir(parents=True, exist_ok=True)
+    fig.savefig(plot_folder / fig_name.format("pdf"))
+    fig.savefig(plot_folder / fig_name.format("png"))
 
 
 def evaluate_stream(
@@ -435,7 +451,13 @@ def evaluate_stream(
 
     # split the sentence in chunks every sentence_hop_length
     sentence_hop_length = new_sr // 16
-    split_length = new_sr // 2
+
+    # the length of the split is chosen to match the training type
+    if train_words_type.endswith("LS"):
+        split_length = new_sr // 2
+    else:
+        split_length = new_sr
+
     splits = split_sentence(
         sentence_sig, datasets_type, sentence_hop_length, split_length
     )
@@ -482,10 +504,24 @@ def evaluate_stream(
             clean_labels.append(yl)
     logg.debug(f"Predictions {clean_labels}")
 
+    # fig_name = f"{architecture_type}_{evaluation_type}_{datasets_type}_{train_words_type}_{norm_tra}.{{}}"
+    fig_name = f"{architecture_type}"
+    fig_name += f"_{evaluation_type}"
+    fig_name += f"_{datasets_type}"
+    fig_name += f"_{train_words_type}"
+    fig_name += f"_{sentence_index}"
+    # fig_name += f"_{norm_tra}.{{}}"
+    fig_name += ".{}"
+
     plot_sentence_pred(
-        sentence_sig, y_pred, norm_tra, words, sentence_hop_length, split_length
+        sentence_sig,
+        y_pred,
+        norm_tra,
+        words,
+        sentence_hop_length,
+        split_length,
+        fig_name,
     )
-    plt.show()
 
 
 def run_evaluate_stream(args: argparse.Namespace) -> None:
@@ -499,7 +535,11 @@ def run_evaluate_stream(args: argparse.Namespace) -> None:
     architecture_type = args.architecture_type
     sentence_index = args.sentence_index
 
-    for sentence_index in range(116):
+    # good_sentences = [10, 16, 19, 22, 26, 33, 36, 42, 46, 66, 67, 100]
+    # good_sentences = [19, 26, 40, 46, 67]
+    good_sentences = [19, 26, 67]
+    # for sentence_index in range(116):
+    for sentence_index in good_sentences:
         evaluate_stream(
             evaluation_type,
             which_dataset,
@@ -507,6 +547,7 @@ def run_evaluate_stream(args: argparse.Namespace) -> None:
             architecture_type,
             sentence_index,
         )
+    plt.show()
 
 
 if __name__ == "__main__":

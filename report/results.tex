@@ -560,8 +560,56 @@ in \fig{fig:attention_weights_area} and \fig{fig:attention_weights_vertical}.
 
 \subsection{Stream predictions}
 
-Compare normal vs loud
+The effectiveness of using a model trained on single word utterances to
+identify a word in a sentence is examined in this section.
+\fig{fig:stream_attention_ltts_meL04_LTnumLS_26} is an example of a very good
+scenario: of the four numbers spoken, three are well isolated in the sentence,
+and are clearly picked up. The initial utterance of ``three'' is also
+identified, albeit with a lower probability, as it is very close to the next
+word (``\textit{three} o'clock'').
+\fig{fig:stream_attention_ltts_meL04_LTnumLS_67} shows a more common situation,
+when the interesting word is in the middle of the sentence (``of the
+\textit{four} other\ldots''). The model can only barely identify the presence
+of the word.
+\fig{fig:stream_attention_ltts_meL04_LTnumLS_19} shows why a ``silence'' class
+would be useful: when background converation is present, the model consistently
+identifies \texttt{\_other} as the predicted word, but in the section where no
+word is spoken, the model fires randomly.
 
-Attention vs Simple vs AreaNet vs VerticalAreaNet
+Training only on the loudest $0.5$ second section of the audio samples improves
+the performance of the models quite a lot: the ``four'' in the second example
+is completely missed by a model trained with identical parameters except the
+longer words, as shown in \fig{fig:stream_attention_ltts_mel04_LTnum_67}: only
+the more isolated ``two'' is found.
 
-Compare inference time, model size
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{stream2_attention_ltts_meL04_LTnumLS_26.pdf}
+    \caption{Stream 26}%
+    \label{fig:stream_attention_ltts_meL04_LTnumLS_26}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{stream2_attention_ltts_meL04_LTnumLS_67.pdf}
+    \caption{Stream 67}%
+    \label{fig:stream_attention_ltts_meL04_LTnumLS_67}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{stream_attention_ltts_mel04_LTnum_67.pdf}
+    \caption{Stream 67 long words}%
+    \label{fig:stream_attention_ltts_mel04_LTnum_67}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{stream2_attention_ltts_meL04_LTnumLS_19.pdf}
+    \caption{Stream 19}%
+    \label{fig:stream_attention_ltts_meL04_LTnumLS_19}
+\end{figure}
+
+% Attention vs Simple vs AreaNet vs VerticalAreaNet
+
+TODO: Compare inference time, model size

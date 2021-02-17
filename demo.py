@@ -1,18 +1,61 @@
 from random import seed as rseed
+from pathlib import Path
 from timeit import default_timer as timer
 import argparse
 import logging
 import queue
 import typing as ty
 
+from tensorflow.keras import models as tf_models  # type: ignore
 import librosa  # type: ignore
 from matplotlib.animation import FuncAnimation  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 import sounddevice as sd  # type: ignore
 
+from train_area import build_area_name
 from preprocess_data import get_spec_dict
 from preprocess_data import get_spec_shape_dict
+from utils import setup_gpus
+
+
+def load_trained_model_area(which_dataset: str) -> tf_models.Model:
+    """MAKEDOC: what is load_trained_model_area doing?"""
+    logg = logging.getLogger(f"c.{__name__}.load_trained_model_area")
+    # logg.setLevel("INFO")
+    logg.debug("Start load_trained_model_area")
+
+    hypa = {
+        "batch_size_type": "32",
+        # "dataset_name": "aug07",
+        "dataset_name": which_dataset,
+        "epoch_num_type": "15",
+        "learning_rate_type": "05",
+        "net_type": "VAN",
+        "optimizer_type": "a1",
+        "words_type": "LTnum",
+    }
+    use_validation = True
+    model_name = build_area_name(hypa, use_validation)
+
+    model_folder = Path("trained_models") / "area"
+    model_path = model_folder / f"{model_name}.h5"
+
+    model = tf_models.load_model(model_path)
+
+    # grab the last layer that has no name because you were a fool
+    name_output_layer = model.layers[-1].name
+    logg.debug(f"name_output_layer: {name_output_layer}")
+
+    att_weight_model = tf_models.Model(
+        inputs=model.input,
+        outputs=[
+            model.get_layer(name_output_layer).output,
+            model.get_layer("area_values").output,
+        ],
+    )
+
+    return att_weight_model
 
 
 class Demo:
@@ -44,19 +87,34 @@ class Demo:
 
         self.plot_downsample = 1
         self.samplerate_train = 16000
-        # self.which_dataset = "mela1"
+
+        # self.which_dataset = "aug07"
         self.which_dataset = "mel04"
 
+        # the trained model with additional outputs
+        # self.att_weight_model = load_trained_model_area(self.which_dataset)
+        self.att_weight_model = load_trained_model_area("aug07")
+
+        # info on the spectrogram
         spec_dict = get_spec_dict()
         self.mel_kwargs = spec_dict[self.which_dataset]
         self.p2d_kwargs = {"ref": np.max}
-
         spec_shape_dict = get_spec_shape_dict()
         self.spec_shape = spec_shape_dict[self.which_dataset]
         self.spec = np.zeros(self.spec_shape)
         logg.debug(f"self.spec.shape: {self.spec.shape}")
         logg.debug(f"self.spec_shape: {self.spec_shape}")
 
+        # info on the predictions
+        self.max_old_pred = 50
+        self.num_labels = 11
+        self.all_pred = np.zeros((self.max_old_pred, self.num_labels))
+
+        # info on the att_weights
+        self.att_weight_shape = (16, 1)
+        self.att_weights = np.zeros(self.att_weight_shape)
+
+        # the input audio stream
         self.stream = sd.InputStream(
             device=self.device,
             channels=max(self.channels),
@@ -68,7 +126,7 @@ class Demo:
         self.length = int(self.window * self.samplerate_input / 1000)
         self.audio_signal = np.zeros((self.length, len(self.channels)))
 
-        # this is filled by sounddevice and emptied by matplotlib
+        # the Queue is filled by sounddevice and emptied by matplotlib
         self.audio_queue: queue.Queue[np.ndarray] = queue.Queue()
 
         # the figs and axis
@@ -77,14 +135,28 @@ class Demo:
         # the waveform ax
         ax_wave = self.axes[0][0]
         self.lines_wave = ax_wave.plot(self.audio_signal[:: self.plot_downsample, 0])
+        logg.debug(f"self.lines_wave: {self.lines_wave}")
         ax_wave.axis((0, len(self.audio_signal // self.plot_downsample), -1, 1))
         ax_wave.set_yticks([0])
         ax_wave.yaxis.grid(True)
 
         # the spectrogram ax
         ax_spec = self.axes[1][0]
-        self.spec_im = ax_spec.imshow(self.spec, origin="lower", vmin=-80, vmax=-10)
+        self.im_spec = ax_spec.imshow(self.spec, origin="lower", vmin=-80, vmax=-10)
+        logg.debug(f"self.im_spec: {self.im_spec}")
 
+        # the attention weights ax
+        ax_attw = self.axes[0][1]
+        self.im_attw = ax_attw.imshow(self.all_pred, origin="lower", vmin=0, vmax=1)
+        logg.debug(f"self.im_attw: {self.im_attw}")
+
+        # the prediction ax
+        ax_pred = self.axes[1][1]
+        self.im_pred = ax_pred.imshow(self.all_pred, origin="lower", vmin=0, vmax=1)
+        logg.debug(f"self.im_pred: {self.im_pred}")
+
+        # fig setup
+        self.fig.suptitle("The demo")
         self.fig.tight_layout()
 
         # setup the animations
@@ -93,6 +165,12 @@ class Demo:
         )
         self.animation_spectrogram = FuncAnimation(
             self.fig, self.update_plot_spectrogram, interval=self.interval, blit=True
+        )
+        self.animation_predictions = FuncAnimation(
+            self.fig, self.update_plot_predictions, interval=self.interval, blit=True
+        )
+        self.animation_weights = FuncAnimation(
+            self.fig, self.update_plot_weights, interval=self.interval, blit=True
         )
 
     def audio_callback(self, indata, frames, time, status) -> None:
@@ -106,9 +184,9 @@ class Demo:
         # logg = logging.getLogger(f"c.{__name__}.audio_callback")
         # # logg.setLevel("INFO")
         # # logg.debug("Start audio_callback")
-        # start_update = timer()
-        # from_last_update = start_update - self.last_update
-        # recap = f"now: {start_update:6f}"
+        # time_001 = timer()
+        # from_last_update = time_001 - self.last_update
+        # recap = f"now: {time_001:6f}"
         # recap += f"   from_last_update: {from_last_update:6f}"
         # recap += f"   indata.shape: {indata.shape}"
         # logg.debug(recap)
@@ -157,36 +235,72 @@ class Demo:
         """
         logg = logging.getLogger(f"c.{__name__}.update_plot_spectrogram")
         # logg.setLevel("INFO")
-        logg.debug("Start update_plot_spectrogram")
+        # logg.debug("Start update_plot_spectrogram")
 
-        start_update = timer()
+        time_001 = timer()
+
+        #################################################################
+        #   compute the spectrogram
+        #################################################################
 
         sig_16k = librosa.resample(
             self.audio_signal[:, 0], self.samplerate_input, self.samplerate_train
         )
-
         mel = librosa.feature.melspectrogram(
             sig_16k, sr=self.samplerate_train, **self.mel_kwargs
         )
         log_mel = librosa.power_to_db(mel, **self.p2d_kwargs)
 
-        requested_length = self.spec_shape[1]
-        pad_needed = requested_length - log_mel.shape[1]
+        # pad it
+        pad_needed = self.spec_shape[1] - log_mel.shape[1]
         pad_needed = max(0, pad_needed)
         pad_width = ((0, 0), (0, pad_needed))
         padded_log_mel = np.pad(log_mel, pad_width=pad_width)
         self.spec = padded_log_mel
 
-        self.spec_im.set_data(self.spec)
+        self.im_spec.set_data(self.spec)
 
-        end_update = timer()
+        time_002 = timer()
         recap = f"self.spec.shape: {self.spec.shape}"
         recap += f" self.spec.min() {self.spec.min()}"
         recap += f" self.spec.max() {self.spec.min()}"
-        recap += f"    end_update-start_update: {end_update-start_update}"
+        recap += f"    spectrogram time: {time_002-time_001}"
         logg.debug(recap)
 
-        return (self.spec_im,)
+        # now use the spectrogram to predict!
+        img_log_mel = np.expand_dims(padded_log_mel, axis=-1)
+        batch_log_mel = np.expand_dims(img_log_mel, axis=0)
+        recap = f"img_log_mel.shape: {img_log_mel.shape}"
+        recap += f" batch_log_mel.shape: {batch_log_mel.shape}"
+        logg.debug(recap)
+
+        pred, att_weights = self.att_weight_model.predict(batch_log_mel)
+        # move the all_pred and append the latest
+        # self.all_pred
+
+        time_003 = timer()
+        recap = f" pred.shape: {pred.shape}"
+        recap += f"    preditions time: {time_003-time_002}"
+        logg.debug(recap)
+        logg.debug(f"pred: {pred}")
+
+        return (self.im_spec,)
+
+    def update_plot_weights(self, frame) -> ty.Any:
+        """MAKEDOC: what is update_plot_weights doing?"""
+        # logg = logging.getLogger(f"c.{__name__}.update_plot_weights")
+        # logg.setLevel("INFO")
+        # logg.debug("Start update_plot_weights")
+
+        return (self.im_attw,)
+
+    def update_plot_predictions(self, frame) -> ty.Any:
+        """MAKEDOC: what is update_plot_predictions doing?"""
+        # logg = logging.getLogger(f"c.{__name__}.update_plot_predictions")
+        # logg.setLevel("INFO")
+        # logg.debug("Start update_plot_predictions")
+
+        return (self.im_pred,)
 
     def run(self) -> None:
         """MAKEDOC: what is run doing?"""
@@ -227,11 +341,11 @@ def setup_logger(logLevel: str = "DEBUG") -> None:
 
     module_console_handler = logging.StreamHandler()
 
-    #  log_format_module = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    #  log_format_module = "%(name)s - %(levelname)s: %(message)s"
-    #  log_format_module = '%(levelname)s: %(message)s'
-    #  log_format_module = '%(name)s: %(message)s'
-    log_format_module = "%(message)s"
+    # log_format_module = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    # log_format_module = "%(name)s - %(levelname)s: %(message)s"
+    # log_format_module = '%(levelname)s: %(message)s'
+    log_format_module = '%(name)s: %(message)s'
+    # log_format_module = "%(message)s"
 
     formatter = logging.Formatter(log_format_module)
     module_console_handler.setFormatter(formatter)
@@ -276,6 +390,9 @@ def run_demo(args: argparse.Namespace) -> None:
     """TODO: What is demo doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_demo")
     logg.debug("Starting run_demo")
+
+    # magic to fix the GPUs
+    setup_gpus()
 
     device = None
 

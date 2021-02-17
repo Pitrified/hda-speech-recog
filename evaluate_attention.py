@@ -206,7 +206,7 @@ def evaluate_results_attention() -> None:
         word_list = [w for w in results_df.words.unique() if words_type in w]
 
         df_f = results_df
-        df_f = df_f.query("use_val == True")
+        # df_f = df_f.query("use_val == True")
         # df_f = df_f.query(f"words == '{words_type}'")
         df_f = df_f[df_f["words"].isin(word_list)]
         df_f = df_f.sort_values("fscore", ascending=False)
@@ -244,15 +244,15 @@ def evaluate_results_attention() -> None:
     logg.info(f"results_df['conv'].value_count(): {results_df['conv'].value_counts()}")
 
     df_f = results_df
-    df_f = df_f.query("use_val == True")
-    df_f = df_f.query("words == 'k1'")
-    df_f = df_f.query("lr == '08'")
-    epoch_list = ["01", "02"]
-    df_f = df_f[df_f["epoch"].isin(epoch_list)]
-    batch_list = ["01", "02"]
-    df_f = df_f[df_f["batch"].isin(batch_list)]
+    # df_f = df_f.query("use_val == True")
+    df_f = df_f.query("words == 'LTnumLS'")
+    # df_f = df_f.query("lr == '08'")
+    # epoch_list = ["01", "02"]
+    # df_f = df_f[df_f["epoch"].isin(epoch_list)]
+    # batch_list = ["01", "02"]
+    # df_f = df_f[df_f["batch"].isin(batch_list)]
     df_f = df_f.sort_values("fscore", ascending=False)
-    logg.info(f"{df_f.head(100)}")
+    logg.info(f"{df_f.head(10)}")
 
 
 def evaluate_batch_epoch() -> None:

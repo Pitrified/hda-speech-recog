@@ -168,6 +168,15 @@ def evaluate_results_area() -> None:
         logg.info(f"{df_f.head(30)}\n{df_f.tail()}")
 
 
+def load_trained_model_area(
+    hypa: ty.Dict[str, ty.List[str]], use_validation: bool
+) -> None:
+    """MAKEDOC: what is load_trained_model_area doing?"""
+    logg = logging.getLogger(f"c.{__name__}.load_trained_model_area")
+    # logg.setLevel("INFO")
+    logg.debug("Start load_trained_model_area")
+
+
 def evaluate_attention_weights(train_words_type: str) -> None:
     """MAKEDOC: what is evaluate_attention_weights doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_attention_weights")
