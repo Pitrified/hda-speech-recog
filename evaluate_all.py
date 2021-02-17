@@ -444,7 +444,7 @@ def build_megacomparison_v02() -> None:
     all_fscores: ty.Dict[str, ty.Dict[str, ty.Dict[str, float]]] = {}
 
     # track the best
-    best_arch_names: ty.Dict[str, str] = {}
+    best_arch_names: ty.Dict[str, ty.List[str]] = {}
     best_fscore_max: ty.Dict[str, float] = {}
 
     # build the fscore dict
@@ -474,13 +474,28 @@ def build_megacomparison_v02() -> None:
                     wl_fscores[arch_name]["min"] = fscore_min
                     wl_fscores[arch_name]["max"] = fscore_max
 
-                    if fscore_max > best_fscore_max.setdefault(wl_str, 0):
-                        best_arch_names[wl_str] = arch_name
+                    # get the current max or 0
+                    # curr_best_fscore_max = best_fscore_max.setdefault(wl_str, 0)
+                    if wl_str in best_fscore_max:
+                        curr_best_fscore_max = best_fscore_max[wl_str]
+                    else:
+                        curr_best_fscore_max = 0
+
+                    # add the value if it is not increasing
+                    if math.isclose(fscore_max, curr_best_fscore_max, abs_tol=1e-5):
+                        # if wl_str in best_arch_names:
+                        best_arch_names[wl_str].append(arch_name)
+                        # logg.debug(f"isclose {arch_name} for {wl_str}")
+
+                    # the value is a new max, reset the list
+                    # we only arrive here if it is NOT close, avoid float errors
+                    elif fscore_max > curr_best_fscore_max:
+                        best_arch_names[wl_str] = [arch_name]
                         best_fscore_max[wl_str] = fscore_max
 
         all_fscores[wl_str] = wl_fscores
 
-    logg.debug(f"all_fscores: {json.dumps(all_fscores, indent=4)}")
+    # logg.debug(f"all_fscores: {json.dumps(all_fscores, indent=4)}")
     logg.debug(f"best_arch_names: {json.dumps(best_arch_names, indent=4)}")
 
     #################################################################
@@ -547,10 +562,13 @@ def build_megacomparison_v02() -> None:
 
                     best_arch_name = best_arch_names[wl_str]
                     table_str += " & $"
-                    table_str += "\\bf{" if arch_name == best_arch_name else "    "
+                    table_str += "\\bf{" if arch_name in best_arch_name else "    "
                     table_str += f"{fscore_max:.3f}"
-                    table_str += "}" if arch_name == best_arch_name else " "
+                    table_str += "}" if arch_name in best_arch_name else " "
                     table_str += "$     "
+
+                    if arch_name in best_arch_name:
+                        logg.debug(f"is best {arch_name} for {wl_str}")
 
                 else:
                     table_str += " & -                "
@@ -559,7 +577,7 @@ def build_megacomparison_v02() -> None:
 
         table_str += hline
 
-    logg.debug(f"{table_str}")
+    # logg.debug(f"{table_str}")
 
     caption = "A nice mega comparison"
     autogen_cmd = "python evaluate_all.py -et build_megacomparison_v02"
@@ -572,7 +590,7 @@ def build_megacomparison_v02() -> None:
         table_str=table_str,
         num_data_col=num_data_col,
     )
-    logg.debug(f"the_table:\n{the_table}")
+    # logg.debug(f"the_table:\n{the_table}")
 
     this_file_folder = Path(__file__).parent.absolute()
     report_folder = this_file_folder / "report"
