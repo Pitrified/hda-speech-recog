@@ -438,7 +438,8 @@ def build_megacomparison_v02() -> None:
     type_per_arch["cnn"] = ["CNN"]
     type_per_arch["tra"] = ["TRA", "TD1", "TB0", "TB4", "TB7"]
     type_per_arch["att"] = ["ATT"]
-    type_per_arch["area"] = ["AAN", "ARN", "SIM", "SI2", "VAN"]
+    # type_per_arch["area"] = ["AAN", "ARN", "SIM", "SI2", "VAN"]
+    type_per_arch["area"] = ["AAN", "SIM", "SI2", "VAN"]
 
     # all_fscores[wl_str][arch_name]['mean'] = fmean
     all_fscores: ty.Dict[str, ty.Dict[str, ty.Dict[str, float]]] = {}

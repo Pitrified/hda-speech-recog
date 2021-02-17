@@ -153,7 +153,8 @@ def hyper_train_area(
     ###### the words to train on
     # hypa_grid["words_type"] = [words_type]
     # hypa_grid["words_type"] = ["LTnum", "LTall", "yn"]
-    hypa_grid["words_type"] = ["LTnum", "yn"]
+    # hypa_grid["words_type"] = ["LTnum", "yn"]
+    hypa_grid["words_type"] = ["LTnum", "yn", "f1", "k1"]
 
     ###### the dataset to train on
     ds = []
@@ -184,8 +185,8 @@ def hyper_train_area(
     # lr.extend(["01", "02"])  # fixed
     lr.extend(["03"])  # exp_decay_step_01
     lr.extend(["04"])  # exp_decay_smooth_01
-    lr.extend(["05"])  # clr_triangular2_01
-    lr.extend(["06"])  # clr_triangular2_02
+    # lr.extend(["05"])  # clr_triangular2_01
+    # lr.extend(["06"])  # clr_triangular2_02
     hypa_grid["learning_rate_type"] = lr
 
     ###### which optimizer to use

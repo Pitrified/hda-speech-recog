@@ -160,7 +160,7 @@ def hyper_train_attention(
     # ds.extend(["aug14", "aug15", "aug16", "aug17"])
     ds.extend(["mela1"])
     ds.extend(["mel04"])
-    # ds.extend(["aug15"])
+    ds.extend(["aug15"])
     ds.extend(["aug14"])
     ds.extend(["aug07"])
     # hypa_grid["dataset_name"] = ["mela1"]
@@ -199,8 +199,8 @@ def hyper_train_attention(
     qs = []
     # hypa_grid["query_style_type"] = ["01", "02", "03", "04", "05"]
     # qs.extend(["01"])  # dense01
-    # qs.extend(["03"])  # conv02 (LSTM)
-    # qs.extend(["04"])  # conv03 (inputs)
+    qs.extend(["03"])  # conv02 (LSTM)
+    qs.extend(["04"])  # conv03 (inputs)
     qs.extend(["05"])  # dense02
     hypa_grid["query_style_type"] = qs
 
@@ -211,16 +211,16 @@ def hyper_train_attention(
     ###### the learning rates for the optimizer
     lr = []
     # lr.extend(["01", "02"])  # fixed
-    lr.extend(["01"])  # fixed
+    # lr.extend(["01"])  # fixed
     # lr.extend(["02"])  # fixed
     lr.extend(["03"])  # exp_decay_step_01
     lr.extend(["04"])  # exp_decay_smooth_01
-    lr.extend(["05"])  # clr_triangular2_01
-    lr.extend(["06"])  # clr_triangular2_02
-    lr.extend(["07"])  # clr_triangular2_03
-    lr.extend(["08"])  # clr_triangular2_04
-    lr.extend(["09"])  # clr_triangular2_05
-    lr.extend(["10"])  # exp_decay_smooth_02
+    # lr.extend(["05"])  # clr_triangular2_01
+    # lr.extend(["06"])  # clr_triangular2_02
+    # lr.extend(["07"])  # clr_triangular2_03
+    # lr.extend(["08"])  # clr_triangular2_04
+    # lr.extend(["09"])  # clr_triangular2_05
+    # lr.extend(["10"])  # exp_decay_smooth_02
 
     hypa_grid["learning_rate_type"] = lr
 
@@ -234,9 +234,9 @@ def hyper_train_attention(
 
     ###### the number of epochs
     en = []
-    # en.extend(["01"])  # 15
+    en.extend(["01"])  # 15
     # en.extend(["02"])  # 30
-    en.extend(["03", "04"])
+    # en.extend(["03", "04"])
     hypa_grid["epoch_num_type"] = en
 
     # the grid you are generating from (useful to recreate the training)
@@ -255,6 +255,14 @@ def hyper_train_attention(
     #         preprocess_spec(dn, wt)
     #     elif dn.startswith("au"):
     #         do_augmentation(dn, wt)
+
+    # MAYBE finish this on yn
+    # hypa_grid: {'words_type': ['yn'], 'dataset_name': ['mela1', 'mel04', 'aug15',
+    # 'aug14', 'aug07'], 'conv_size_type': ['02'], 'dropout_type': ['01'],
+    # 'kernel_size_type': ['01', '02'], 'lstm_units_type': ['01'], 'query_style_type':
+    # ['03', '04', '05'], 'dense_width_type': ['01'], 'learning_rate_type': ['03',
+    # '04'], 'optimizer_type': ['a1'], 'batch_size_type': ['02'], 'epoch_num_type':
+    # ['01']}
 
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
