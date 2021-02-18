@@ -440,6 +440,20 @@ def get_val_test_list(dataset_path: Path) -> ty.Tuple[ty.List[str], ty.List[str]
     return validation_names, testing_names
 
 
+def find_free_file_index(base_folder: Path, name_template: str) -> int:
+    """MAKEDOC: what is find_free_file_index doing?"""
+    # logg = logging.getLogger(f"c.{__name__}.find_free_file_index")
+    # logg.setLevel("INFO")
+    # logg.debug("Start find_free_file_index")
+
+    for i in range(1000000):
+        possible_path = base_folder / name_template.format(i)
+        if not possible_path.exists():
+            return i
+
+    return -1
+
+
 def pr2fscore(precision, recall) -> np.ndarray:
     """MAKEDOC: what is pr2fscore doing?"""
     logg = logging.getLogger(f"c.{__name__}.pr2fscore")

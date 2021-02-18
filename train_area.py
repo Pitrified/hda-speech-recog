@@ -202,7 +202,7 @@ def hyper_train_area(
     ###### the number of epochs (the key is converted to int)
     en = []
     # en.extend(["15"])
-    en.extend(["14"])
+    en.extend(["13"])
     # en.extend(["10"])
     hypa_grid["epoch_num_type"] = en
 
