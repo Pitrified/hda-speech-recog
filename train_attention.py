@@ -267,7 +267,7 @@ def hyper_train_attention(
     # '04'], 'optimizer_type': ['a1'], 'batch_size_type': ['02'], 'epoch_num_type':
     # ['01']}
 
-    hypa = {
+    hypa_base = {
         "batch_size_type": "02",
         "conv_size_type": "02",
         # "dataset_name": "mel04L",
@@ -286,15 +286,22 @@ def hyper_train_attention(
     }
     the_grid = []
 
+    from copy import deepcopy
+    hypa = deepcopy(hypa_base)
     hypa["dataset_name"] = "mel04"
     hypa["words_type"] = "LTBnum"
     the_grid.append(hypa)
+    hypa = deepcopy(hypa_base)
+    hypa["dataset_name"] = "mel04"
     hypa["words_type"] = "LTBall"
     the_grid.append(hypa)
 
+    hypa = deepcopy(hypa_base)
     hypa["dataset_name"] = "mel04L"
     hypa["words_type"] = "LTBnumLS"
     the_grid.append(hypa)
+    hypa = deepcopy(hypa_base)
+    hypa["dataset_name"] = "mel04L"
     hypa["words_type"] = "LTBallLS"
     the_grid.append(hypa)
 

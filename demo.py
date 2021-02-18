@@ -404,10 +404,17 @@ class Demo:
         }
         use_validation = False
 
+        # this is valid for
+        # hypa["dataset_name"] = "mel04"
+        # hypa["words_type"] = "LTBnum"
+        # hypa["words_type"] = "LTBall"
+        # hypa["dataset_name"] = "mel04L"
+        # hypa["words_type"] = "LTBnumLS"
+        # hypa["words_type"] = "LTBallLS"
         hypa = {
             "batch_size_type": "02",
             "conv_size_type": "02",
-            "dataset_name": "aug14",
+            "dataset_name": self.train_dataset,
             "dense_width_type": "01",
             "dropout_type": "01",
             "epoch_num_type": "02",
@@ -415,8 +422,8 @@ class Demo:
             "learning_rate_type": "03",
             "lstm_units_type": "01",
             "optimizer_type": "a1",
-            "query_style_type": "04",
-            "words_type": "LTall",
+            "query_style_type": "01",
+            "words_type": self.train_words_type,
         }
         use_validation = True
 

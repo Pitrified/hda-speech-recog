@@ -229,11 +229,22 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     # }
 
     # VAN_opa1_lr04_bs32_en15_dsaug14_wLTall
+    # hypa = {
+    #     "batch_size_type": "32",
+    #     "dataset_name": "aug14",
+    #     "epoch_num_type": "15",
+    #     "learning_rate_type": "04",
+    #     "net_type": "VAN",
+    #     "optimizer_type": "a1",
+    #     "words_type": "LTall",
+    # }
+
+    # VAN_opa1_lr05_bs32_en15_dsaug07_wLTall
     hypa = {
         "batch_size_type": "32",
-        "dataset_name": "aug14",
+        "dataset_name": "aug07",
         "epoch_num_type": "15",
-        "learning_rate_type": "04",
+        "learning_rate_type": "05",
         "net_type": "VAN",
         "optimizer_type": "a1",
         "words_type": "LTall",
@@ -277,10 +288,18 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     processed_folder = Path("data_proc")
     processed_path = processed_folder / f"{dataset_name}"
 
+    # evaluate on all data because im confused
+    data, labels = load_processed(processed_path, train_words)
+    logg.debug(f"data['testing'].shape: {data['testing'].shape}")
+    logg.debug(f"labels['testing'].shape: {labels['testing'].shape}")
+    eval_testing = model.evaluate(data["testing"], labels["testing"])
+    for metrics_name, value in zip(model.metrics_names, eval_testing):
+        logg.debug(f"{metrics_name}: {value}")
+
     # which word in the dataset to plot
     # word_id = 5
     # word_id = 7
-    word_id = 11
+    word_id = 12
 
     # the loaded spectrograms
     rec_data_l: ty.List[np.ndarray] = []
@@ -296,7 +315,15 @@ def evaluate_attention_weights(train_words_type: str) -> None:
 
     logg.debug(f"processed_path: {processed_path}")
     for i, word in enumerate(rec_words):
+        logg.debug(f"word: {word}")
+
         data, labels = load_processed(processed_path, [word])
+        logg.debug(f"data['testing'].shape: {data['testing'].shape}")
+        logg.debug(f"labels['testing'].shape: {labels['testing'].shape}")
+
+        # eval_testing = model.evaluate(data["testing"], labels["testing"])
+        # for metrics_name, value in zip(model.metrics_names, eval_testing):
+        #     logg.debug(f"{metrics_name}: {value}")
 
         # get one of the spectrograms
         word_data = data["testing"][word_id]
@@ -318,7 +345,11 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     fig, axes = plt.subplots(nrows=nrows, ncols=num_rec_words, figsize=(fw, fh))
     fig.suptitle("Attention weights computed with VerticalAreaNet", fontsize=20)
 
+    sorted_train_words = sorted(train_words)
+    logg.debug(f"sorted(train_words): {sorted(train_words)}")
+
     for i, word in enumerate(rec_words):
+        logg.debug(f"recword: {word}")
 
         # show the spectrogram
         word_spec = rec_data[i][:, :, 0]
@@ -329,6 +360,7 @@ def evaluate_attention_weights(train_words_type: str) -> None:
         axes[1][i].set_title(f"Attention weights for {word}", fontsize=20)
         att_w = att_weights[i][:, :, 0]
         axes[1][i].imshow(att_w, origin="lower")
+        logg.debug(f"att_w.max(): {att_w.max()}")
 
         # axes[0][i].imshow(
         #     att_w, origin="lower", extent=img.get_extent(), cmap="gray", alpha=0.4
@@ -337,19 +369,27 @@ def evaluate_attention_weights(train_words_type: str) -> None:
         # weighted = word_spec * att_w
         # axes[2][i].imshow(weighted, origin="lower")
 
+        word_pred = pred[i]
+        pred_index = np.argmax(word_pred)
+        pred_word = sorted_train_words[pred_index]
+        logg.debug(f"sorted pred_word: {pred_word} pred_index {pred_index}")
+
         # # plot the predictions
-        # word_pred = pred[i]
-        # logg.debug(f"word_pred: {word_pred}")
+        word_pred = pred[i]
+        logg.debug(f"word_pred: {word_pred}")
         # # permute the prediction from sorted to the order you have
-        # word_pred = word_pred[perm_pred]
-        # pred_index = np.argmax(word_pred)
+        word_pred = word_pred[perm_pred]
+        logg.debug(f"word_pred permuted: {word_pred}")
+        pred_index = np.argmax(word_pred)
+        pred_word = train_words[pred_index]
+        logg.debug(f"pred_word: {pred_word} pred_index {pred_index}")
         # title = f"Predictions for {word}"
         # plot_pred(word_pred, train_words, axes[2][i], title, pred_index)
 
     fig.tight_layout()
 
     fig_name = f"{model_name}"
-    fig_name += "_0001.{}"
+    fig_name += "_0002.{}"
     plot_folder = Path("plot_results")
     results_path = plot_folder / fig_name.format("pdf")
     fig.savefig(results_path)
