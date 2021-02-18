@@ -13,13 +13,14 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 import sounddevice as sd  # type: ignore
 
-from train_area import build_area_name
+from augment_data import get_aug_dict
 from preprocess_data import get_spec_dict
 from preprocess_data import get_spec_shape_dict
+from train_area import build_area_name
 from utils import setup_gpus
 
 
-def load_trained_model_area(which_dataset: str) -> tf_models.Model:
+def load_trained_model_area(train_dataset: str) -> tf_models.Model:
     """MAKEDOC: what is load_trained_model_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.load_trained_model_area")
     # logg.setLevel("INFO")
@@ -28,7 +29,7 @@ def load_trained_model_area(which_dataset: str) -> tf_models.Model:
     hypa = {
         "batch_size_type": "32",
         # "dataset_name": "aug07",
-        "dataset_name": which_dataset,
+        "dataset_name": train_dataset,
         "epoch_num_type": "15",
         "learning_rate_type": "05",
         "net_type": "VAN",
@@ -88,19 +89,16 @@ class Demo:
         self.plot_downsample = 1
         self.samplerate_train = 16000
 
-        # self.which_dataset = "aug07"
-        self.which_dataset = "mel04"
+        # self.train_dataset = "aug07"
+        # self.train_dataset = "mel04"
 
         # the trained model with additional outputs
-        # self.att_weight_model = load_trained_model_area(self.which_dataset)
-        self.att_weight_model = load_trained_model_area("aug07")
+        # self.att_weight_model = load_trained_model_area(self.train_dataset)
+        self.train_dataset = "aug07"
+        self.att_weight_model = load_trained_model_area(self.train_dataset)
 
         # info on the spectrogram
-        spec_dict = get_spec_dict()
-        self.mel_kwargs = spec_dict[self.which_dataset]
-        self.p2d_kwargs = {"ref": np.max}
-        spec_shape_dict = get_spec_shape_dict()
-        self.spec_shape = spec_shape_dict[self.which_dataset]
+        self.get_spec_aug_info()
         self.spec = np.zeros(self.spec_shape)
         logg.debug(f"self.spec.shape: {self.spec.shape}")
         logg.debug(f"self.spec_shape: {self.spec_shape}")
@@ -302,6 +300,25 @@ class Demo:
 
         return (self.im_pred,)
 
+    def get_spec_aug_info(self) -> None:
+        """MAKEDOC: what is get_spec_aug_info doing?"""
+        logg = logging.getLogger(f"c.{__name__}.get_spec_aug_info")
+        # logg.setLevel("INFO")
+        logg.debug("Start get_spec_aug_info")
+
+        self.p2d_kwargs = {"ref": np.max}
+
+        if self.train_dataset.startswith("me"):
+            spec_dict = get_spec_dict()
+            self.mel_kwargs = spec_dict[self.train_dataset]
+            spec_shape_dict = get_spec_shape_dict()
+            self.spec_shape = spec_shape_dict[self.train_dataset]
+
+        elif self.train_dataset.startswith("au"):
+            aug_dict = get_aug_dict()
+            self.mel_kwargs = aug_dict[self.train_dataset]["mel_kwargs"]
+            self.spec_shape = aug_dict[self.train_dataset]["aug_shape"]
+
     def run(self) -> None:
         """MAKEDOC: what is run doing?"""
         logg = logging.getLogger(f"c.{__name__}.run")
@@ -344,7 +361,7 @@ def setup_logger(logLevel: str = "DEBUG") -> None:
     # log_format_module = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     # log_format_module = "%(name)s - %(levelname)s: %(message)s"
     # log_format_module = '%(levelname)s: %(message)s'
-    log_format_module = '%(name)s: %(message)s'
+    log_format_module = "%(name)s: %(message)s"
     # log_format_module = "%(message)s"
 
     formatter = logging.Formatter(log_format_module)

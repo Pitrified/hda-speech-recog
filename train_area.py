@@ -151,10 +151,10 @@ def hyper_train_area(
     hypa_grid["net_type"] = nt
 
     ###### the words to train on
-    # hypa_grid["words_type"] = [words_type]
+    hypa_grid["words_type"] = [words_type]
     # hypa_grid["words_type"] = ["LTnum", "LTall", "yn"]
     # hypa_grid["words_type"] = ["LTnum", "yn"]
-    hypa_grid["words_type"] = ["LTnum", "yn", "f1", "k1"]
+    # hypa_grid["words_type"] = ["LTnum", "yn", "f1", "k1"]
 
     ###### the dataset to train on
     ds = []
@@ -196,11 +196,13 @@ def hyper_train_area(
     ###### the batch size (the key is converted to int)
     bs = []
     bs.extend(["32"])
+    bs.extend(["16"])
     hypa_grid["batch_size_type"] = bs
 
     ###### the number of epochs (the key is converted to int)
     en = []
-    en.extend(["15"])
+    # en.extend(["15"])
+    en.extend(["14"])
     # en.extend(["10"])
     hypa_grid["epoch_num_type"] = en
 
@@ -208,16 +210,17 @@ def hyper_train_area(
     logg.debug(f"hypa_grid = {hypa_grid}")
     the_grid = list(ParameterGrid(hypa_grid))
 
-    hypa = {
-        "batch_size_type": "32",
-        "dataset_name": "auA07",
-        "epoch_num_type": "15",
-        "learning_rate_type": "03",
-        "net_type": "VAN",
-        "optimizer_type": "a1",
-        "words_type": "LTnumLS",
-    }
-    the_grid = [hypa]
+    # hijack the grid
+    # hypa = {
+    #     "batch_size_type": "32",
+    #     "dataset_name": "auA07",
+    #     "epoch_num_type": "15",
+    #     "learning_rate_type": "03",
+    #     "net_type": "VAN",
+    #     "optimizer_type": "a1",
+    #     "words_type": "LTnumLS",
+    # }
+    # the_grid = [hypa]
 
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
