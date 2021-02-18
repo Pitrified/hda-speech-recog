@@ -293,12 +293,12 @@ def evaluate_attention_weights(train_words_type: str) -> None:
 
             # get the word
             word_data = data["testing"][wid]
-            # logg.debug(f"word_data.shape: {word_data.shape}")
+            logg.debug(f"word_data.shape: {word_data.shape}")
             batch_word_data = np.expand_dims(word_data, axis=0)
-            # logg.debug(f"batch_word_data.shape: {batch_word_data.shape}")
+            logg.debug(f"batch_word_data.shape: {batch_word_data.shape}")
 
             shape_batch = (batch_size, *word_data.shape)
-            # logg.debug(f"shape_batch: {shape_batch}")
+            logg.debug(f"shape_batch: {shape_batch}")
 
             batch_word_data_big = np.zeros(shape_batch, dtype=np.float32)
             for i in range(batch_size):

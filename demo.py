@@ -64,8 +64,8 @@ class Demo:
 
         # the trained model with additional outputs
         # self.att_weight_model = self.load_trained_model_area(self.train_dataset)
-        # self.load_trained_model_area()
-        self.load_trained_model_att()
+        self.load_trained_model_area()
+        # self.load_trained_model_att()
 
         # grab the output dimentions
         # logg.debug(f"self.att_weight_model.outputs: {self.att_weight_model.outputs}")
@@ -128,7 +128,11 @@ class Demo:
 
         # the attention weights ax
         ax_attw = self.axes[0][1]
-        self.im_attw = ax_attw.imshow(self.att_weights, origin="lower", vmin=0, vmax=1)
+        # self.im_attw = ax_attw.imshow(self.att_weights, origin="lower", vmin=0, vmax=1)
+        self.im_attw = ax_attw.imshow(
+            self.att_weights, origin="lower", vmin=0, vmax=0.005
+        )
+        # self.im_attw = ax_attw.imshow(self.att_weights, origin="lower")
         logg.debug(f"self.im_attw: {self.im_attw}")
 
         # the prediction ax
@@ -163,8 +167,8 @@ class Demo:
         therefore the queue tends to contain multiple blocks of audio data.
         """
         logg = logging.getLogger(f"c.{__name__}.update_plots")
-        logg.setLevel("INFO")
-        logg.debug("Start update_plots -----------------")
+        # logg.setLevel("INFO")
+        logg.debug("--------------- Start update_plots ---------------")
 
         #################################################################
         #   aquire data from queue
@@ -231,7 +235,16 @@ class Demo:
         logg.debug(recap)
 
         ###### get predictions and weights
-        pred, att_weights = self.att_weight_model.predict(batch_log_mel)
+        # we do a megatrick super magic:
+        # get a batch size of 32 (or whatever is set by the hypas)
+        shape_batch = (self.batch_size, *img_log_mel.shape)
+        logg.debug(f"shape_batch: {shape_batch}")
+        batch_log_mel_big = np.zeros(shape_batch, dtype=np.float32)
+        # fill the entire big batch with the same spectrogram
+        for i in range(self.batch_size):
+            batch_log_mel_big[i, :, :, :] = batch_log_mel
+        # and finally predict: now magically is correct!
+        pred, att_weights = self.att_weight_model.predict(batch_log_mel_big)
 
         ###### time the prediction
         time_003 = timer()
@@ -253,6 +266,7 @@ class Demo:
         logg.debug(f"att_weights.shape: {att_weights.shape}")
         this_weight = att_weights[0]
         logg.debug(f"this_weight.shape: {this_weight.shape}")
+        # logg.debug(f"this_weight: {this_weight}")
 
         if len(this_weight.shape) == 1:
             self.att_weights = np.expand_dims(this_weight, axis=-1)
@@ -261,10 +275,14 @@ class Demo:
             # self.att_weights = att_weights[0][:, :, 0]
             self.att_weights = this_weight[:, :, 0]
 
-        logg.debug(f"self.att_weights.shape: {self.att_weights.shape}")
+        recap = f"self.att_weights.shape: {self.att_weights.shape}"
+        recap += f" self.att_weights.max() {self.att_weights.max()}"
+        recap += f" self.att_weights.min() {self.att_weights.min()}"
+        logg.debug(recap)
 
         # update the data in the plot
         self.im_attw.set_data(self.att_weights)
+        self.im_attw.set_clim(self.att_weights.min(), self.att_weights.max())
 
         ###### build the list of artist to update
         all_artists = []
@@ -302,30 +320,43 @@ class Demo:
         # logg.setLevel("INFO")
         logg.debug("Start load_trained_model_area")
 
-        # hypa = {
-        #     "batch_size_type": "32",
-        #     # "dataset_name": "aug07",
-        #     "dataset_name": train_dataset,
-        #     "epoch_num_type": "15",
-        #     "learning_rate_type": "05",
-        #     "net_type": "VAN",
-        #     "optimizer_type": "a1",
-        #     "words_type": "LTnum",
-        # }
-        # use_validation = True
+        hypa = {
+            "batch_size_type": "32",
+            # "dataset_name": "aug07",
+            "dataset_name": self.train_dataset,
+            "epoch_num_type": "15",
+            "learning_rate_type": "05",
+            "net_type": "VAN",
+            "optimizer_type": "a1",
+            # "words_type": "LTnum",
+            "words_type": self.train_words_type,
+        }
+        use_validation = True
 
         hypa = {
             "batch_size_type": "32",
-            # "dataset_name": "auA07",
+            # "dataset_name": "mel04",
             "dataset_name": self.train_dataset,
             "epoch_num_type": "15",
             "learning_rate_type": "03",
             "net_type": "VAN",
             "optimizer_type": "a1",
-            # "words_type": "LTnumLS",
+            # "words_type": "LTBnum"
             "words_type": self.train_words_type,
         }
-        use_validation = False
+
+        # hypa = {
+        #     "batch_size_type": "32",
+        #     # "dataset_name": "auA07",
+        #     "dataset_name": self.train_dataset,
+        #     "epoch_num_type": "15",
+        #     "learning_rate_type": "03",
+        #     "net_type": "VAN",
+        #     "optimizer_type": "a1",
+        #     # "words_type": "LTnumLS",
+        #     "words_type": self.train_words_type,
+        # }
+        # use_validation = False
 
         # hypa = {
         #     "batch_size_type": "32",
@@ -338,6 +369,8 @@ class Demo:
         #     "words_type": "LTnum",
         # }
         # use_validation = True
+
+        self.batch_size = int(hypa["batch_size_type"])
 
         model_name = build_area_name(hypa, use_validation)
 
@@ -358,7 +391,6 @@ class Demo:
             ],
         )
 
-        # return att_weight_model
         self.att_weight_model = att_weight_model
 
     def load_trained_model_att(self) -> None:

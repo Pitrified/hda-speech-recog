@@ -144,17 +144,19 @@ def hyper_train_area(
 
     ###### the net type
     nt = []
-    nt.append("SIM")
-    nt.append("SI2")
-    nt.append("AAN")
+    # nt.append("SIM")
+    # nt.append("SI2")
+    # nt.append("AAN")
     nt.append("VAN")
     hypa_grid["net_type"] = nt
 
     ###### the words to train on
-    hypa_grid["words_type"] = [words_type]
+    # hypa_grid["words_type"] = [words_type]
     # hypa_grid["words_type"] = ["LTnum", "LTall", "yn"]
     # hypa_grid["words_type"] = ["LTnum", "yn"]
     # hypa_grid["words_type"] = ["LTnum", "yn", "f1", "k1"]
+    hypa_grid["words_type"] = ["LTBnum", "LTBall"]
+    # hypa_grid["words_type"] = ["LTBnumLS", "LTBallLS"]
 
     ###### the dataset to train on
     ds = []
@@ -196,13 +198,13 @@ def hyper_train_area(
     ###### the batch size (the key is converted to int)
     bs = []
     bs.extend(["32"])
-    bs.extend(["16"])
+    # bs.extend(["16"])
     hypa_grid["batch_size_type"] = bs
 
     ###### the number of epochs (the key is converted to int)
     en = []
-    # en.extend(["15"])
-    en.extend(["13"])
+    en.extend(["15"])
+    # en.extend(["13"])
     # en.extend(["10"])
     hypa_grid["epoch_num_type"] = en
 
