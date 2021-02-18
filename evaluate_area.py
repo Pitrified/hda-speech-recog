@@ -191,54 +191,6 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     # magic to fix the GPUs
     setup_gpus()
 
-    # dataset_name = "mela1"
-    # dataset_name = "mel04"
-    dataset_name = "aug14"
-
-    # hypa = {
-    #     "net_type": "AAN",
-    #     "batch_size_type": "32",
-    #     # "dataset_name": "mela1",
-    #     "dataset_name": dataset_name,
-    #     "epoch_num_type": "15",
-    #     "learning_rate_type": "03",
-    #     "optimizer_type": "a1",
-    #     # "words_type": "LTnum",
-    #     "words_type": train_words_type,
-    # }
-
-    # hypa = {
-    #     "batch_size_type": "32",
-    #     "dataset_name": "auA05",
-    #     "epoch_num_type": "15",
-    #     "learning_rate_type": "03",
-    #     "net_type": "AAN",
-    #     "optimizer_type": "a1",
-    #     "words_type": "LTnumLS",
-    # }
-
-    # AAN_opa1_lr03_bs32_en15_dsaug14_wLTnum
-    # hypa = {
-    #     "batch_size_type": "32",
-    #     "dataset_name": "aug14",
-    #     "epoch_num_type": "15",
-    #     "learning_rate_type": "03",
-    #     "net_type": "AAN",
-    #     "optimizer_type": "a1",
-    #     "words_type": "LTnum",
-    # }
-
-    # VAN_opa1_lr04_bs32_en15_dsaug14_wLTall
-    # hypa = {
-    #     "batch_size_type": "32",
-    #     "dataset_name": "aug14",
-    #     "epoch_num_type": "15",
-    #     "learning_rate_type": "04",
-    #     "net_type": "VAN",
-    #     "optimizer_type": "a1",
-    #     "words_type": "LTall",
-    # }
-
     # VAN_opa1_lr05_bs32_en15_dsaug07_wLTall
     hypa = {
         "batch_size_type": "32",
@@ -249,52 +201,52 @@ def evaluate_attention_weights(train_words_type: str) -> None:
         "optimizer_type": "a1",
         "words_type": "LTall",
     }
-
-    dataset_name = hypa["dataset_name"]
-
     use_validation = True
+    dataset_name = hypa["dataset_name"]
+    batch_size = int(hypa["batch_size_type"])
 
+    # get the model name
     model_name = build_area_name(hypa, use_validation)
     logg.debug(f"model_name: {model_name}")
 
     # load the model
     model_folder = Path("trained_models") / "area"
     model_path = model_folder / f"{model_name}.h5"
-
     model = tf_models.load_model(model_path)
 
-    # for layer in model.layers:
-    #     logg.debug(layer.name)
+    # get the output layer because you forgot to name it
     name_output_layer = model.layers[-1].name
     logg.debug(f"name_output_layer: {name_output_layer}")
 
+    # build a model on top of that to get the weights
     att_weight_model = tf_models.Model(
         inputs=model.input,
         outputs=[
             model.get_layer(name_output_layer).output,
-            # model.outputs,
             model.get_layer("area_values").output,
         ],
     )
     att_weight_model.summary()
-    # logg.debug(f"att_weight_model.outputs: {att_weight_model.outputs}")
 
     # get the training words
     train_words = words_types[train_words_type]
     perm_pred = compute_permutation(train_words)
     logg.debug(f"perm_pred: {perm_pred}")
+    sorted_train_words = sorted(train_words)
+    logg.debug(f"sorted(train_words): {sorted(train_words)}")
 
     # load data if you do not want to record new audios
     processed_folder = Path("data_proc")
     processed_path = processed_folder / f"{dataset_name}"
+    logg.debug(f"processed_path: {processed_path}")
 
-    # evaluate on all data because im confused
-    data, labels = load_processed(processed_path, train_words)
-    logg.debug(f"data['testing'].shape: {data['testing'].shape}")
-    logg.debug(f"labels['testing'].shape: {labels['testing'].shape}")
-    eval_testing = model.evaluate(data["testing"], labels["testing"])
-    for metrics_name, value in zip(model.metrics_names, eval_testing):
-        logg.debug(f"{metrics_name}: {value}")
+    # # evaluate on all data because im confused
+    # data, labels = load_processed(processed_path, train_words)
+    # logg.debug(f"data['testing'].shape: {data['testing'].shape}")
+    # logg.debug(f"labels['testing'].shape: {labels['testing'].shape}")
+    # eval_testing = model.evaluate(data["testing"], labels["testing"])
+    # for metrics_name, value in zip(model.metrics_names, eval_testing):
+    #     logg.debug(f"{metrics_name}: {value}")
 
     # which word in the dataset to plot
     # word_id = 5
@@ -305,17 +257,12 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     rec_data_l: ty.List[np.ndarray] = []
 
     # for now we do not record new words
-    # rec_words = train_words[-3:]
-    # rec_words = train_words[:3]
-    # rec_words = train_words[:2]
-    # rec_words = train_words[10:21]
-    # rec_words = train_words[20:31]
     rec_words = train_words[30:32]
     num_rec_words = len(rec_words)
 
     logg.debug(f"processed_path: {processed_path}")
     for i, word in enumerate(rec_words):
-        logg.debug(f"word: {word}")
+        logg.debug(f"\nword: {word}")
 
         data, labels = load_processed(processed_path, [word])
         logg.debug(f"data['testing'].shape: {data['testing'].shape}")
@@ -329,9 +276,70 @@ def evaluate_attention_weights(train_words_type: str) -> None:
         word_data = data["testing"][word_id]
         rec_data_l.append(word_data)
 
+        pred, att_weights = att_weight_model.predict(data["testing"])
+        logg.debug(f"pred.shape: {pred.shape}")
+        logg.debug(f"pred[0].shape: {pred[0].shape}")
+
+        pred_am_all = np.argmax(pred, axis=1)
+        logg.debug(f"pred_am_all: {pred_am_all}")
+
+        pred_index = np.argmax(pred[0])
+        pred_word = sorted_train_words[pred_index]
+        logg.debug(f"sorted pred_word: {pred_word} pred_index {pred_index}")
+
+        # test EVERY SINGLE spectrogram
+        spec_num = data["testing"].shape[0]
+        for wid in range(spec_num):
+
+            # get the word
+            word_data = data["testing"][wid]
+            # logg.debug(f"word_data.shape: {word_data.shape}")
+            batch_word_data = np.expand_dims(word_data, axis=0)
+            # logg.debug(f"batch_word_data.shape: {batch_word_data.shape}")
+
+            shape_batch = (batch_size, *word_data.shape)
+            # logg.debug(f"shape_batch: {shape_batch}")
+
+            batch_word_data_big = np.zeros(shape_batch, dtype=np.float32)
+            for i in range(batch_size):
+                batch_word_data_big[i, :, :, :] = batch_word_data
+            # batch_word_data_big[0, :, :, :] = batch_word_data
+
+            # predict it
+            # pred, att_weights = att_weight_model.predict(batch_word_data)
+            pred, att_weights = att_weight_model.predict(batch_word_data_big)
+
+            # show all prediction
+            # pred_am = np.argmax(pred, axis=1)
+            # logg.debug(f"pred_am: {pred_am}")
+
+            # focus on first prediction
+            word_pred = pred[0]
+            pred_index = np.argmax(word_pred)
+            pred_word = sorted_train_words[pred_index]
+
+            recap = ""
+            if pred_word == word:
+                recap += "correct "
+            else:
+                recap += "  wrong "
+                pred_am = np.argmax(pred, axis=1)
+                logg.debug(f"pred_am: {pred_am}")
+
+            recap += f"sorted pred_word: {pred_word} pred_index {pred_index}"
+            recap += f" word_pred.shape {word_pred.shape}"
+            recap += f" pred_am_all[wid] {pred_am_all[wid]}"
+
+            # pred_f = ", ".join([f"{p:.3f}" for p in pred[0]])
+            # recap += f" pred_f: {pred_f}"
+
+            logg.debug(recap)
+
+            # break
+
     # turn the list into np array
     rec_data = np.stack(rec_data_l)
-    logg.debug(f"rec_data.shape: {rec_data.shape}")
+    logg.debug(f"\nrec_data.shape: {rec_data.shape}")
 
     # get prediction and attention weights
     pred, att_weights = att_weight_model.predict(rec_data)
@@ -344,9 +352,6 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     fh = plot_size * nrows
     fig, axes = plt.subplots(nrows=nrows, ncols=num_rec_words, figsize=(fw, fh))
     fig.suptitle("Attention weights computed with VerticalAreaNet", fontsize=20)
-
-    sorted_train_words = sorted(train_words)
-    logg.debug(f"sorted(train_words): {sorted(train_words)}")
 
     for i, word in enumerate(rec_words):
         logg.debug(f"recword: {word}")
@@ -376,10 +381,10 @@ def evaluate_attention_weights(train_words_type: str) -> None:
 
         # # plot the predictions
         word_pred = pred[i]
-        logg.debug(f"word_pred: {word_pred}")
+        # logg.debug(f"word_pred: {word_pred}")
         # # permute the prediction from sorted to the order you have
         word_pred = word_pred[perm_pred]
-        logg.debug(f"word_pred permuted: {word_pred}")
+        # logg.debug(f"word_pred permuted: {word_pred}")
         pred_index = np.argmax(word_pred)
         pred_word = train_words[pred_index]
         logg.debug(f"pred_word: {pred_word} pred_index {pred_index}")
