@@ -1,4 +1,3 @@
-from random import seed as rseed
 from pathlib import Path
 from timeit import default_timer as timer
 import argparse
@@ -7,6 +6,7 @@ import queue
 import typing as ty
 
 from tensorflow.keras import models as tf_models  # type: ignore
+from tensorflow.keras import backend as K  # type: ignore
 import librosa  # type: ignore
 from matplotlib.animation import FuncAnimation  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
@@ -17,46 +17,9 @@ from augment_data import get_aug_dict
 from preprocess_data import get_spec_dict
 from preprocess_data import get_spec_shape_dict
 from train_area import build_area_name
+from train_attention import build_attention_name
 from utils import setup_gpus
-
-
-def load_trained_model_area(train_dataset: str) -> tf_models.Model:
-    """MAKEDOC: what is load_trained_model_area doing?"""
-    logg = logging.getLogger(f"c.{__name__}.load_trained_model_area")
-    # logg.setLevel("INFO")
-    logg.debug("Start load_trained_model_area")
-
-    hypa = {
-        "batch_size_type": "32",
-        # "dataset_name": "aug07",
-        "dataset_name": train_dataset,
-        "epoch_num_type": "15",
-        "learning_rate_type": "05",
-        "net_type": "VAN",
-        "optimizer_type": "a1",
-        "words_type": "LTnum",
-    }
-    use_validation = True
-    model_name = build_area_name(hypa, use_validation)
-
-    model_folder = Path("trained_models") / "area"
-    model_path = model_folder / f"{model_name}.h5"
-
-    model = tf_models.load_model(model_path)
-
-    # grab the last layer that has no name because you were a fool
-    name_output_layer = model.layers[-1].name
-    logg.debug(f"name_output_layer: {name_output_layer}")
-
-    att_weight_model = tf_models.Model(
-        inputs=model.input,
-        outputs=[
-            model.get_layer(name_output_layer).output,
-            model.get_layer("area_values").output,
-        ],
-    )
-
-    return att_weight_model
+from utils import words_types
 
 
 class Demo:
@@ -73,6 +36,8 @@ class Demo:
         interval,
         samplerate_input,
         channels,
+        train_dataset,
+        train_words_type,
     ) -> None:
         """MAKEDOC: what is __init__ doing?"""
         logg = logging.getLogger(f"c.{__name__}.__init__")
@@ -84,18 +49,30 @@ class Demo:
         self.interval = interval
         self.samplerate_input = int(samplerate_input)
         self.channels = channels
+        self.train_dataset = train_dataset
+        self.train_words_type = train_words_type
+
         self.mapping = [c - 1 for c in self.channels]  # Channel numbers start with 1
 
         self.plot_downsample = 1
         self.samplerate_train = 16000
 
-        # self.train_dataset = "aug07"
         # self.train_dataset = "mel04"
+        # self.train_dataset = "aug07"
+        # self.train_dataset = "auA07"
+        # self.train_dataset = "aug14"
 
         # the trained model with additional outputs
-        # self.att_weight_model = load_trained_model_area(self.train_dataset)
-        self.train_dataset = "aug07"
-        self.att_weight_model = load_trained_model_area(self.train_dataset)
+        # self.att_weight_model = self.load_trained_model_area(self.train_dataset)
+        # self.load_trained_model_area()
+        self.load_trained_model_att()
+
+        # grab the output dimentions
+        # logg.debug(f"self.att_weight_model.outputs: {self.att_weight_model.outputs}")
+        self.pred_output = self.att_weight_model.outputs[0]
+        # logg.debug(f"self.weight_output.shape: {self.weight_output.shape}")
+        self.weight_output = self.att_weight_model.outputs[1]
+        # logg.debug(f"self.weight_output.shape: {self.weight_output.shape}")
 
         # info on the spectrogram
         self.get_spec_aug_info()
@@ -105,11 +82,17 @@ class Demo:
 
         # info on the predictions
         self.max_old_pred = 50
-        self.num_labels = 11
+        # self.num_labels = 11
+        self.num_labels = self.pred_output.shape[1]
         self.all_pred = np.zeros((self.max_old_pred, self.num_labels))
 
         # info on the att_weights
-        self.att_weight_shape = (16, 1)
+        # self.att_weight_shape = (16, 1)
+        self.att_weight_shape = self.weight_output.shape[1 : 2 + 1]
+        logg.debug(f"self.att_weight_shape: {self.att_weight_shape}")
+        if len(self.att_weight_shape) == 1:
+            self.att_weight_shape = (self.att_weight_shape[0], 1)
+        logg.debug(f"self.att_weight_shape: {self.att_weight_shape}")
         self.att_weights = np.zeros(self.att_weight_shape)
 
         # the input audio stream
@@ -145,7 +128,7 @@ class Demo:
 
         # the attention weights ax
         ax_attw = self.axes[0][1]
-        self.im_attw = ax_attw.imshow(self.all_pred, origin="lower", vmin=0, vmax=1)
+        self.im_attw = ax_attw.imshow(self.att_weights, origin="lower", vmin=0, vmax=1)
         logg.debug(f"self.im_attw: {self.im_attw}")
 
         # the prediction ax
@@ -159,88 +142,57 @@ class Demo:
 
         # setup the animations
         self.animation_waveform = FuncAnimation(
-            self.fig, self.update_plot_waveform, interval=self.interval, blit=True
-        )
-        self.animation_spectrogram = FuncAnimation(
-            self.fig, self.update_plot_spectrogram, interval=self.interval, blit=True
-        )
-        self.animation_predictions = FuncAnimation(
-            self.fig, self.update_plot_predictions, interval=self.interval, blit=True
-        )
-        self.animation_weights = FuncAnimation(
-            self.fig, self.update_plot_weights, interval=self.interval, blit=True
+            self.fig, self.update_plots, interval=self.interval, blit=True
         )
 
     def audio_callback(self, indata, frames, time, status) -> None:
-        """MAKEDOC: what is audio_callback doing?
+        """MAKEDOC: what is audio_callback doing?"""
+        # logg = logging.getLogger(f"c.{__name__}.audio_callback")
+        # # logg.setLevel("INFO")
+        # logg.debug("Start audio_callback")
+
+        # a hard copy must be made, be careful to not just use a reference
+        self.audio_queue.put(indata[::, self.mapping])
+
+    def update_plots(self, frame) -> ty.List[ty.Any]:
+        """MAKEDOC: what is update_plots doing?
 
         This is called by matplotlib for each plot update.
 
         Typically, audio callbacks happen more frequently than plot updates,
         therefore the queue tends to contain multiple blocks of audio data.
         """
-        # logg = logging.getLogger(f"c.{__name__}.audio_callback")
-        # # logg.setLevel("INFO")
-        # # logg.debug("Start audio_callback")
-        # time_001 = timer()
-        # from_last_update = time_001 - self.last_update
-        # recap = f"now: {time_001:6f}"
-        # recap += f"   from_last_update: {from_last_update:6f}"
-        # recap += f"   indata.shape: {indata.shape}"
-        # logg.debug(recap)
-
-        # self.audio_queue.put(indata[:: self.downsample, self.mapping])
-        self.audio_queue.put(indata[::, self.mapping])
-
-    def update_plot_waveform(self, frame) -> None:
-        """MAKEDOC: what is update_plot_waveform doing?"""
-        logg = logging.getLogger(f"c.{__name__}.update_plot_waveform")
+        logg = logging.getLogger(f"c.{__name__}.update_plots")
         logg.setLevel("INFO")
-        # logg.debug("Start update_plot_waveform")
+        logg.debug("Start update_plots -----------------")
 
-        # aquire data from queue
+        #################################################################
+        #   aquire data from queue
+        #################################################################
+
         while True:
             try:
                 data = self.audio_queue.get_nowait()
             except queue.Empty:
                 break
-
             shift = len(data)
             self.audio_signal = np.roll(self.audio_signal, -shift, axis=0)
             self.audio_signal[-shift:, :] = data
-            # logg.debug(f"data.shape: {data.shape}")
-            # logg.debug(f"data: {data}")
 
-        # plot but not everything
+        #################################################################
+        #   plot the waveform of the channel you are using
+        #################################################################
+
         for column, line in enumerate(self.lines_wave):
-            # logg.debug(f"setting {line} {column}")
-            # logg.debug(f"self.audio_signal.shape: {self.audio_signal.shape}")
             line.set_ydata(self.audio_signal[:: self.plot_downsample, column])
 
-        # logg.debug(f"self.audio_signal: {self.audio_signal.T}")
-        # logg.debug(f"self.audio_signal.shape: {self.audio_signal.shape}")
-        # logg.debug(f"self.audio_signal.min(): {self.audio_signal.min()}")
-        # logg.debug(f"self.audio_signal.max(): {self.audio_signal.max()}")
-
-        return self.lines_wave
-
-    def update_plot_spectrogram(self, frame) -> ty.Any:
-        """MAKEDOC: what is update_plot_spectrogram doing?
-
-        https://stackoverflow.com/a/17837600/2237151
-        http://jakevdp.github.io/blog/2012/08/18/matplotlib-animation-tutorial/
-        https://stackoverflow.com/a/57259405/2237151
-        """
-        logg = logging.getLogger(f"c.{__name__}.update_plot_spectrogram")
-        # logg.setLevel("INFO")
-        # logg.debug("Start update_plot_spectrogram")
+        #################################################################
+        #   spectrogram
+        #################################################################
 
         time_001 = timer()
 
-        #################################################################
-        #   compute the spectrogram
-        #################################################################
-
+        # compute it
         sig_16k = librosa.resample(
             self.audio_signal[:, 0], self.samplerate_input, self.samplerate_train
         )
@@ -256,8 +208,10 @@ class Demo:
         padded_log_mel = np.pad(log_mel, pad_width=pad_width)
         self.spec = padded_log_mel
 
+        # plot it
         self.im_spec.set_data(self.spec)
 
+        # time it
         time_002 = timer()
         recap = f"self.spec.shape: {self.spec.shape}"
         recap += f" self.spec.min() {self.spec.min()}"
@@ -265,40 +219,63 @@ class Demo:
         recap += f"    spectrogram time: {time_002-time_001}"
         logg.debug(recap)
 
-        # now use the spectrogram to predict!
+        #################################################################
+        #   predictions
+        #################################################################
+
+        ###### turn 2D image in a batch of a 3D image
         img_log_mel = np.expand_dims(padded_log_mel, axis=-1)
         batch_log_mel = np.expand_dims(img_log_mel, axis=0)
         recap = f"img_log_mel.shape: {img_log_mel.shape}"
         recap += f" batch_log_mel.shape: {batch_log_mel.shape}"
         logg.debug(recap)
 
+        ###### get predictions and weights
         pred, att_weights = self.att_weight_model.predict(batch_log_mel)
-        # move the all_pred and append the latest
-        # self.all_pred
 
+        ###### time the prediction
         time_003 = timer()
-        recap = f" pred.shape: {pred.shape}"
-        recap += f"    preditions time: {time_003-time_002}"
+        recap = f"pred.shape: {pred.shape}"
+        recap += f"    preditions time: {time_003-time_002:.7f}"
+        pred_f = ", ".join([f"{p:.3f}" for p in pred[0]])
+        recap += f" pred_f: {pred_f}"
         logg.debug(recap)
-        logg.debug(f"pred: {pred}")
+        # logg.debug(f"pred: {pred}")
 
-        return (self.im_spec,)
+        ###### move the all_pred and append the latest
+        self.all_pred = np.roll(self.all_pred, -1, axis=0)
+        self.all_pred[-1, :] = pred[0]
+        self.im_pred.set_data(self.all_pred)
 
-    def update_plot_weights(self, frame) -> ty.Any:
-        """MAKEDOC: what is update_plot_weights doing?"""
-        # logg = logging.getLogger(f"c.{__name__}.update_plot_weights")
-        # logg.setLevel("INFO")
-        # logg.debug("Start update_plot_weights")
+        ###### plot the weights
 
-        return (self.im_attw,)
+        # if the att_weights are one dimensiona, add the dims
+        logg.debug(f"att_weights.shape: {att_weights.shape}")
+        this_weight = att_weights[0]
+        logg.debug(f"this_weight.shape: {this_weight.shape}")
 
-    def update_plot_predictions(self, frame) -> ty.Any:
-        """MAKEDOC: what is update_plot_predictions doing?"""
-        # logg = logging.getLogger(f"c.{__name__}.update_plot_predictions")
-        # logg.setLevel("INFO")
-        # logg.debug("Start update_plot_predictions")
+        if len(this_weight.shape) == 1:
+            self.att_weights = np.expand_dims(this_weight, axis=-1)
 
-        return (self.im_pred,)
+        else:
+            # self.att_weights = att_weights[0][:, :, 0]
+            self.att_weights = this_weight[:, :, 0]
+
+        logg.debug(f"self.att_weights.shape: {self.att_weights.shape}")
+
+        # update the data in the plot
+        self.im_attw.set_data(self.att_weights)
+
+        ###### build the list of artist to update
+        all_artists = []
+        # we EXTEND, lines_wave is already an iterable of lines
+        all_artists.extend(self.lines_wave)
+        # we APPEND, im_spec is just one object
+        all_artists.append(self.im_spec)
+        all_artists.append(self.im_pred)
+        all_artists.append(self.im_attw)
+
+        return all_artists
 
     def get_spec_aug_info(self) -> None:
         """MAKEDOC: what is get_spec_aug_info doing?"""
@@ -319,6 +296,155 @@ class Demo:
             self.mel_kwargs = aug_dict[self.train_dataset]["mel_kwargs"]
             self.spec_shape = aug_dict[self.train_dataset]["aug_shape"]
 
+    def load_trained_model_area(self) -> None:
+        """MAKEDOC: what is load_trained_model_area doing?"""
+        logg = logging.getLogger(f"c.{__name__}.load_trained_model_area")
+        # logg.setLevel("INFO")
+        logg.debug("Start load_trained_model_area")
+
+        # hypa = {
+        #     "batch_size_type": "32",
+        #     # "dataset_name": "aug07",
+        #     "dataset_name": train_dataset,
+        #     "epoch_num_type": "15",
+        #     "learning_rate_type": "05",
+        #     "net_type": "VAN",
+        #     "optimizer_type": "a1",
+        #     "words_type": "LTnum",
+        # }
+        # use_validation = True
+
+        hypa = {
+            "batch_size_type": "32",
+            # "dataset_name": "auA07",
+            "dataset_name": self.train_dataset,
+            "epoch_num_type": "15",
+            "learning_rate_type": "03",
+            "net_type": "VAN",
+            "optimizer_type": "a1",
+            # "words_type": "LTnumLS",
+            "words_type": self.train_words_type,
+        }
+        use_validation = False
+
+        # hypa = {
+        #     "batch_size_type": "32",
+        #     # "dataset_name": "aug14",
+        #     "dataset_name": train_dataset,
+        #     "epoch_num_type": "15",
+        #     "learning_rate_type": "03",
+        #     "net_type": "AAN",
+        #     "optimizer_type": "a1",
+        #     "words_type": "LTnum",
+        # }
+        # use_validation = True
+
+        model_name = build_area_name(hypa, use_validation)
+
+        model_folder = Path("trained_models") / "area"
+        model_path = model_folder / f"{model_name}.h5"
+
+        model = tf_models.load_model(model_path)
+
+        # grab the last layer that has no name because you were a fool
+        name_output_layer = model.layers[-1].name
+        logg.debug(f"name_output_layer: {name_output_layer}")
+
+        att_weight_model = tf_models.Model(
+            inputs=model.input,
+            outputs=[
+                model.get_layer(name_output_layer).output,
+                model.get_layer("area_values").output,
+            ],
+        )
+
+        # return att_weight_model
+        self.att_weight_model = att_weight_model
+
+    def load_trained_model_att(self) -> None:
+        """MAKEDOC: what is load_trained_model_att doing?"""
+        logg = logging.getLogger(f"c.{__name__}.load_trained_model_att")
+        # logg.setLevel("INFO")
+        logg.debug("Start load_trained_model_att")
+
+        # ATT_ct02_dr01_ks01_lu01_qt05_dw01_opa1_lr03_bs02_en02_dsaug07_wLTnum
+        hypa = {
+            "batch_size_type": "02",
+            "conv_size_type": "02",
+            # "dataset_name": "aug07",
+            "dataset_name": self.train_dataset,
+            "dense_width_type": "01",
+            "dropout_type": "01",
+            "epoch_num_type": "02",
+            "kernel_size_type": "01",
+            "learning_rate_type": "03",
+            "lstm_units_type": "01",
+            "optimizer_type": "a1",
+            "query_style_type": "05",
+            # "words_type": "LTnum",
+            "words_type": self.train_words_type,
+        }
+        use_validation = True
+
+        hypa = {
+            "batch_size_type": "02",
+            "conv_size_type": "02",
+            # "dataset_name": "meL04",
+            "dataset_name": self.train_dataset,
+            "dense_width_type": "01",
+            "dropout_type": "01",
+            "epoch_num_type": "02",
+            "kernel_size_type": "01",
+            "learning_rate_type": "03",
+            "lstm_units_type": "01",
+            "optimizer_type": "a1",
+            "query_style_type": "01",
+            # "words_type": "LTnumLS"
+            "words_type": self.train_words_type,
+        }
+        use_validation = False
+
+        hypa = {
+            "batch_size_type": "02",
+            "conv_size_type": "02",
+            "dataset_name": "aug14",
+            "dense_width_type": "01",
+            "dropout_type": "01",
+            "epoch_num_type": "02",
+            "kernel_size_type": "01",
+            "learning_rate_type": "03",
+            "lstm_units_type": "01",
+            "optimizer_type": "a1",
+            "query_style_type": "04",
+            "words_type": "LTall",
+        }
+        use_validation = True
+
+        model_name = build_attention_name(hypa, use_validation)
+        logg.debug(f"model_name: {model_name}")
+
+        # load the model
+        model_folder = Path("trained_models") / "attention"
+        model_path = model_folder / f"{model_name}.h5"
+
+        # model = tf.keras.models.load_model(model_path)
+        # https://github.com/keras-team/keras/issues/5088#issuecomment-401498334
+        model = tf_models.load_model(model_path, custom_objects={"backend": K})
+        # model.summary()
+        # logg.debug(f"ascii_model(model): {ascii_model(model)}")
+
+        att_weight_model = tf_models.Model(
+            inputs=model.input,
+            outputs=[
+                model.get_layer("output").output,
+                model.get_layer("att_softmax").output,
+            ],
+        )
+        # att_weight_model.summary()
+        # logg.debug(f"att_weight_model.outputs: {att_weight_model.outputs}")
+
+        self.att_weight_model = att_weight_model
+
     def run(self) -> None:
         """MAKEDOC: what is run doing?"""
         logg = logging.getLogger(f"c.{__name__}.run")
@@ -333,16 +459,22 @@ def parse_arguments() -> argparse.Namespace:
     """Setup CLI interface"""
     parser = argparse.ArgumentParser(description="")
 
+    tra_types = [w for w in words_types.keys() if not w.startswith("_")]
     parser.add_argument(
-        "-i",
-        "--path_input",
+        "-tw",
+        "--train_words_type",
         type=str,
-        default="hp.jpg",
-        help="path to input image to use",
+        default="f2",
+        choices=tra_types,
+        help="Words the dataset was trained on",
     )
 
     parser.add_argument(
-        "-s", "--rand_seed", type=int, default=-1, help="random seed to use"
+        "-dn",
+        "--dataset_name",
+        type=str,
+        default="mel01",
+        help="Name of the dataset folder",
     )
 
     # last line to parse the args
@@ -376,30 +508,14 @@ def setup_logger(logLevel: str = "DEBUG") -> None:
 
 def setup_env() -> argparse.Namespace:
     setup_logger("DEBUG")
-
     args = parse_arguments()
-
-    # setup seed value
-    if args.rand_seed == -1:
-        myseed = 1
-        myseed = int(timer() * 1e9 % 2 ** 32)
-    else:
-        myseed = args.rand_seed
-    rseed(myseed)
-    np.random.seed(myseed)
-
     # build command string to repeat this run
     # FIXME if an option is a flag this does not work, sorry
     recap = "python3 demo.py"
     for a, v in args._get_kwargs():
-        if a == "rand_seed":
-            recap += f" --rand_seed {myseed}"
-        else:
-            recap += f" --{a} {v}"
-
+        recap += f" --{a} {v}"
     logmain = logging.getLogger(f"c.{__name__}.setup_env")
     logmain.info(recap)
-
     return args
 
 
@@ -407,6 +523,9 @@ def run_demo(args: argparse.Namespace) -> None:
     """TODO: What is demo doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_demo")
     logg.debug("Starting run_demo")
+
+    train_words_type = args.train_words_type
+    dataset_name = args.dataset_name
 
     # magic to fix the GPUs
     setup_gpus()
@@ -416,11 +535,16 @@ def run_demo(args: argparse.Namespace) -> None:
     device_info = sd.query_devices(device=device, kind="input")
     logg.debug(f"device_info: {device_info}")
 
-    window = 1000
+    if train_words_type.endswith("LS"):
+        window = 500
+    else:
+        window = 1000
+
     # window = 200
     # interval = 1000
-    # interval = 30
-    interval = 100
+    interval = 30
+    # interval = 100
+    # interval = 500
     # blocksize = 0
     samplerate_input = device_info["default_samplerate"]
     channels = [1]
@@ -432,6 +556,8 @@ def run_demo(args: argparse.Namespace) -> None:
         interval,
         samplerate_input,
         channels,
+        train_dataset=dataset_name,
+        train_words_type=train_words_type,
     )
 
     the_demo.run()

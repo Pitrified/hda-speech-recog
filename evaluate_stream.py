@@ -587,9 +587,9 @@ def run_evaluate_stream(args: argparse.Namespace) -> None:
     setup_gpus()
     model = load_trained_model(architecture_type, which_dataset, train_words_type)
 
-    for sentence_index in range(116):
+    # for sentence_index in range(116):
     # for sentence_index in range(6):
-    # for sentence_index in good_sentences:
+    for sentence_index in good_sentences:
         evaluate_stream(
             model,
             evaluation_type,
