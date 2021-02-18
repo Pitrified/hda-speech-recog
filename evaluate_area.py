@@ -157,7 +157,7 @@ def evaluate_results_area() -> None:
         word_list = [w for w in results_df.words.unique() if words_type in w]
 
         df_f = results_df
-        df_f = df_f.query("use_val == True")
+        # df_f = df_f.query("use_val == True")
         # df_f = df_f.query(f"words == '{words_type}'")
         df_f = df_f[df_f["words"].isin(word_list)]
         if len(df_f) == 0:
@@ -166,6 +166,11 @@ def evaluate_results_area() -> None:
         df_f = df_f.sort_values("fscore", ascending=False)
         logg.info(f"\nOnly on {words_type}")
         logg.info(f"{df_f.head(30)}\n{df_f.tail()}")
+
+    df_f = results_df
+    df_f = df_f.query("words == 'LTnumLS'")
+    df_f = df_f.sort_values("fscore", ascending=False)
+    logg.info(f"{df_f.head(10)}")
 
 
 def load_trained_model_area(

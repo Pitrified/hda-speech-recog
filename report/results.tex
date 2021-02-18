@@ -566,7 +566,7 @@ identify a word in a sentence is examined in this section.
 scenario: of the four numbers spoken, three are well isolated in the sentence,
 and are clearly picked up. The initial utterance of ``three'' is also
 identified, albeit with a lower probability, as it is very close to the next
-word (``\textit{three} o'clock'').
+word (``\textit{three} o'clock'' is spoken with barely a pause).
 \fig{fig:stream_attention_ltts_meL04_LTnumLS_67} shows a more common situation,
 when the interesting word is in the middle of the sentence (``of the
 \textit{four} other\ldots''). The model can only barely identify the presence
@@ -580,7 +580,17 @@ Training only on the loudest $0.5$ second section of the audio samples improves
 the performance of the models quite a lot: the ``four'' in the second example
 is completely missed by a model trained with identical parameters except the
 longer words, as shown in \fig{fig:stream_attention_ltts_mel04_LTnum_67}: only
-the more isolated ``two'' is found.
+the more isolated ``two'' is found, as there is space to align a window that
+ends with the utterance and starts with silence.
+
+A manual inspection was conducted on $116$ sentences containing numbers, and
+only $31$ were correctly identified, amounting to $26.7\%$ recall.
+The false positives however are only $14$, resulting in a precision of
+$87.9\%$: if a number is identified, there is reasonable confidence that was
+actually spoken.
+% good_count: 31
+% bad_count: 85
+% total: 116
 
 \begin{figure}[h!]
     \centering
@@ -613,3 +623,5 @@ the more isolated ``two'' is found.
 % Attention vs Simple vs AreaNet vs VerticalAreaNet
 
 TODO: Compare inference time, model size
+
+% Little difference in performance

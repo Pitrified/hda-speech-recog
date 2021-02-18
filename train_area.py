@@ -207,6 +207,18 @@ def hyper_train_area(
     ###### build the combinations
     logg.debug(f"hypa_grid = {hypa_grid}")
     the_grid = list(ParameterGrid(hypa_grid))
+
+    hypa = {
+        "batch_size_type": "32",
+        "dataset_name": "auA07",
+        "epoch_num_type": "15",
+        "learning_rate_type": "03",
+        "net_type": "VAN",
+        "optimizer_type": "a1",
+        "words_type": "LTnumLS",
+    }
+    the_grid = [hypa]
+
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
 

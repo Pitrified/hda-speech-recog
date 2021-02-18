@@ -12,6 +12,7 @@ from augment_data import augment_signals
 from augment_data import compute_spectrograms
 from preprocess_data import get_spec_dict
 from preprocess_data import get_spec_shape_dict
+from train_area import build_area_name
 from train_attention import build_attention_name
 from train_cnn import build_cnn_name
 from utils import setup_gpus
@@ -37,7 +38,7 @@ def parse_arguments() -> argparse.Namespace:
         "--architecture_type",
         type=str,
         default="cnn",
-        choices=["cnn", "attention"],
+        choices=["cnn", "attention", "area"],
         help="Which architecture to use",
     )
 
@@ -272,6 +273,42 @@ def load_trained_model_cnn(override_hypa) -> models.Model:
     return model
 
 
+def load_trained_model_area(override_hypa) -> models.Model:
+    """MAKEDOC: what is load_trained_model_area doing?"""
+    logg = logging.getLogger(f"c.{__name__}.load_trained_model_area")
+    # logg.setLevel("INFO")
+    logg.debug("Start load_trained_model_area")
+
+    hypa = {
+        "batch_size_type": "32",
+        # "dataset_name": "auA07",
+        "epoch_num_type": "15",
+        "learning_rate_type": "03",
+        "net_type": "VAN",
+        "optimizer_type": "a1",
+        # "words_type": "LTnumLS"
+    }
+    use_validation = False
+
+    # override the values
+    for hypa_name in override_hypa:
+        hypa[hypa_name] = override_hypa[hypa_name]
+
+    model_name = build_area_name(hypa, use_validation)
+    logg.debug(f"model_name: {model_name}")
+
+    model_folder = Path("trained_models") / "area"
+    model_path = model_folder / f"{model_name}.h5"
+    if not model_path.exists():
+        logg.error(f"Model not found at: {model_path}")
+        logg.error(f"Train it with hypa_grid = {hypa}")
+        raise FileNotFoundError
+
+    model = models.load_model(model_path)
+
+    return model
+
+
 def load_trained_model(
     model_type: str, datasets_type: str, train_words_type: str
 ) -> models.Model:
@@ -283,9 +320,14 @@ def load_trained_model(
     if model_type == "cnn":
         override_hypa = {"dataset": datasets_type, "words": train_words_type}
         model = load_trained_model_cnn(override_hypa)
+
     elif model_type == "attention":
         override_hypa = {"dataset_name": datasets_type, "words_type": train_words_type}
         model = load_trained_model_att(override_hypa)
+
+    elif model_type == "area":
+        override_hypa = {"dataset_name": datasets_type, "words_type": train_words_type}
+        model = load_trained_model_area(override_hypa)
 
     return model
 
@@ -337,7 +379,7 @@ def plot_sentence_pred(
 
     fig.tight_layout()
 
-    plot_folder = Path("plot_stream")
+    plot_folder = Path("plot_stream") / "all2"
     if not plot_folder.exists():
         plot_folder.mkdir(parents=True, exist_ok=True)
     fig.savefig(plot_folder / fig_name.format("pdf"))
@@ -345,6 +387,7 @@ def plot_sentence_pred(
 
 
 def evaluate_stream(
+    model: models.Model,
     evaluation_type: str,
     datasets_type: str,
     train_words_type: str,
@@ -417,13 +460,10 @@ def evaluate_stream(
     # logg.setLevel("INFO")
     logg.debug("Start evaluate_stream")
 
-    # magic to fix the GPUs
-    setup_gpus()
-
     # a random number generator to use
     rng = np.random.default_rng(12345)
 
-    model = load_trained_model(architecture_type, datasets_type, train_words_type)
+    # model = load_trained_model(architecture_type, datasets_type, train_words_type)
     # model.summary()
 
     if evaluation_type == "ltts":
@@ -464,7 +504,7 @@ def evaluate_stream(
     logg.debug(f"len(splits): {len(splits)}")
 
     # compute spectrograms / augment / compose
-    if datasets_type.startswith("aug"):
+    if datasets_type.startswith("au"):
         specs = augment_signals(splits, datasets_type, rng, which_fold="testing")
         logg.debug(f"specs.shape: {specs.shape}")
         specs_img = np.expand_dims(specs, axis=-1)
@@ -522,6 +562,7 @@ def evaluate_stream(
         split_length,
         fig_name,
     )
+    # plt.show()
 
 
 def run_evaluate_stream(args: argparse.Namespace) -> None:
@@ -538,16 +579,36 @@ def run_evaluate_stream(args: argparse.Namespace) -> None:
     # good_sentences = [10, 16, 19, 22, 26, 33, 36, 42, 46, 66, 67, 100]
     # good_sentences = [19, 26, 40, 46, 67]
     good_sentences = [19, 26, 67]
-    # for sentence_index in range(116):
-    for sentence_index in good_sentences:
+
+    good_count = 0
+    bad_count = 0
+
+    # magic to fix the GPUs
+    setup_gpus()
+    model = load_trained_model(architecture_type, which_dataset, train_words_type)
+
+    for sentence_index in range(116):
+    # for sentence_index in range(6):
+    # for sentence_index in good_sentences:
         evaluate_stream(
+            model,
             evaluation_type,
             which_dataset,
             train_words_type,
             architecture_type,
             sentence_index,
         )
-    plt.show()
+        # wasgood = input()
+        # if wasgood == "y":
+        #     good_count += 1
+        # else:
+        #     bad_count += 1
+
+    logg.debug(f"good_count: {good_count}")
+    logg.debug(f"bad_count: {bad_count}")
+    logg.debug(f"total: {bad_count+good_count}")
+
+    # plt.show()
 
 
 if __name__ == "__main__":
