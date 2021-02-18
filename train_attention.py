@@ -270,8 +270,8 @@ def hyper_train_attention(
     hypa = {
         "batch_size_type": "02",
         "conv_size_type": "02",
-        # "dataset_name": "meL04",
-        "dataset_name": "mel04L",
+        # "dataset_name": "mel04L",
+        # "dataset_name": "mel04",
         "dense_width_type": "01",
         "dropout_type": "01",
         "epoch_num_type": "02",
@@ -280,23 +280,23 @@ def hyper_train_attention(
         "lstm_units_type": "01",
         "optimizer_type": "a1",
         "query_style_type": "01",
-        "words_type": "LTnumLS",
+        # "words_type": "LTnumLS",
+        # "words_type": "LTBnumLS",
+        # "words_type": "LTnum",
     }
-    # hypa = {
-    #     "batch_size_type": "02",
-    #     "conv_size_type": "02",
-    #     "dataset_name": "mel04",
-    #     "dense_width_type": "01",
-    #     "dropout_type": "01",
-    #     "epoch_num_type": "02",
-    #     "kernel_size_type": "01",
-    #     "learning_rate_type": "03",
-    #     "lstm_units_type": "01",
-    #     "optimizer_type": "a1",
-    #     "query_style_type": "01",
-    #     "words_type": "LTnum",
-    # }
-    the_grid = [hypa]
+    the_grid = []
+
+    hypa["dataset_name"] = "mel04"
+    hypa["words_type"] = "LTBnum"
+    the_grid.append(hypa)
+    hypa["words_type"] = "LTBall"
+    the_grid.append(hypa)
+
+    hypa["dataset_name"] = "mel04L"
+    hypa["words_type"] = "LTBnumLS"
+    the_grid.append(hypa)
+    hypa["words_type"] = "LTBallLS"
+    the_grid.append(hypa)
 
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")

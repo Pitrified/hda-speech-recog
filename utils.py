@@ -137,6 +137,18 @@ def define_words_types():
     words_ltts_num_loud = copy(words_num_loud)
     words_ltts_num_loud.extend(additional_ltts_loud)
 
+    additional_background = ["_background"]
+    words_ltts_num_background = copy(words_ltts_num)
+    words_ltts_num_background.extend(additional_background)
+    words_ltts_all_background = copy(words_ltts_all)
+    words_ltts_all_background.extend(additional_background)
+
+    additional_background_loud = ["_background_loud"]
+    words_ltts_num_background_loud = copy(words_ltts_num_loud)
+    words_ltts_num_background_loud.extend(additional_background_loud)
+    words_ltts_all_background_loud = copy(words_ltts_all_loud)
+    words_ltts_all_background_loud.extend(additional_background_loud)
+
     words_types = {}
 
     words_gs_standard = {
@@ -178,6 +190,14 @@ def define_words_types():
         "LTyn": words_ltts_yn,
     }
     words_types.update(words_ltts)
+
+    words_ltts_background = {
+        "LTBall": words_ltts_all_background,
+        "LTBnum": words_ltts_num_background,
+        "LTBallLS": words_ltts_all_background_loud,
+        "LTBnumLS": words_ltts_num_background_loud,
+    }
+    words_types.update(words_ltts_background)
 
     words_universe = set(
         [

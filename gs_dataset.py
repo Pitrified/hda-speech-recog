@@ -102,8 +102,8 @@ def shorten_gs_utterances() -> None:
     logg.debug(f"orig_base_folder: {orig_base_folder}")
 
     # which words to elaborate
-    # words = words_types["all"]
-    words = words_types["num"]
+    words = words_types["all"]
+    # words = words_types["num"]
 
     loudest_template = "loudest_{}"
 
