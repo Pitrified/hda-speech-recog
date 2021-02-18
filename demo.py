@@ -57,6 +57,16 @@ class Demo:
         self.plot_downsample = 1
         self.samplerate_train = 16000
 
+        # save the training words, sorted so that they match the predictions
+        train_words = words_types[self.train_words_type]
+        self.sorted_train_words = sorted(train_words)
+        if self.sorted_train_words[0] == "_background":
+            self.sorted_train_words[0] = "Silence"
+        if self.sorted_train_words[1] == "_other_ltts":
+            self.sorted_train_words[1] = "Background conversation"
+        if self.sorted_train_words[0] == "_other_ltts":
+            self.sorted_train_words[0] = "Background conversation"
+
         # self.train_dataset = "mel04"
         # self.train_dataset = "aug07"
         # self.train_dataset = "auA07"
@@ -111,33 +121,59 @@ class Demo:
         self.audio_queue: queue.Queue[np.ndarray] = queue.Queue()
 
         # the figs and axis
-        self.fig, self.axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 12))
+        # self.fig, self.axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 12))
+
+        # self.fig = plt.figure(constrained_layout=True)
+        self.fig = plt.figure()
+        gs = self.fig.add_gridspec(3, 2)
+        self.ax_wave = self.fig.add_subplot(gs[0, 0])
+        self.ax_spec = self.fig.add_subplot(gs[1, 0])
+        self.ax_attw = self.fig.add_subplot(gs[2, 0])
+        self.ax_pred = self.fig.add_subplot(gs[:, 1])
+
+        # setup dynamic title for predictions
+        self.pred_title = self.ax_pred.text(
+            0.5,
+            # 1.01,
+            0.04,
+            "Predictions",
+            horizontalalignment="center",
+            verticalalignment="bottom",
+            transform=self.ax_pred.transAxes,
+            bbox={"facecolor": "w", "alpha": 0.9, "pad": 5},
+        )
 
         # the waveform ax
-        ax_wave = self.axes[0][0]
-        self.lines_wave = ax_wave.plot(self.audio_signal[:: self.plot_downsample, 0])
+        # self.ax_wave = self.axes[0][0]
+        self.lines_wave = self.ax_wave.plot(
+            self.audio_signal[:: self.plot_downsample, 0]
+        )
         logg.debug(f"self.lines_wave: {self.lines_wave}")
-        ax_wave.axis((0, len(self.audio_signal // self.plot_downsample), -1, 1))
-        ax_wave.set_yticks([0])
-        ax_wave.yaxis.grid(True)
+        self.ax_wave.axis((0, len(self.audio_signal // self.plot_downsample), -1, 1))
+        self.ax_wave.set_yticks([0])
+        self.ax_wave.yaxis.grid(True)
 
         # the spectrogram ax
-        ax_spec = self.axes[1][0]
-        self.im_spec = ax_spec.imshow(self.spec, origin="lower", vmin=-80, vmax=-10)
+        # self.ax_spec = self.axes[1][0]
+        self.im_spec = self.ax_spec.imshow(
+            self.spec, origin="lower", vmin=-80, vmax=-10, aspect="auto"
+        )
         logg.debug(f"self.im_spec: {self.im_spec}")
 
         # the attention weights ax
-        ax_attw = self.axes[0][1]
-        # self.im_attw = ax_attw.imshow(self.att_weights, origin="lower", vmin=0, vmax=1)
-        self.im_attw = ax_attw.imshow(
-            self.att_weights, origin="lower", vmin=0, vmax=0.005
+        # self.ax_attw = self.axes[0][1]
+        # self.im_attw = self.ax_attw.imshow(self.att_weights, origin="lower", vmin=0, vmax=1)
+        self.im_attw = self.ax_attw.imshow(
+            self.att_weights, origin="lower", vmin=0, vmax=0.005, aspect="auto"
         )
-        # self.im_attw = ax_attw.imshow(self.att_weights, origin="lower")
+        # self.im_attw = self.ax_attw.imshow(self.att_weights, origin="lower")
         logg.debug(f"self.im_attw: {self.im_attw}")
 
         # the prediction ax
-        ax_pred = self.axes[1][1]
-        self.im_pred = ax_pred.imshow(self.all_pred, origin="lower", vmin=0, vmax=1)
+        # self.ax_pred = self.axes[1][1]
+        self.im_pred = self.ax_pred.imshow(
+            self.all_pred, origin="lower", vmin=0, vmax=1, aspect="auto"
+        )
         logg.debug(f"self.im_pred: {self.im_pred}")
 
         # fig setup
@@ -167,7 +203,7 @@ class Demo:
         therefore the queue tends to contain multiple blocks of audio data.
         """
         logg = logging.getLogger(f"c.{__name__}.update_plots")
-        # logg.setLevel("INFO")
+        logg.setLevel("INFO")
         logg.debug("--------------- Start update_plots ---------------")
 
         #################################################################
@@ -260,6 +296,13 @@ class Demo:
         self.all_pred[-1, :] = pred[0]
         self.im_pred.set_data(self.all_pred)
 
+        # get the predicted word
+        pred_index = np.argmax(pred[0])
+        pred_word = self.sorted_train_words[pred_index]
+        logg.debug(f"sorted pred_word: {pred_word} pred_index {pred_index}")
+        # self.ax_pred.set_title(f"Predicted: {pred_word}")
+        self.pred_title.set_text(f"Predicted: {pred_word}")
+
         ###### plot the weights
 
         # if the att_weights are one dimensiona, add the dims
@@ -292,6 +335,7 @@ class Demo:
         all_artists.append(self.im_spec)
         all_artists.append(self.im_pred)
         all_artists.append(self.im_attw)
+        all_artists.append(self.pred_title)
 
         return all_artists
 
@@ -342,6 +386,20 @@ class Demo:
             "net_type": "VAN",
             "optimizer_type": "a1",
             # "words_type": "LTBnum"
+            "words_type": self.train_words_type,
+        }
+
+        # AAN_opa1_lr03_bs32_en15_dsaug14_wLTnum
+
+        hypa = {
+            "batch_size_type": "32",
+            # "dataset_name": "aug14",
+            "dataset_name": self.train_dataset,
+            "epoch_num_type": "15",
+            "learning_rate_type": "03",
+            "net_type": "AAN",
+            "optimizer_type": "a1",
+            # "words_type": "LTnum"
             "words_type": self.train_words_type,
         }
 
