@@ -32,57 +32,36 @@ class Demo:
     def __init__(
         self,
         device,
-        window,
-        interval,
-        samplerate_input,
-        channels,
-        train_dataset,
-        train_words_type,
+        window: int,
+        interval: int,
+        samplerate_input: int,
+        channels: ty.List[int],
+        arch_type: str,
+        train_words_type: str,
     ) -> None:
         """MAKEDOC: what is __init__ doing?"""
         logg = logging.getLogger(f"c.{__name__}.__init__")
         # logg.setLevel("INFO")
         logg.debug("Start __init__")
 
+        # save params
         self.device = device
         self.window = window
         self.interval = interval
         self.samplerate_input = int(samplerate_input)
         self.channels = channels
-        self.train_dataset = train_dataset
+        self.mapping = [c - 1 for c in self.channels]  # Channel numbers start with 1
+        self.arch_type = arch_type
         self.train_words_type = train_words_type
 
-        self.mapping = [c - 1 for c in self.channels]  # Channel numbers start with 1
+        logg.debug(f"self.window: {self.window}")
 
+        # define constants
         self.plot_downsample = 1
         self.samplerate_train = 16000
 
-        # save the training words, sorted so that they match the predictions
-        train_words = words_types[self.train_words_type]
-        self.sorted_train_words = sorted(train_words)
-        if self.sorted_train_words[0] == "_background":
-            self.sorted_train_words[0] = "Silence"
-        if self.sorted_train_words[1] == "_other_ltts":
-            self.sorted_train_words[1] = "Background conversation"
-        if self.sorted_train_words[0] == "_other_ltts":
-            self.sorted_train_words[0] = "Background conversation"
-
-        # self.train_dataset = "mel04"
-        # self.train_dataset = "aug07"
-        # self.train_dataset = "auA07"
-        # self.train_dataset = "aug14"
-
-        # the trained model with additional outputs
-        # self.att_weight_model = self.load_trained_model_area(self.train_dataset)
-        self.load_trained_model_area()
-        # self.load_trained_model_att()
-
-        # grab the output dimentions
-        # logg.debug(f"self.att_weight_model.outputs: {self.att_weight_model.outputs}")
-        self.pred_output = self.att_weight_model.outputs[0]
-        # logg.debug(f"self.weight_output.shape: {self.weight_output.shape}")
-        self.weight_output = self.att_weight_model.outputs[1]
-        # logg.debug(f"self.weight_output.shape: {self.weight_output.shape}")
+        # setup the model
+        self.setup_model()
 
         # info on the spectrogram
         self.get_spec_aug_info()
@@ -93,16 +72,9 @@ class Demo:
         # info on the predictions
         self.max_old_pred = 50
         # self.num_labels = 11
-        self.num_labels = self.pred_output.shape[1]
         self.all_pred = np.zeros((self.max_old_pred, self.num_labels))
 
         # info on the att_weights
-        # self.att_weight_shape = (16, 1)
-        self.att_weight_shape = self.weight_output.shape[1 : 2 + 1]
-        logg.debug(f"self.att_weight_shape: {self.att_weight_shape}")
-        if len(self.att_weight_shape) == 1:
-            self.att_weight_shape = (self.att_weight_shape[0], 1)
-        logg.debug(f"self.att_weight_shape: {self.att_weight_shape}")
         self.att_weights = np.zeros(self.att_weight_shape)
 
         # the input audio stream
@@ -175,15 +147,63 @@ class Demo:
             self.all_pred, origin="lower", vmin=0, vmax=1, aspect="auto"
         )
         logg.debug(f"self.im_pred: {self.im_pred}")
+        self.ax_pred.set_xticks(np.arange(self.num_labels))
+        self.ax_pred.set_xticklabels(self.sorted_train_words, rotation=90)
 
         # fig setup
-        self.fig.suptitle("The demo")
+        self.fig.suptitle(f"Demo for {self.arch_type}")
         self.fig.tight_layout()
 
         # setup the animations
         self.animation_waveform = FuncAnimation(
             self.fig, self.update_plots, interval=self.interval, blit=True
         )
+
+    def setup_model(self) -> None:
+        r"""MAKEDOC: what is setup_model doing?"""
+        logg = logging.getLogger(f"c.{__name__}.setup_model")
+        # logg.setLevel("INFO")
+        logg.debug("Start setup_model")
+
+        ###### save the training words, sorted so that they match the predictions
+        train_words = words_types[self.train_words_type]
+        self.sorted_train_words = sorted(train_words)
+        if self.sorted_train_words[0] == "_background":
+            self.sorted_train_words[0] = "Silence"
+        if self.sorted_train_words[1] == "_other_ltts":
+            self.sorted_train_words[1] = "Conversation"
+        if self.sorted_train_words[0] == "_other_ltts":
+            self.sorted_train_words[0] = "Conversation"
+
+        ###### build the trained model with additional outputs
+        if self.arch_type.startswith("ATT"):
+            self.load_trained_model_att()
+        elif self.arch_type.startswith("VAN") or self.arch_type.startswith("AAN"):
+            self.load_trained_model_area()
+
+        ###### grab the output dimentions
+
+        # get the number of labels
+        # logg.debug(f"self.att_weight_model.outputs: {self.att_weight_model.outputs}")
+        self.pred_output = self.att_weight_model.outputs[0]
+        self.num_labels: int = self.pred_output.shape[1]
+
+        # get the shape of the attention weights layer
+        self.weight_output = self.att_weight_model.outputs[1]
+        logg.debug(f"self.weight_output.shape: {self.weight_output.shape}")
+        # self.att_weight_shape = (16, 1)
+        att_weight_shape = self.weight_output.shape[1 : 2 + 1]
+        logg.debug(f"att_weight_shape: {att_weight_shape}")
+
+        self.att_weight_shape: ty.Tuple[int, int] = (0, 0)
+
+        # if it is an att model you need to add a dimension
+        if len(att_weight_shape) == 1:
+            # self.att_weight_shape = (att_weight_shape[0], 1)
+            self.att_weight_shape = (1, att_weight_shape[0])
+        else:
+            self.att_weight_shape = att_weight_shape
+        logg.debug(f"self.att_weight_shape: {self.att_weight_shape}")
 
     def audio_callback(self, indata, frames, time, status) -> None:
         """MAKEDOC: what is audio_callback doing?"""
@@ -311,8 +331,9 @@ class Demo:
         logg.debug(f"this_weight.shape: {this_weight.shape}")
         # logg.debug(f"this_weight: {this_weight}")
 
+        # MAYBE check if you are using ATT
         if len(this_weight.shape) == 1:
-            self.att_weights = np.expand_dims(this_weight, axis=-1)
+            self.att_weights = np.expand_dims(this_weight, axis=-1).T
 
         else:
             # self.att_weights = att_weights[0][:, :, 0]
@@ -349,9 +370,9 @@ class Demo:
 
         if self.train_dataset.startswith("me"):
             spec_dict = get_spec_dict()
-            self.mel_kwargs = spec_dict[self.train_dataset]
+            self.mel_kwargs: ty.Dict[str, ty.Any] = spec_dict[self.train_dataset]
             spec_shape_dict = get_spec_shape_dict()
-            self.spec_shape = spec_shape_dict[self.train_dataset]
+            self.spec_shape: ty.Tuple[int, int] = spec_shape_dict[self.train_dataset]
 
         elif self.train_dataset.startswith("au"):
             aug_dict = get_aug_dict()
@@ -364,84 +385,85 @@ class Demo:
         # logg.setLevel("INFO")
         logg.debug("Start load_trained_model_area")
 
-        hypa = {
-            "batch_size_type": "32",
-            # "dataset_name": "aug07",
-            "dataset_name": self.train_dataset,
-            "epoch_num_type": "15",
-            "learning_rate_type": "05",
-            "net_type": "VAN",
-            "optimizer_type": "a1",
-            # "words_type": "LTnum",
-            "words_type": self.train_words_type,
-        }
-        use_validation = True
+        ###### get the hypas for this model/words combo
 
-        hypa = {
-            "batch_size_type": "32",
-            # "dataset_name": "mel04",
-            "dataset_name": self.train_dataset,
-            "epoch_num_type": "15",
-            "learning_rate_type": "03",
-            "net_type": "VAN",
-            "optimizer_type": "a1",
-            # "words_type": "LTBnum"
-            "words_type": self.train_words_type,
-        }
+        if self.arch_type.startswith("VAN"):
 
-        # AAN_opa1_lr03_bs32_en15_dsaug14_wLTnum
+            if self.train_words_type == "LTnum":
 
-        hypa = {
-            "batch_size_type": "32",
-            # "dataset_name": "aug14",
-            "dataset_name": self.train_dataset,
-            "epoch_num_type": "15",
-            "learning_rate_type": "03",
-            "net_type": "AAN",
-            "optimizer_type": "a1",
-            # "words_type": "LTnum"
-            "words_type": self.train_words_type,
-        }
+                # which is this FIXME add the filename
+                hypa = {
+                    "batch_size_type": "32",
+                    "dataset_name": "aug07",
+                    "epoch_num_type": "15",
+                    "learning_rate_type": "05",
+                    "net_type": "VAN",
+                    "optimizer_type": "a1",
+                    "words_type": "LTnum",
+                }
+                use_validation = True
 
-        # hypa = {
-        #     "batch_size_type": "32",
-        #     # "dataset_name": "auA07",
-        #     "dataset_name": self.train_dataset,
-        #     "epoch_num_type": "15",
-        #     "learning_rate_type": "03",
-        #     "net_type": "VAN",
-        #     "optimizer_type": "a1",
-        #     # "words_type": "LTnumLS",
-        #     "words_type": self.train_words_type,
-        # }
-        # use_validation = False
+            elif self.train_words_type == "LTBnum":
+                # which is this FIXME add the filename
+                hypa = {
+                    "batch_size_type": "32",
+                    "dataset_name": "mel04",
+                    "epoch_num_type": "15",
+                    "learning_rate_type": "03",
+                    "net_type": "VAN",
+                    "optimizer_type": "a1",
+                    "words_type": "LTBnum",
+                }
+                use_validation = True
 
-        # hypa = {
-        #     "batch_size_type": "32",
-        #     # "dataset_name": "aug14",
-        #     "dataset_name": train_dataset,
-        #     "epoch_num_type": "15",
-        #     "learning_rate_type": "03",
-        #     "net_type": "AAN",
-        #     "optimizer_type": "a1",
-        #     "words_type": "LTnum",
-        # }
-        # use_validation = True
+            else:
+                raise ValueError(f"Not available {self.train_words_type}")
 
+            # hypa = {
+            #     "batch_size_type": "32",
+            #     # "dataset_name": "auA07",
+            #     "epoch_num_type": "15",
+            #     "learning_rate_type": "03",
+            #     "net_type": "VAN",
+            #     "optimizer_type": "a1",
+            #     # "words_type": "LTnumLS",
+            # }
+            # use_validation = False
+
+        elif self.arch_type.startswith("AAN"):
+
+            if self.train_words_type == "LTnum":
+                # AAN_opa1_lr03_bs32_en15_dsaug14_wLTnum
+                hypa = {
+                    "batch_size_type": "32",
+                    "dataset_name": "aug14",
+                    "epoch_num_type": "15",
+                    "learning_rate_type": "03",
+                    "net_type": "AAN",
+                    "optimizer_type": "a1",
+                    "words_type": "LTnum",
+                }
+                use_validation = True
+
+            else:
+                raise ValueError(f"Not available {self.train_words_type}")
+
+        ###### get info from the hypas used
         self.batch_size = int(hypa["batch_size_type"])
+        self.train_dataset = hypa["dataset_name"]
+        self.train_words_type = hypa["words_type"]
 
+        ###### build the model
         model_name = build_area_name(hypa, use_validation)
-
         model_folder = Path("trained_models") / "area"
         model_path = model_folder / f"{model_name}.h5"
-
         model = tf_models.load_model(model_path)
 
         # grab the last layer that has no name because you were a fool
         name_output_layer = model.layers[-1].name
         logg.debug(f"name_output_layer: {name_output_layer}")
 
-        att_weight_model = tf_models.Model(
+        self.att_weight_model = tf_models.Model(
             inputs=model.input,
             outputs=[
                 model.get_layer(name_output_layer).output,
@@ -449,73 +471,126 @@ class Demo:
             ],
         )
 
-        self.att_weight_model = att_weight_model
-
     def load_trained_model_att(self) -> None:
         """MAKEDOC: what is load_trained_model_att doing?"""
         logg = logging.getLogger(f"c.{__name__}.load_trained_model_att")
         # logg.setLevel("INFO")
         logg.debug("Start load_trained_model_att")
 
-        # ATT_ct02_dr01_ks01_lu01_qt05_dw01_opa1_lr03_bs02_en02_dsaug07_wLTnum
-        hypa = {
-            "batch_size_type": "02",
-            "conv_size_type": "02",
-            # "dataset_name": "aug07",
-            "dataset_name": self.train_dataset,
-            "dense_width_type": "01",
-            "dropout_type": "01",
-            "epoch_num_type": "02",
-            "kernel_size_type": "01",
-            "learning_rate_type": "03",
-            "lstm_units_type": "01",
-            "optimizer_type": "a1",
-            "query_style_type": "05",
-            # "words_type": "LTnum",
-            "words_type": self.train_words_type,
-        }
-        use_validation = True
+        if self.arch_type.startswith("ATT"):
 
-        hypa = {
-            "batch_size_type": "02",
-            "conv_size_type": "02",
-            # "dataset_name": "meL04",
-            "dataset_name": self.train_dataset,
-            "dense_width_type": "01",
-            "dropout_type": "01",
-            "epoch_num_type": "02",
-            "kernel_size_type": "01",
-            "learning_rate_type": "03",
-            "lstm_units_type": "01",
-            "optimizer_type": "a1",
-            "query_style_type": "01",
-            # "words_type": "LTnumLS"
-            "words_type": self.train_words_type,
-        }
-        use_validation = False
+            if self.train_words_type == "LTnum":
 
-        # this is valid for
-        # hypa["dataset_name"] = "mel04"
-        # hypa["words_type"] = "LTBnum"
-        # hypa["words_type"] = "LTBall"
-        # hypa["dataset_name"] = "mel04L"
-        # hypa["words_type"] = "LTBnumLS"
-        # hypa["words_type"] = "LTBallLS"
-        hypa = {
-            "batch_size_type": "02",
-            "conv_size_type": "02",
-            "dataset_name": self.train_dataset,
-            "dense_width_type": "01",
-            "dropout_type": "01",
-            "epoch_num_type": "02",
-            "kernel_size_type": "01",
-            "learning_rate_type": "03",
-            "lstm_units_type": "01",
-            "optimizer_type": "a1",
-            "query_style_type": "01",
-            "words_type": self.train_words_type,
-        }
-        use_validation = True
+                # ATT_ct02_dr01_ks01_lu01_qt05_dw01_opa1_lr03_bs02_en02_dsaug07_wLTnum
+                hypa = {
+                    "batch_size_type": "02",
+                    "conv_size_type": "02",
+                    "dataset_name": "aug07",
+                    "dense_width_type": "01",
+                    "dropout_type": "01",
+                    "epoch_num_type": "02",
+                    "kernel_size_type": "01",
+                    "learning_rate_type": "03",
+                    "lstm_units_type": "01",
+                    "optimizer_type": "a1",
+                    "query_style_type": "05",
+                    "words_type": "LTnum",
+                }
+                use_validation = True
+
+            elif self.train_words_type == "LTnumLS":
+
+                # which is this FIXME add the filename
+                hypa = {
+                    "batch_size_type": "02",
+                    "conv_size_type": "02",
+                    "dataset_name": "meL04",
+                    "dense_width_type": "01",
+                    "dropout_type": "01",
+                    "epoch_num_type": "02",
+                    "kernel_size_type": "01",
+                    "learning_rate_type": "03",
+                    "lstm_units_type": "01",
+                    "optimizer_type": "a1",
+                    "query_style_type": "01",
+                    "words_type": "LTnumLS",
+                }
+                use_validation = False
+
+            elif self.train_words_type == "LTBnum":
+                hypa = {
+                    "batch_size_type": "02",
+                    "conv_size_type": "02",
+                    "dataset_name": "mel04",
+                    "dense_width_type": "01",
+                    "dropout_type": "01",
+                    "epoch_num_type": "02",
+                    "kernel_size_type": "01",
+                    "learning_rate_type": "03",
+                    "lstm_units_type": "01",
+                    "optimizer_type": "a1",
+                    "query_style_type": "01",
+                    "words_type": "LTBnum",
+                }
+                use_validation = True
+
+            elif self.train_words_type == "LTBall":
+                hypa = {
+                    "batch_size_type": "02",
+                    "conv_size_type": "02",
+                    "dataset_name": "mel04",
+                    "dense_width_type": "01",
+                    "dropout_type": "01",
+                    "epoch_num_type": "02",
+                    "kernel_size_type": "01",
+                    "learning_rate_type": "03",
+                    "lstm_units_type": "01",
+                    "optimizer_type": "a1",
+                    "query_style_type": "01",
+                    "words_type": "LTBall",
+                }
+                use_validation = True
+
+            elif self.train_words_type == "LTBnumLS":
+                hypa = {
+                    "batch_size_type": "02",
+                    "conv_size_type": "02",
+                    "dataset_name": "mel04L",
+                    "dense_width_type": "01",
+                    "dropout_type": "01",
+                    "epoch_num_type": "02",
+                    "kernel_size_type": "01",
+                    "learning_rate_type": "03",
+                    "lstm_units_type": "01",
+                    "optimizer_type": "a1",
+                    "query_style_type": "01",
+                    "words_type": "LTBnumLS",
+                }
+                use_validation = True
+
+            elif self.train_words_type == "LTBallLS":
+                hypa = {
+                    "batch_size_type": "02",
+                    "conv_size_type": "02",
+                    "dataset_name": "mel04L",
+                    "dense_width_type": "01",
+                    "dropout_type": "01",
+                    "epoch_num_type": "02",
+                    "kernel_size_type": "01",
+                    "learning_rate_type": "03",
+                    "lstm_units_type": "01",
+                    "optimizer_type": "a1",
+                    "query_style_type": "01",
+                    "words_type": "LTBallLS",
+                }
+                use_validation = True
+
+            else:
+                raise ValueError(f"Not available {self.train_words_type}")
+
+        self.batch_size = int(hypa["batch_size_type"])
+        self.train_dataset = hypa["dataset_name"]
+        self.train_words_type = hypa["words_type"]
 
         model_name = build_attention_name(hypa, use_validation)
         logg.debug(f"model_name: {model_name}")
@@ -556,22 +631,28 @@ def parse_arguments() -> argparse.Namespace:
     """Setup CLI interface"""
     parser = argparse.ArgumentParser(description="")
 
-    tra_types = [w for w in words_types.keys() if not w.startswith("_")]
     parser.add_argument(
-        "-tw",
-        "--train_words_type",
+        "-at",
+        "--arch_type",
         type=str,
-        default="f2",
-        choices=tra_types,
-        help="Words the dataset was trained on",
+        default="VAN",
+        help="Which model to use",
     )
 
     parser.add_argument(
-        "-dn",
-        "--dataset_name",
+        "-twt",
+        "--train_words_type",
         type=str,
-        default="mel01",
-        help="Name of the dataset folder",
+        default="LTBnum",
+        help="Which set of words to predict ",
+    )
+
+    parser.add_argument(
+        "-in",
+        "--interval",
+        type=int,
+        default=30,
+        help="Milliseconds between frame updates",
     )
 
     # last line to parse the args
@@ -621,8 +702,8 @@ def run_demo(args: argparse.Namespace) -> None:
     logg = logging.getLogger(f"c.{__name__}.run_demo")
     logg.debug("Starting run_demo")
 
+    arch_type = args.arch_type
     train_words_type = args.train_words_type
-    dataset_name = args.dataset_name
 
     # magic to fix the GPUs
     setup_gpus()
@@ -639,7 +720,8 @@ def run_demo(args: argparse.Namespace) -> None:
 
     # window = 200
     # interval = 1000
-    interval = 30
+    # interval = 30
+    interval = args.interval
     # interval = 100
     # interval = 500
     # blocksize = 0
@@ -653,7 +735,7 @@ def run_demo(args: argparse.Namespace) -> None:
         interval,
         samplerate_input,
         channels,
-        train_dataset=dataset_name,
+        arch_type=arch_type,
         train_words_type=train_words_type,
     )
 
