@@ -68,6 +68,8 @@ def define_words_types():
 
     words_yesno = ["yes", "no"]
 
+    words_leftright = ["left", "right"]
+
     words_kaggle_1 = [
         "yes",
         "no",
@@ -158,6 +160,7 @@ def define_words_types():
         "k1": words_kaggle_1,
         "w2": words_task_20,
         "yn": words_yesno,
+        "lr": words_leftright,
         "f1": ["happy", "learn", "wow", "visual"],
         "f2": ["backward", "eight", "go", "yes"],
     }

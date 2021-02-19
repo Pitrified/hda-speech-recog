@@ -112,22 +112,29 @@
 \maketitle
 
 \begin{abstract}
-    This report covers the work done to solve the speech command recognition task,
-    following three approaches:
-    Convolutional Neural Networks,
-    transfer learning using a pre-trained Xception architecture,
-    and a recurrent attention model.
+    This report covers the work done to solve the speech command recognition
+    task, following four approaches:
+    a convolutional neural network,
+    transfer learning using a pre-trained image-classifying architecture,
+    a recurrent attention model,
+    and convolutional attention model.
 
-    A new method to compute the attention weight is proposed, using a Convolutional Neural Network to evaluate the scores, both directly from the spectrogram and from the LSTM features.
+    % A different method to compute the attention weight for the recurrent
+    % model is proposed, using convolutional layers to compute the scores, both
+    % directly from the spectrogram and from the LSTM features.
 
-    Experiments to identify the best input preprocess and hyper-parameters are performed for the three architectures.
+    Experiments to identify the best input preprocess and hyper-parameters are
+    performed for the four architectures.
 
-    Results are compared with the results obtained in the paper that proposed the attention model.
-    (IN REALTA LORO SU TASK LEGGERMENTE DIVERSA)
+    Streaming: keyword spotting adaptation of the model
+
+    Some results
 \end{abstract}
 
 \IEEEkeywords
-Speech Command Recognition
+Speech Command Recognition,
+Keyword Spotting,
+Attention Mechanism
 \endIEEEkeywords
 
 \input{intro}

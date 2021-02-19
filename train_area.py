@@ -145,7 +145,7 @@ def hyper_train_area(
     ###### the net type
     nt = []
     # nt.append("SIM")
-    # nt.append("SI2")
+    nt.append("SI2")
     nt.append("AAN")
     nt.append("VAN")
     hypa_grid["net_type"] = nt
@@ -156,7 +156,8 @@ def hyper_train_area(
     # hypa_grid["words_type"] = ["LTnum", "yn"]
     # hypa_grid["words_type"] = ["LTnum", "yn", "f1", "k1"]
     # hypa_grid["words_type"] = ["LTBnum", "LTBall"]
-    hypa_grid["words_type"] = ["LTBnumLS", "LTBallLS"]
+    # hypa_grid["words_type"] = ["LTBnumLS", "LTBallLS"]
+    hypa_grid["words_type"] = ["lr"]
 
     ###### the dataset to train on
     ds = []
@@ -164,11 +165,11 @@ def hyper_train_area(
     # TODO VAN on LTall
     # TODO AAN/SIM/VAN on LTnum
     # TODO AAN on LTnum for all datasets, only one lr
-    # ds.extend(["mel04"])
-    # ds.extend(["mela1"])
-    # ds.extend(["aug07"])
-    # ds.extend(["aug14"])
-    # ds.extend(["aug15"])
+    ds.extend(["mel04"])
+    ds.extend(["mela1"])
+    ds.extend(["aug07"])
+    ds.extend(["aug14"])
+    ds.extend(["aug15"])
 
     # TODO auL6789 auL18901 on all net_type
     # TODO auA5678 on VAN (on LTnumLS)
@@ -177,7 +178,7 @@ def hyper_train_area(
     # ds.extend(["auA01", "auA02", "auA03", "auA04"])
     # ds.extend(["auA05", "auA06", "auA07", "auA08"])
     # ds.extend(["auA04"])
-    ds.extend(["mel04L"])
+    # ds.extend(["mel04L"])
 
     # TODO just the 3 best per architecture on noval
 
