@@ -14,13 +14,47 @@ Deep Neural Networks, in more recent years, provided efficient solutions
 applied to exploit the spatial correlations in the spectrograms while keeping a
 small memory footprint for the model \cite{sainathconvolutional}.
 % RNN
+Long short-term memory cells are used to better deal with long time
+dependencies within the signal, allowing some delay in the decision while
+keeping an internal state that acts as memory \cite{fernandezRNNKWS}.
 
-Show attend tell
+% Attention mechanism
+The attention mechanism allows the model to selectively focus on some portions
+of the input data that is judged to be more relevant.
+% Attention wide variety of tasks 
+This mechanism has been applied successfully to a variety of tasks, such as
+machine translation \cite{luong2015effective}, \cite{bahdanau2016neural}, and
+image caption generation \cite{xu2016show}.
+% Andrade
+The attention mechanism was adapted to the speech commands recognition task
+\cite{2018arXiv180808929C}, where it was used in conjunction to LSTMs focusing
+on single word recognition.
+% Federated learning for privacy concerns
+A federated learning approach can be used to train a central model on the local
+data of many users \cite{leroy2019federated}, addressing concerns regarding the
+privacy of the training data.
+% Microcontrollers
+The power and memory requirements, are carefully investigated in
+\cite{zhang2018hello}, where a resource constrained neural network architecture
+exploration is performed, to maximize the performances within a given set of
+constraints. On top of that, Neural Network Quantization is used to shrink the
+otained models even more, using the quantization technique presented in
+\cite{10.1145/2847263.2847265}.
+% Tsetlin Machines
+A completely different learning framework is used in \cite{granmo2021tsetlin},
+where a learning algorithm called the Tsetlin Machine is applied.
+The core of this machine is the Tsetlin Automaton,
+that uses a penalty/reward signal to train the automaton, whose decisions are
+combined with a clause module to create logic propositions that describe the 
+input features.
+% A learning automata powered machine is used to 
+Application-specific integrated circuit (ASIC) exist for this architecture,
+allowing for extremely energy-efficient inference.
+% Tsetlin machine (TM) is evaluated in the KWS-AI design in place of the
+% traditional perceptron based NNs.
+% The machine operates through deriving propositional logic that describes the
+% input features.
+% It has shown great potential over NN based models in delivering energy frugal AI application while maintaining faster convergence and high learning efficacy
 
-Attention bahanu e l'altro tipo
 
-Federated learning for privacy concerns
 
-Tsetlin Machines
-
-Microcontrollers

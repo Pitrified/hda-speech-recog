@@ -70,6 +70,8 @@ def define_words_types():
 
     words_leftright = ["left", "right"]
 
+    words_similar = ["seven", "no", "stop", "yes", "five", "nine", "one", "two", "zero"]
+
     words_kaggle_1 = [
         "yes",
         "no",
@@ -161,6 +163,7 @@ def define_words_types():
         "w2": words_task_20,
         "yn": words_yesno,
         "lr": words_leftright,
+        "similar": words_similar,
         "f1": ["happy", "learn", "wow", "visual"],
         "f2": ["backward", "eight", "go", "yes"],
     }

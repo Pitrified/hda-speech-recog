@@ -157,7 +157,8 @@ def hyper_train_area(
     # hypa_grid["words_type"] = ["LTnum", "yn", "f1", "k1"]
     # hypa_grid["words_type"] = ["LTBnum", "LTBall"]
     # hypa_grid["words_type"] = ["LTBnumLS", "LTBallLS"]
-    hypa_grid["words_type"] = ["lr"]
+    # hypa_grid["words_type"] = ["lr"]
+    hypa_grid["words_type"] = ["similar"]
 
     ###### the dataset to train on
     ds = []
