@@ -111,28 +111,32 @@
 
 \maketitle
 
-\begin{abstract}
-    This report covers the work done to solve the speech command recognition
-    task, following four approaches:
-    a convolutional neural network,
-    transfer learning using a pre-trained image-classifying architecture,
-    a recurrent attention model,
-    and convolutional attention model.
-
-    % A different method to compute the attention weight for the recurrent
-    % model is proposed, using convolutional layers to compute the scores, both
-    % directly from the spectrogram and from the LSTM features.
-
-    Experiments to identify the best input preprocess and hyper-parameters are
-    performed for the four architectures.
-
-    Streaming: keyword spotting adaptation of the model
-
-    Some results
+\begin{abstract} This report covers the work done to solve the speech command
+    recognition task, following four approaches: a convolutional neural
+    network, transfer learning using a pre-trained image-classifying
+    architecture, a recurrent attention model, and a convolutional attention
+    model.
+    % att query
+    A different method to compute the attention weight for the recurrent model
+    is tested, using convolutional layers to compute the scores, both directly
+    from the spectrogram and from the LSTM features.
+    % hypa
+    Experiments to identify the best input preprocess and model
+    hyper-parameters are performed for the four architectures.
+    % Streaming: keyword spotting adaptation of the model
+    The models' performances were tested in an online fashion, evaluating the
+    keyword spotting capabilities on an audio stream.
+    % results
+    The convolutional+attention model reached 99.89\% accuracy on the ``yes/no''
+    task, 98.63\% on a 10+2 task composed of 10 words, one silence, and one
+    background conversation classes; and 95.59\% on the 35+2 task that contains
+    all the available words.
+    %
+    % DONE: Some results 9863 VAN on LTBnum 999 on yn 9665 SI2 on LTall 9559
+    % VAN on LTBall
 \end{abstract}
 
 \IEEEkeywords
-Speech Command Recognition,
 Keyword Spotting,
 Attention Mechanism
 \endIEEEkeywords

@@ -149,6 +149,8 @@ def get_spec_dict():
         "mel02": {"n_mels": 64, "n_fft": 4096, "hop_length": 1024},  # (64, 16)
         "mel03": {"n_mels": 64, "n_fft": 2048, "hop_length": 512},  # (64, 32)
         "mel04": {"n_mels": 64, "n_fft": 1024, "hop_length": 256},  # (64, 64)
+        "mel04a": {"n_mels": 64, "n_fft": 512, "hop_length": 256},  # (64, 64)
+        "mel04b": {"n_mels": 64, "n_fft": 2048, "hop_length": 256},  # (64, 64)
         "mel05": {"n_mels": 128, "n_fft": 1024, "hop_length": 128},  # (128, 128)
         "mel06": {"n_mels": 128, "n_fft": 1024, "hop_length": 256},  # (128, 64)
         "mel07": {"n_mels": 128, "n_fft": 2048, "hop_length": 256},  # (128, 64)

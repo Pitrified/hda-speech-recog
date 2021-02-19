@@ -167,10 +167,37 @@ def evaluate_results_area() -> None:
         logg.info(f"\nOnly on {words_type}")
         logg.info(f"{df_f.head(30)}\n{df_f.tail()}")
 
-    df_f = results_df
-    df_f = df_f.query("words == 'LTnumLS'")
-    df_f = df_f.sort_values("fscore", ascending=False)
-    logg.info(f"{df_f.head(10)}")
+    word_res = [
+        "all",
+        "LTall",
+        "LTBall",
+        "allLS",
+        "LTallLS",
+        "LTBallLS",
+        "BallLS",
+        "Ball",
+        "num",
+        "LTnum",
+        "LTBnum",
+        "numLS",
+        "LTnumLS",
+        "LTBnumLS",
+        "BnumLS",
+        "Bnum",
+    ]
+    for word in word_res:
+        df_f = results_df
+        df_f = df_f.query(f"words == '{word}'")
+        if len(df_f) == 0:
+            continue
+        df_f = df_f.sort_values("fscore", ascending=False)
+        logg.info(f"\nOnly on {word}")
+        logg.info(f"{df_f.head(10)}")
+
+    # df_f = results_df
+    # df_f = df_f.query("words == 'LTnumLS'")
+    # df_f = df_f.sort_values("fscore", ascending=False)
+    # logg.info(f"{df_f.head(10)}")
 
 
 def load_trained_model_area(

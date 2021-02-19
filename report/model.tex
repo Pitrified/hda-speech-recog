@@ -2,19 +2,37 @@
 
 \section{Processing Pipeline}
 \label{sec:processing_architecture}
+% High level descripion of the processing flow:
 
-High level descripion of the processing flow:
+For each architecture used in this report, the high-level processing flow is
+mostly the same:
+\begin{enumerate}
+    \item Preprocess the signals by extracting the loudest section
+    \item Extract speech features using mel spectrogram or MFCCs
+    \item Augment the data with image warping
+    \item Classify the augmented speech features using a Neural Network
+\end{enumerate}
+% Throughout the report: extract Spectrograms, classify image.
+The first and third steps are optional, and their impact on the performance was
+evaluated.
 
-Throughout the report: extract Spectrograms, classify image.
+Most of the work is focused on the classification section of the pipeline, and
+four architectures were evaluated:
+\begin{itemize}
+    \item Standard Convolutional Neural Network
+    \item Big pre-trained image classifiers (e.g. Xception), adapted with
+        transfer learning to this problem
+    \item Recurrent model with attention mechanism
+    \item Convolutional model with attention mechanism
+\end{itemize}
 
-Some experiments extract only the loudest section of the inputs.
-
-Test against a stream of sounds.
+Finally, the models were tested on an audio stream rather than an audio sample
+containing one command, to evaluate their performances with respect to online
+keyword spotting.
+% Test against a stream of sounds.
 
 \section{Signals and Features}
 \label{sec:model}
-
-TODO: somewhere talk about silence
 
 \subsection{Input Datasets}
 
@@ -48,7 +66,7 @@ The Speech Commands dataset was preprocessed, extracting for each $1$ second
 utterance the loudest $0.5$ second section, using a simple analysis of the
 signal's power.
 
-TODO: comparison of 1 sec clip and loudest section, with spectrograms
+% MAYBE: comparison of 1 sec clip and loudest section, with spectrograms
 
 \subsubsection{Free Spoken Digit Dataset}
 
@@ -65,27 +83,39 @@ the performances on fresh data.
 
 \subsubsection{LibriTTS}
 
-% The performances of the models were also measured with a audio streaming task.
-% Instead of using as inputs 
-To evaluate the models in a streaming setting,
-a part of the LibriTTS dataset was used \cite{zen2019libritts}.
-This dataset contains approximately $585$ hours of English speech, aligned at
-sentence level.
+To evaluate the models in a streaming setting, a part of the LibriTTS dataset
+was used \cite{zen2019libritts}. This dataset contains approximately $585$
+hours of English speech, aligned at sentence level.
+%
 Both original and normalized text is included (e.g. ``June $9$, $1872$'' is
 converted in ``june ninth eighteen seventy two''), and each sentence is saved
 in \textit{.wav} format at $24$ KHz rate.
+%
 Metadata information regarding the speakers, the books and the chapters is
-available, but was not needed in this project.
-The dataset is released under the Creative Commons Attribution $4.0$
-International (CC~BY~$4.0$) License \cite{ccby4}.
+available, but was not needed in this project. The dataset is released under
+the Creative Commons Attribution $4.0$ International (CC~BY~$4.0$) License
+\cite{ccby4}.
 
+The ``dev-clean'' portion of the database was used.
 To extract the audio samples, the original signal is simply split in $1$ or
 $0.5$ seconds intervals: this is considered a good approximation of random
 background conversations.
 The sentences in the dataset were split by checking whether or not
 one of the training word was used in the sentece.
 
-TODO: dev-clean was used
+
+\subsubsection{Silence class}
+
+An additional class containing only silence and background noise was added. To
+build it, both the background noises available in the Google Speech Commands
+Dataset and new recordings were used.
+%
+It must be noted that only $10$ minutes of background audio are available,
+corresponding to roughly $600$ samples.
+%
+To have a similar number of samples to the other classes, all the background
+audios were composed in a single vector and random $1$ second portions were
+extracted.
 
 \subsection{Problem definition}
 
@@ -197,16 +227,21 @@ and understand to which frequencies the important bins correspond to. }%
     \label{fig:happy_specs}
 \end{figure}
 
-% TODO show spectrogams with different ftt win lenght to show smoothing effect
-
 \begin{figure}[t!]
     \centering
-    \includegraphics[width=0.9\linewidth]{happy_mel01_mel04_mel06_melc1_specs.pdf}
-    \caption{Different spectrograms for the same word}%
+    % \includegraphics[width=0.9\linewidth]{happy_mel01_mel04_mel06_melc1_specs.pdf}
+    \includegraphics[width=0.9\linewidth]{happy_mel04_mel04a_mel04b_melc1_specs.pdf}
+    \caption{Different spectrograms for the same word. Note the effects of the
+        window length: in \texttt{mel04} the window size is $1024$, in
+        \texttt{mel04a} the window is shorter ($512$) and in \texttt{mel04b} it
+        is longer ($2048$). This results in a noisier spectrogram for
+        \texttt{mel04a}, as the window covers less data, and a much smoother
+        spectrogram for \texttt{mel04b}.
+    }%
     \label{fig:happy_mel01_mel04_mel06_melc1_specs}
 \end{figure}
 
-TODO: decision of preprocessing the data separately.
+% MAYBE: decision of preprocessing the data separately.
 
 \subsection{Data augmentation}
 \label{sec:data_augmentation}
@@ -256,12 +291,10 @@ landmarks.}%
 \section{Learning Framework}
 \label{sec:learning_framework}
 
-% TODO: See Kumar Xception 4.4
+% MAYBE: See Kumar Xception 4.4
 
 The training was done using the tensorflow library \cite{tensorflow2015-whitepaper}.
-
-% TODO: intro to this section.
-
+% MAYBE: intro to this section.
 Several training details can be adjusted to achieve optimal performance.
 An overview of the parameters tweaked during the experiments is provided in
 this section.
@@ -269,9 +302,9 @@ this section.
 \subsection{Learning rate}
 
 During the experiments, different values of learning rate and different
-schedules were used:
-% TODO: de novo?
-% The details are described in this section.
+schedules were used.
+A technique to find good values for the learning rate was applied.
+The details are described in this section.
 
 \subsubsection{Finding optimal LR values}
 \label{sec:lr_sweep}
@@ -395,8 +428,8 @@ peak of the second cycle. Finally with the last two cycles the model converges.
     \label{fig:cyclic_lr_example}
 \end{figure}
 
-\subsection{Regularization and Batch Normalization}
-TODO or todont?
+% \subsection{Regularization and Batch Normalization}
+% MAYBE or maybenot?
 
 \subsection{Early stopping}
 
@@ -419,18 +452,15 @@ during the training of a model, and can be used to compare different training
 runs.
 During the experiments, early stopping with patience 4 was used.
 
-TODO: Show a plot
+% MAYBEnot: Show a plot
 
-\subsection{Optimizer, epochs number and batch size}
-TODO or todont?
-
-Adam \cite{kingma2017adam}.
-
-Epoche/batch, tempo di computazione
-
-In each epoch, every sample in the dataset is seen once.
-A batch is a set of samples that is used by the optimizer 
-algorithm to TODO.
+% \subsection{Optimizer, epochs number and batch size}
+% MAYBE or maybenot?
+% Adam \cite{kingma2017adam}.
+% Epoche/batch, tempo di computazione
+% In each epoch, every sample in the dataset is seen once.
+% A batch is a set of samples that is used by the optimizer 
+% algorithm to.
 
 \subsection{Hyper-parameter tuning}
 
@@ -469,26 +499,25 @@ No formal way to check for consistency in the grid was developed,
 but some care was taken in being methodical when exploring.
 
 % overshadow
-
-TODO: Usare Pool, MAYBE in conclusion/what I learned section.
-
 % Ovviamente non su tutte le combinazioni
 % Pay attention (no pun) to over-representation of the good params.
 
-\subsection{Dataset loading}
+% MAYBE: Usare Pool, MAYBE in conclusion/what I learned section.
 
-% TODO: loading the dataset with AudioGenerator
+\subsection{Dataset loading}
 
 For the datasets with a single spectrogram, even the 35-words task fits easily
 in memory. However, for the stacked 3-channel ``images'' with augmented data
 the size can grow to 20 gigabytes, which is inconvenient to load at once.
 Considering that the training is done in small batches of samples, loading only
 the images needed for the current batch is a reasonable approach.
+%
 This behaviour was implemented by subclassing the \texttt{Sequence} tensorflow
 class, that provides an interface for loading data as needed in a thread safe
 way (i.e. it assures that each sample is loaded once per epoch, even when
 loading data from multiple threads).
-The guide followed to implement the \texttt{AudioGenerator} is available on 
+%
+The guide followed to implement the \texttt{AudioGenerator} is available on
 GitHub \cite{afshineaKDG}.
 
 \section{Convolutional Neural Network}
@@ -530,7 +559,7 @@ The possible values for the model hyper-parameters are:
     \item kernel\_size = [[(2,2), (2,2), (2,2)], [(5,1), (3,3), (3,3)]]
     \item pool\_size = [[(2,2), (2,2), (2,2)], [(2,1), (2,2), (2,2)]]
 \end{itemize}
-TODO:
+% MAYBE write better info for exp_decay, chi sa cosa stia facendo:
 The possible values for the training hyper-parameters are:
 \begin{itemize}
     \item batch\_size = [32, 64, 128]
@@ -654,16 +683,24 @@ averages the values in each feature extracted, followed by some dense layers
 (according to the hyper-parameters selected) and finally a softmax layer to
 compute the predictions.
 
-TODO: specify which model version were used (121, B047)
-
-TODO: model sizes
-7M DenseNet121
-22.8M Xception
-5.3M B0
-19M B4
-66M B7
-
-TODO: specify labels for models
+Different architectures were used, the specific version and the number of 
+parameters in the model are listed in \tab{tab:transfer_models_list}.
+\begin{table}[ht!]
+    \centering
+    \caption{Pre-trained model architecture used}
+    \label{tab:transfer_models_list}
+    \begin{tabular}{|c|c|c|}
+        \hline
+        Id & Model name & $\#$ Params \\
+        \hline
+        TRA & Xception        & $22.8$M \\
+        TD1 & DenseNet121     & $7$M    \\
+        TB0 & EfficientNetB0  & $5.3$M  \\
+        TB4 & EfficientNetB4  & $19$M   \\
+        TB7 & EfficientNetB7  & $66$M   \\
+        \hline
+    \end{tabular}
+\end{table}
 
 When building the model, aside from the number of classes to predict and the
 input shape of the spectrograms, two parameters can be set:
@@ -748,7 +785,7 @@ spectrogram, using a CNN.
 A third query style tested is regarding the choice of LSTM output vector to
 pick to compute the query: instead of the last, the central vector was chosen.
 
-TODO: un grafichetto sarebbe bellissimo
+% TODO: un grafichetto sarebbe bellissimo
 
 \subsection{Model building and hyper-parameters}
 
@@ -777,7 +814,7 @@ The possible values for the hyper-parameters are:
     \item dense\_width = [32, 64]
 \end{itemize}
 
-TODO: hyper-parameter for training (e.g. lr)
+% TODO: hyper-parameter for training (e.g. lr)
 
 \section{SimpleNet, AreaNet and VerticalAreaNet}
 % Dream a dream

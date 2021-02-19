@@ -7,18 +7,17 @@
 \subsection{Performance measure}
 
 % \subsubsection{F-Score}
-% TODO: what is the F-Score
 
 The F-Score is a metric that combines the values of precision and recall to
 provide an estimate of the quality of the predictions made on a test dataset.
-Precision is the fraction of relevant data among the selected instances,
-the number of true positives over all the samples selected
-(a high precision score means that there are few false positives).
-% TODO how confident you are that a selected is really in that class.
+Precision is the fraction of relevant data among the selected instances, the
+number of true positives over all the samples selected (a high precision score
+means that there are few false positives).
+% MAYBE how confident you are that a selected is really in that class.
 Recall is the fraction of selected instances among all the relevant samples,
-the number of true positives over all the true samples
-(a high recall score means that there are few false negatives).
-The F-Score is obtained as the harmonic mean of precision and recall.
+the number of true positives over all the true samples (a high recall score
+means that there are few false negatives). The F-Score is obtained as the
+harmonic mean of precision and recall.
 
 % Confusion matrix
 Another tool used to visually show the performance of a model
@@ -70,7 +69,9 @@ blue line tells the standard deviation around the mean.
 % Hypa comparison
 % First specific hypas
 
-A total of $4664$ TODO experiment were performed for the convolutional architecture.
+A total of $5064$
+% TODO
+experiment were performed for the convolutional architecture.
 
 \subsubsection{Model parameters performance comparison}
 
@@ -104,7 +105,7 @@ Several insights can be extrapolated, in order of clarity:
     \item Square pool windows perform slightly better than the rectangular ones.
 \end{itemize}
 
-TODO: on what is averaged
+% TODO: on what is averaged
 
 \begin{figure*}[h!]
     \centering
@@ -144,9 +145,11 @@ Two main conclusions can be reached:
 
 \subsection{Hyper-parameter analysis: Transfer learning}
 
-A total of $130$ TODO experiment were performed for the transfer learning approach.
+A total of $144$
+% TODO
+experiment were performed for the transfer learning approach.
 
-TODO: on what are you averaging
+% TODO: on what are you averaging
 
 \subsubsection{Model and training parameters performance comparison}
 
@@ -175,7 +178,7 @@ influence the training.
 
 \fig{fig:tra_comparison_dataset}
 
-TODO: what are you averaging?
+% TODO: what are you averaging?
 
 The different ways used to stack the spectrograms to obtain a 3-channels image
 are compared in \fig{fig:tra_comparison_dataset}.
@@ -214,7 +217,7 @@ EfficientNetB4 also achieves very good results, using only 19M parameters,
 outperformimg by a little Xception, with 22.8M parameters.
 EfficientNetB0, with 5.3M parameters, cannot reach the same results.
 
-TODO: EfficientNet exactly like in the paper the nice curve precision vs number params
+% TODO: EfficientNet exactly like in the paper the nice curve precision vs number params
 
 % 7M DenseNet121
 % 22.8M Xception
@@ -231,7 +234,9 @@ TODO: EfficientNet exactly like in the paper the nice curve precision vs number 
 
 \subsection{Hyper-parameter analysis: Attention}
 
-A total of $1389$ TODO experiment were performed for the LSTM+attention model.
+A total of $1688$
+% TODO
+experiment were performed for the LSTM+attention model.
 
 \subsubsection{Model parameters performance comparison}
 
@@ -253,16 +258,15 @@ the scores and $04$  uses convolutional layers connected to the spectrograms).
 The results are very close but two conclusions can be tentatively reached:
 
 \begin{itemize}
-    \item The query type does not influence
-% TODO influence suona male
-the results: within each packet of columns the values are very close to each
-other, within one standard deviation.
-    \item The combination of dense 02 ($64$ units), conv 01 ($1$ layer) and dropout 01 ($0.2$)
-seems to be consistently better than the average.
-The best values might be found with other combinations of parameters, but those
-combinations are less robust, as indicated by the higher standard deviation,
-and the quality of the model is less assured when training that combination for
-new datasets.
+    \item The query type does not influence the results: within each packet of
+        columns the values are very close to each other, within one standard
+        deviation.
+    \item The combination of dense 02 ($64$ units), conv 01 ($1$ layer) and
+        dropout 01 ($0.2$) seems to be consistently better than the average.
+        The best values might be found with other combinations of parameters,
+        but those combinations are less robust, as indicated by the higher
+        standard deviation, and the quality of the model is less assured when
+        training that combination for new datasets.
 \end{itemize}
 
 \begin{figure*}[t!]
@@ -274,7 +278,7 @@ new datasets.
         convolution type,
         dropout.
         Averaged on 20 and 35 words task, solved by the LSTM+attention architecture.
-        % TODO should also average on non ugmented dataset
+        % MAYBE should also average on non ugmented dataset
         }%
     \label{fig:att_dropout_conv_query_dense}
 \end{figure*}
@@ -318,55 +322,54 @@ Two main conclusions can be reached:
 
 \subsection{AreaNet and SimpleNet performance}
 
-So good!
+TODO: So good!
 
 \subsection{Data augmentation performance}
 \label{sec:augmentation_performance}
 
-% TODO: type 01 aug was tested but too long
 % TODO: combine 01 and 15 for the final augmentation
 
 As explained in \secref{sec:data_augmentation}, several types of augmentation
 were performed on the dataset.
-% The bulk of the investigation was to 
-% determine which kind of augmentation performed better.
-Each type of augmentation is based on one set of spectrogram parameters,
-and there are four styles of warp based aumentation:
-the landmarks are shifted
-1) along both axes of the spectrogram,
-2) only along the time axis,
-3) only along the frequency axis,
-4) along no axis, to provide a reference measure.
-Three different spectrogram parameters and two different warping parameters
-were tested.
-\tab{tab:aug_values}, in the Appendix, shows the specific values used.
-For the ``big'' type, $3$ landmarks are shifted by at most $5$ units,
-while for the ``small'' type, $4$ landmarks are shifted by at most $2$ units.
-% The main differences in augmentation can be seen
-% between the ``big'' and ``small'' types.
+%
+% MAYBE: type 01 aug was tested but too long The augmentation regarding the
+% signal (i.e. \texttt{aug01}) was tested very little as it produced datasets
+% that were too large to 
+%
+% The bulk of the investigation was to determine which kind of augmentation
+% performed better.
+Each type of augmentation is based on one set of spectrogram parameters, and
+there are four styles of warp based aumentation: the landmarks are shifted 1)
+along both axes of the spectrogram, 2) only along the time axis, 3) only along
+the frequency axis, 4) along no axis, to provide a reference measure. Three
+different spectrogram parameters and two different warping parameters were
+tested. \tab{tab:aug_values}, in the Appendix, shows the specific values used.
+For the ``big'' type, $3$ landmarks are shifted by at most $5$ units, while for
+the ``small'' type, $4$ landmarks are shifted by at most $2$ units.
+% The main differences in augmentation can be seen between the ``big'' and
+% ``small'' types.
 This leads to the largest difference in augmentation performance:
-\tab{tab:augmentation_comparison_performance} shows that the ``small'' augmentation
-% TODO incomprensibile
-type leads to an increase in F-Score value from $0.015$ to $0.03$ relative to
-the ``big'' augmentation, both when training the convolutional architecture
-(\secref{sec:convolutional_arch}) on a 4-words task, and when using the
-LSTM+attention (\secref{sec:attention_model}) on a 10-words task.
+\tab{tab:augmentation_comparison_performance} shows that the ``small''
+augmentation type leads to an increase in F-Score value of $0.015$ and $0.03$
+relative to the ``big'' augmentation, when training the convolutional
+architecture (\secref{sec:convolutional_arch}) on a 4-words task, and the
+LSTM+attention model (\secref{sec:attention_model}) on a 10-words task
+respectively.
+%
 This makes sense: the spectrograms used for augmentation have shape $(64, 64)$,
-so moving a landmark by $5$ changes too sharply the image.
-A more uniform augmentation, with more landmarks but with 
-gentler
-% TODO do not go gentle into that good night
-warping leads to better results.
-For the convolutional architecture the mean F-Score value for the 
-\texttt{f1} 4-words task increases from $0.939$ to $0.960$,
-while for the LSTM+attention architecture, data augmentation does not increase
-the performance of the model.
-However, the speed with which a high performance is achieved is influenced
-by the presence of augmented data.
-As shown in \tab{tab:augmentation_learning_speed} and in
-\fig{fig:augmentation_learning_speed}, 
-peak performance for the model is reached after just $4$ epochs of training,
-compared to $10$ to $15$ epochs when using non-augmented data.
+so moving a landmark by $5$ changes too sharply the image. A more uniform
+augmentation, with more landmarks but with gentler warping leads to better
+results.
+%
+For the convolutional architecture the mean F-Score value for the \texttt{f1}
+4-words task increases from $0.939$ to $0.960$, while for the LSTM+attention
+architecture, data augmentation does not increase the performance of the model.
+However, the speed with which a high performance is achieved is influenced by
+the presence of augmented data. As shown in
+\tab{tab:augmentation_learning_speed} and in
+\fig{fig:augmentation_learning_speed}, peak performance for the model is
+reached after just $4$ epochs of training, compared to $10$ to $15$ epochs when
+using non-augmented data.
 
 \begin{table}[t!]
     \centering
@@ -473,17 +476,19 @@ no particular type emerges as better than the others.
 
 As an additional preprocessing step, the loudest $0.5$s section of the audio
 signal was selected.
+%
 It might seem surprising, but both the LSTM+attention and the AreaNet
 architectures performed better on the full audio samples, 
 as shown in \tab{tab:comparison_loud_section}.
-This however could be explained by the fact that those are \textit{attention}
+%
+This however could partly be explained by the fact that those are \textit{attention}
 architectures, so by design they will identify the relevant portion of the data.
 By only feeding important data to the networks, the attention mechanism has more
 difficulty to learn which sections to select, because all of them are useful.
-
-% TODO
-% Check if this is the case with ConvNets
-% SIM are ConvNets tho, and still LS does not help
+%
+On the other hand, the SimpleNet was also trained on the loudest section of the data
+and that also did not lead to an improvement.
+% MAYBE
 
 \begin{table}[t!]
     \centering
@@ -506,6 +511,8 @@ difficulty to learn which sections to select, because all of them are useful.
 
 \subsection{Architecture comparison}
 
+TODO:
+
 Show best and top 5 average
 
 Then aggregate table for cross architecture
@@ -525,7 +532,7 @@ does not miss them
 
 \subsection{FSDD performance}
 
-Test all on that, MAYBE merge with architecture comparision
+TODO: Test all on that, MAYBE merge with architecture comparision
 
 \subsection{Attention weights}
 

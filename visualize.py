@@ -184,17 +184,20 @@ def visualize_datasets(word_index):
     #     "mel09", "mel10", "mel11", "mel12", "mel13", "mel14", "mel15", "melc1", "melc2",
     #     "melc3", "melc4", "mela1", "meL04", "meLa1", "auL18", "aug18", ]
     # datasets = [ "mel01", "mel04", "mel06", "melc1" ]
+    # datasets = ["mel09", "mel10", "mel11", "melc1"]
+    datasets = ["mel04", "mel04a", "mel04b", "melc1"]
 
     # words = words_types["f1"]
     # a_word = words[0]
     # a_word = "loudest_one"
+    a_word = "happy"
     # a_word = "_other_ltts_loud"
 
-    datasets = []
+    # datasets = []
     # datasets.extend(["meL04", "meLa1", "meLa2", "meLa3", "meLa4"])
     # datasets.extend(["auL06", "auL07", "auL08", "auL09"])
-    datasets.extend(["auL18", "auL19", "auL20", "auL21"])
-    a_word = "loudest_two"
+    # datasets.extend(["auL18", "auL19", "auL20", "auL21"])
+    # a_word = "loudest_two"
 
     # datasets = []
     # datasets.extend(["mel04", "mela1"])

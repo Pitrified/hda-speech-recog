@@ -144,7 +144,7 @@ def hyper_train_area(
 
     ###### the net type
     nt = []
-    # nt.append("SIM")
+    nt.append("SIM")
     nt.append("SI2")
     nt.append("AAN")
     nt.append("VAN")
@@ -158,7 +158,8 @@ def hyper_train_area(
     # hypa_grid["words_type"] = ["LTBnum", "LTBall"]
     # hypa_grid["words_type"] = ["LTBnumLS", "LTBallLS"]
     # hypa_grid["words_type"] = ["lr"]
-    hypa_grid["words_type"] = ["similar"]
+    # hypa_grid["words_type"] = ["similar", "all"]
+    hypa_grid["words_type"] = ["all"]
 
     ###### the dataset to train on
     ds = []
@@ -170,7 +171,7 @@ def hyper_train_area(
     ds.extend(["mela1"])
     ds.extend(["aug07"])
     ds.extend(["aug14"])
-    ds.extend(["aug15"])
+    # ds.extend(["aug15"])
 
     # TODO auL6789 auL18901 on all net_type
     # TODO auA5678 on VAN (on LTnumLS)
