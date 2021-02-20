@@ -511,24 +511,56 @@ and that also did not lead to an improvement.
 
 \subsection{Architecture comparison}
 
-TODO:
-
-Show best and top 5 average
-
-Then aggregate table for cross architecture
-
-Pick the best 5 models per category for each task
-
-Compare: CNN, Dense, Xception, EfficientB047, LSTM+attention, AreaNet, SimpleNet,
-VerticalAreaNet on num, all, LTnum, LTall, numLS, allLS
-
-Not every combination of everything
-
-Show confusion matrices, speak about similar sounding words, note how AreaNet
-does not miss them
-
+\tab{tab:mega_comparison} shows the results for all architectures and
+tasks, listing the F-Score mean, standard deviation and max values.
+% TODO:
+% Show best and top 5 average
+% Then aggregate table for cross architecture
+% Pick the best 5 models per category for each task
+% Compare: CNN, Dense, Xception, EfficientB047, LSTM+attention, AreaNet, SimpleNet,
+% VerticalAreaNet on num, all, LTnum, LTall, numLS, allLS
+% Not every combination of everything
+% Show confusion matrices, speak about similar sounding words, note how AreaNet
+% does not miss them
 % \input{megacomparison_manual}
 \input{megacomparison_auto}
+
+Some confusion matrices are shown in
+\fig{fig:VAN_opa1_lr03_bs32_en14_dsaug14_wyn_cm}
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{VAN_opa1_lr03_bs32_en14_dsaug14_wyn_cm.pdf}
+    \caption{VAN opa1 lr03 bs32 en14 dsaug14 wyn cm}%
+    \label{fig:VAN_opa1_lr03_bs32_en14_dsaug14_wyn_cm}
+\end{figure}
+
+\fig{fig:VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum_cm}
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum_cm.pdf}
+    \caption{VAN opa1 lr03 bs32 en15 dsaug14 wLTBnum cm}%
+    \label{fig:VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum_cm}
+\end{figure}
+
+\fig{fig:VAN_opa1_lr03_bs32_en15_dsmel04_wLTBall_noval_cm}
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{VAN_opa1_lr03_bs32_en15_dsmel04_wLTBall_noval_cm.pdf}
+    \caption{VAN opa1 lr03 bs32 en15 dsmel04 wLTBall noval cm}%
+    \label{fig:VAN_opa1_lr03_bs32_en15_dsmel04_wLTBall_noval_cm}
+\end{figure}
+
+\fig{fig:SI2_opa1_lr04_bs32_en15_dsmel04_wLTBall_noval_cm}
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{SI2_opa1_lr04_bs32_en15_dsmel04_wLTBall_noval_cm.pdf}
+    \caption{SI2 opa1 lr04 bs32 en15 dsmel04 wLTBall noval cm}%
+    \label{fig:SI2_opa1_lr04_bs32_en15_dsmel04_wLTBall_noval_cm}
+\end{figure}
 
 \subsection{FSDD performance}
 

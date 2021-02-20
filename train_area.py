@@ -156,11 +156,12 @@ def hyper_train_area(
     # wtl.extend(["LTnum", "LTall", "yn"])
     # wtl.extend(["LTnum", "yn"])
     # wtl.extend(["LTnum", "yn", "f1", "k1"])
-    wtl.extend(["LTBnum", "LTBall"])
+    # wtl.extend(["LTBnum", "LTBall"])
+    wtl.extend(["LTBnum"])
     # wtl.extend(["LTBnumLS", "LTBallLS"])
     # wtl.extend(["lr"])
     # wtl.extend(["similar", "all"])
-    wtl.extend(["all"])
+    # wtl.extend(["all"])
 
     hypa_grid["words_type"] = wtl
 
@@ -170,8 +171,8 @@ def hyper_train_area(
     # TODO VAN on LTall
     # TODO AAN/SIM/VAN on LTnum
     # TODO AAN on LTnum for all datasets, only one lr
-    ds.extend(["mel04"])
-    ds.extend(["mela1"])
+    # ds.extend(["mel04"])
+    # ds.extend(["mela1"])
     ds.extend(["aug07"])
     ds.extend(["aug14"])
     ds.extend(["aug15"])

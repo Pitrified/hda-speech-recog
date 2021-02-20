@@ -146,7 +146,7 @@ def plot_confusion_matrix(conf_mat, ax, model_name, words, fscore=None):
 
     title = f"{model_name}\nConfusion matrix"
     if fscore is not None:
-        title += f" (F-score: {fscore:.3f})"
+        title += f" (F-score: {fscore:.4f})"
     ax.set_title(title, fontsize=22)
 
     thresh = conf_mat.max() * 0.3
