@@ -144,7 +144,20 @@ def plot_confusion_matrix(conf_mat, ax, model_name, words, fscore=None):
     ax.set_ylabel("Observed", fontsize=16)
     ax.set_xlabel("Predicted", fontsize=16)
 
-    title = f"{model_name}\nConfusion matrix"
+    # title = f"{model_name.replace('_', ' ')}"
+    model_name_split = model_name.split('_')
+    title = f"{model_name_split[0]}"
+
+    if len(model_name_split) > 0:
+        count = 1
+        max_per_line = 8
+        for split in model_name_split[1:]:
+            title += f" {split}"
+            count += 1
+            if (count % max_per_line) == 0:
+                title += "\n"
+
+    title += "\nConfusion matrix"
     if fscore is not None:
         title += f" (F-score: {fscore:.4f})"
     ax.set_title(title, fontsize=22)

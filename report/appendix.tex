@@ -1,7 +1,49 @@
 \section{Appendix}
 \label{sec:appendix}
 
-Several large tables and figures are here.
+% https://tex.stackexchange.com/a/210378
+\renewcommand{\thefigure}{A.\arabic{figure}}
+\setcounter{figure}{0}
+
+\renewcommand{\thetable}{A.\arabic{table}}
+\setcounter{table}{0}
+
+Several large tables and figures are here for ease of reading.
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{VAN_opa1_lr03_bs32_en14_dsaug14_wyn_cm.pdf}
+    \caption{VAN opa1 lr03 bs32 en14 dsaug14 wyn cm}%
+    \label{fig:VAN_opa1_lr03_bs32_en14_dsaug14_wyn_cm}
+\end{figure}
+
+% \begin{figure}[t!]
+%     \centering
+%     \includegraphics[width=0.9\linewidth]{VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum_cm.pdf}
+%     \caption{VAN opa1 lr03 bs32 en15 dsaug14 wLTBnum cm}%
+%     \label{fig:VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum_cm}
+% \end{figure}
+
+\begin{figure*}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{VAN_opa1_lr03_bs32_en15_dsmel04_wLTBall_noval_cm.pdf}
+    \caption{VAN opa1 lr03 bs32 en15 dsmel04 wLTBall noval cm}%
+    \label{fig:VAN_opa1_lr03_bs32_en15_dsmel04_wLTBall_noval_cm}
+\end{figure*}
+
+\begin{figure*}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{SI2_opa1_lr04_bs32_en15_dsmel04_wLTBall_noval_cm.pdf}
+    \caption{SI2 opa1 lr04 bs32 en15 dsmel04 wLTBall noval cm}%
+    \label{fig:SI2_opa1_lr04_bs32_en15_dsmel04_wLTBall_noval_cm}
+\end{figure*}
+
+\begin{figure*}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{ATT_ct02_dr01_ks01_lu01_qt01_dw01_opa1_lr03_bs02_en02_dsmel04_wLTBall_cm.pdf}
+    \caption{ATT ct02 dr01 ks01 lu01 qt01 dw01 opa1 lr03 bs02 en02 dsmel04 wLTBall cm}%
+    \label{fig:ATT_ct02_dr01_ks01_lu01_qt01_dw01_opa1_lr03_bs02_en02_dsmel04_wLTBall_cm}
+\end{figure*}
 
 % https://stackoverflow.com/a/15221702/2237151
 % find . -type d -print0 | while read -d '' -r dir; do files=("$dir"/*); printf "%s & %d\n" "$dir" "${#files[@]}"; done

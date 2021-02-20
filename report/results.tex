@@ -511,31 +511,54 @@ and that also did not lead to an improvement.
 
 \subsection{Architecture comparison}
 
-\tab{tab:mega_comparison} shows the results for all architectures and
-tasks, listing the F-Score mean, standard deviation and max values.
-% TODO:
-% Show best and top 5 average
-% Then aggregate table for cross architecture
-% Pick the best 5 models per category for each task
-% Compare: CNN, Dense, Xception, EfficientB047, LSTM+attention, AreaNet, SimpleNet,
-% VerticalAreaNet on num, all, LTnum, LTall, numLS, allLS
-% Not every combination of everything
-% Show confusion matrices, speak about similar sounding words, note how AreaNet
-% does not miss them
+\subsubsection{F-Score performance}
+
+\tab{tab:mega_comparison} shows the results for all architectures and tasks,
+listing the F-Score mean, standard deviation and max values.
+%
+The best performances are achieved by the SimpleNet in its larger variant. This
+architecture performs well not only regarding to the best model in the class,
+but also according to the very low standard deviation values, that indicate a
+very robust training.
+%
+The VerticalAreaNet tends to perform better than the AreaNet, showing that
+emphasizing the temporal correlations helps the training as the attention
+weights only have to select the relevant \textit{temporal} portion of the
+input, while selecting also along the frequency axes (as AreaNet does) does not
+improve performances.
+%
+It is expected that on a standard image dataset, that lacks this vertical
+correlation, AreaNet would perform better than VerticalAreaNet.
+
 % \input{megacomparison_manual}
 \input{megacomparison_auto}
 
-Some confusion matrices are shown in
-\fig{fig:VAN_opa1_lr03_bs32_en14_dsaug14_wyn_cm}
+Confusion matrices for VerticalAreaNet solving the ``yes/no'', ``LTBnum'' and
+``LTBall'' tasks are shown in \fig{fig:VAN_opa1_lr03_bs32_en14_dsaug14_wyn_cm},
+\fig{fig:VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum_cm} and
+\fig{fig:VAN_opa1_lr03_bs32_en15_dsmel04_wLTBall_noval_cm} respectively.
+%
+\fig{fig:SI2_opa1_lr04_bs32_en15_dsmel04_wLTBall_noval_cm} shows the confusion
+matrix for SimpleNet2 solving the ``LTBall'' task.
+%
+\fig{fig:ATT_ct02_dr01_ks01_lu01_qt01_dw01_opa1_lr03_bs02_en02_dsmel04_wLTBall_cm}
+shows the confusion matrix for LSTM+attention model solving the ``LTBall''
+task.
 
-\begin{figure}[t!]
-    \centering
-    \includegraphics[width=0.9\linewidth]{VAN_opa1_lr03_bs32_en14_dsaug14_wyn_cm.pdf}
-    \caption{VAN opa1 lr03 bs32 en14 dsaug14 wyn cm}%
-    \label{fig:VAN_opa1_lr03_bs32_en14_dsaug14_wyn_cm}
-\end{figure}
+% TODO: visual wow
+Note that for all architectures the largest mistake is regarding
+the classification of ``wow'' that is sometimes predicted as ``visual''.
+Indeed, the two words sound very similar: one of the possible pronunciations
+for visual includes the 
+% https://tex.stackexchange.com/a/370073
+% /waʊ̯/
+% \includegraphics[width=1em]{usound.pdf}
+/\includegraphics[width=0.6em]{usound.pdf}/
+sound,
+which is the main phoneme uttered when saying wow.
 
-\fig{fig:VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum_cm}
+% TODO: 93.9% (35-word)
+
 
 \begin{figure}[t!]
     \centering
@@ -544,25 +567,7 @@ Some confusion matrices are shown in
     \label{fig:VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum_cm}
 \end{figure}
 
-\fig{fig:VAN_opa1_lr03_bs32_en15_dsmel04_wLTBall_noval_cm}
-
-\begin{figure}[t!]
-    \centering
-    \includegraphics[width=0.9\linewidth]{VAN_opa1_lr03_bs32_en15_dsmel04_wLTBall_noval_cm.pdf}
-    \caption{VAN opa1 lr03 bs32 en15 dsmel04 wLTBall noval cm}%
-    \label{fig:VAN_opa1_lr03_bs32_en15_dsmel04_wLTBall_noval_cm}
-\end{figure}
-
-\fig{fig:SI2_opa1_lr04_bs32_en15_dsmel04_wLTBall_noval_cm}
-
-\begin{figure}[t!]
-    \centering
-    \includegraphics[width=0.9\linewidth]{SI2_opa1_lr04_bs32_en15_dsmel04_wLTBall_noval_cm.pdf}
-    \caption{SI2 opa1 lr04 bs32 en15 dsmel04 wLTBall noval cm}%
-    \label{fig:SI2_opa1_lr04_bs32_en15_dsmel04_wLTBall_noval_cm}
-\end{figure}
-
-\subsection{FSDD performance}
+\subsubsection{FSDD performance}
 
 TODO: Test all on that, MAYBE merge with architecture comparision
 
