@@ -228,7 +228,7 @@ def define_words_types():
 words_types = define_words_types()
 
 
-def analyze_confusion(confusion, true_labels):
+def analyze_confusion(confusion, true_labels) -> float:
     """Compute the F-score from the confusion matrix, and print the intermediate results
 
     Precision: TP / ( TP + FP)

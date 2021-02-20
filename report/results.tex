@@ -545,31 +545,37 @@ matrix for SimpleNet2 solving the ``LTBall'' task.
 shows the confusion matrix for LSTM+attention model solving the ``LTBall''
 task.
 
-% TODO: visual wow
+% visual wow
 Note that for all architectures the largest mistake is regarding
 the classification of ``wow'' that is sometimes predicted as ``visual''.
 Indeed, the two words sound very similar: one of the possible pronunciations
 for visual includes the 
 % https://tex.stackexchange.com/a/370073
-% /waʊ̯/
-% \includegraphics[width=1em]{usound.pdf}
 /\includegraphics[width=0.6em]{usound.pdf}/
 sound,
 which is the main phoneme uttered when saying wow.
 
 % TODO: 93.9% (35-word)
-
+The results obtained with the LSTM+attention model closely match the ones obtained in the
+paper that proposed the model \cite{2018arXiv180808929C}.
 
 \begin{figure}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum_cm.pdf}
-    \caption{VAN opa1 lr03 bs32 en15 dsaug14 wLTBnum cm}%
+    \caption{TODO put the fsdd one}%
     \label{fig:VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum_cm}
 \end{figure}
 
 \subsubsection{FSDD performance}
 
-TODO: Test all on that, MAYBE merge with architecture comparision
+% TODO: Test all on that
+The models were also tested on audio samples in the Free Spoken Digit Dataset.
+The results are quite good, as the F-Score reached $95.72\%$
+when the F-Score on the GSCD test data was $98.30\%$.
+%
+A loss in accuracy is present, but it might be explained in the
+lower quality of the dataset, as $2$ out of $6$ speakers' recording
+are with extremely low volume.
 
 \subsection{Attention weights}
 

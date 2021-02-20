@@ -4,12 +4,23 @@ import logging
 import typing as ty
 import json
 import math
+import re
+from tensorflow.keras import models as tf_models  # type: ignore
+import matplotlib.pyplot as plt  # type: ignore
 
+from augment_data import do_augmentation
 from evaluate_area import build_area_results_df
 from evaluate_attention import build_att_results_df
 from evaluate_cnn import build_cnn_results_df
 from evaluate_transfer import build_tra_results_df
+from plot_utils import plot_confusion_matrix
+from preprocess_data import load_processed
+from preprocess_data import preprocess_spec
+from utils import analyze_confusion
+from utils import pred_hot_2_cm
+from utils import setup_gpus
 from utils import setup_logger
+from utils import words_types
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -28,8 +39,39 @@ def parse_arguments() -> argparse.Namespace:
             "build_megacomparison_v02",
             "build_megacomparison_v03",
             "evaluate_loud_section",
+            "evaluate_model_cm",
+            "evaluate_model_cm_all",
         ],
         help="Which evaluation to perform",
+    )
+
+    tra_types = [w for w in words_types.keys() if not w.startswith("_")]
+    parser.add_argument(
+        "-tw",
+        "--train_words_type",
+        type=str,
+        default="f1",
+        choices=tra_types,
+        help="Words the dataset was trained on",
+    )
+
+    rec_types = [w for w in words_types.keys() if not w.startswith("_")]
+    rec_types.append("train")
+    parser.add_argument(
+        "-rw",
+        "--rec_words_type",
+        type=str,
+        default="train",
+        choices=rec_types,
+        help="Words to record and test",
+    )
+
+    parser.add_argument(
+        "-mn",
+        "--model_name",
+        type=str,
+        default="VAN_opa1_lr03_bs32_en15_dsaug07_wnum_noval",
+        help="Which model to use",
     )
 
     # last line to parse the args
@@ -792,6 +834,151 @@ def build_megacomparison_v03() -> None:
     output_file.write_text(the_table)
 
 
+def evaluate_model_cm_all(test_words_type: str) -> None:
+    r"""MAKEDOC: what is evaluate_model_cm_all doing?"""
+    logg = logging.getLogger(f"c.{__name__}.evaluate_model_cm_all")
+    # logg.setLevel("INFO")
+    logg.debug("Start evaluate_model_cm_all")
+
+    this_file_folder = Path(__file__).parent.absolute()
+
+    trained_folder = this_file_folder / "trained_models"
+
+    train_type_tags = []
+    train_type_tags.append("area")
+    # train_type_tags.append("attention")
+    # train_type_tags.append("cnn")
+    # train_type_tags.append("transfer")
+
+    train_words_type_re = re.compile("_w(.*?)[_.]")
+
+    all_models = []
+
+    for train_type_tag in train_type_tags:
+        model_folder = trained_folder / train_type_tag
+        logg.debug(f"model_folder: {model_folder}")
+
+        for model_path in model_folder.iterdir():
+            model_name = model_path.name
+
+            if not model_path.suffix == ".h5":
+                continue
+
+            match = train_words_type_re.search(model_name)
+            if match is not None:
+                # logg.debug(f"match[1]: {match[1]}")
+                train_words_type = match[1]
+            else:
+                continue
+
+            if train_words_type == "num":
+                # logg.debug(f"model_path: {model_path}")
+                all_models.append(model_path.stem)
+
+    logg.debug(f"len(all_models): {len(all_models)}")
+
+    cm_folder: Path = Path("plot_results") / "cm_all01"
+    res_path: Path = cm_folder / "fscore_num_results.json"
+
+    # load the existing results
+    if res_path.exists():
+        all_fscores = json.loads(res_path.read_text())
+    else:
+        all_fscores = {}
+
+    for model_name in all_models:
+        if model_name in all_fscores:
+            logg.debug(f"{model_name} fscore {all_fscores[model_name]}")
+            continue
+        fscore = evaluate_model_cm(model_name, test_words_type)
+        all_fscores[model_name] = fscore
+
+    res_path.write_text(json.dumps(all_fscores, indent=4))
+
+
+def evaluate_model_cm(model_name: str, test_words_type: str) -> float:
+    r"""MAKEDOC: what is evaluate_model_cm doing?"""
+    logg = logging.getLogger(f"c.{__name__}.evaluate_model_cm")
+    # logg.setLevel("INFO")
+    # logg.debug("\nStart evaluate_model_cm")
+
+    # magic to fix the GPUs
+    setup_gpus()
+
+    logg.debug(f"\nmodel_name: {model_name}")
+
+    dataset_re = re.compile("_ds(.*?)_")
+    match = dataset_re.search(model_name)
+    if match is not None:
+        logg.debug(f"match[1]: {match[1]}")
+        dataset_name = match[1]
+
+    train_words_type_re = re.compile("_w(.*?)[_.]")
+    match = train_words_type_re.search(model_name)
+    if match is not None:
+        logg.debug(f"match[1]: {match[1]}")
+        train_words_type = match[1]
+
+    arch_type = model_name[:3]
+
+    if arch_type == "ATT":
+        train_type_tag = "attention"
+    else:
+        train_type_tag = "area"
+
+    # load the model
+    model_folder = Path("trained_models") / train_type_tag
+    model_path = model_folder / f"{model_name}.h5"
+    model = tf_models.load_model(model_path)
+    # model.summary()
+
+    train_words = words_types[train_words_type]
+    logg.debug(f"train_words: {train_words}")
+    test_words = words_types[test_words_type]
+    logg.debug(f"test_words: {test_words}")
+
+    # input data must exist
+    if dataset_name.startswith("mel"):
+        preprocess_spec(dataset_name, test_words_type)
+    elif dataset_name.startswith("aug"):
+        do_augmentation(dataset_name, test_words_type)
+
+    # input data
+    processed_path = Path("data_proc") / f"{dataset_name}"
+    data, labels = load_processed(processed_path, test_words)
+    logg.debug(f"list(data.keys()): {list(data.keys())}")
+    logg.debug(f"data['testing'].shape: {data['testing'].shape}")
+
+    # evaluate on the words you trained on
+    logg.debug("Evaluate on test data:")
+    model.evaluate(data["testing"], labels["testing"])
+    # model.evaluate(data["validation"], labels["validation"])
+
+    # predict labels/cm/fscore
+    y_pred = model.predict(data["testing"])
+    cm = pred_hot_2_cm(labels["testing"], y_pred, test_words)
+    # y_pred = model.predict(data["validation"])
+    # cm = pred_hot_2_cm(labels["validation"], y_pred, test_words)
+    fscore = analyze_confusion(cm, test_words)
+    logg.debug(f"fscore: {fscore}")
+
+    fig, ax = plt.subplots(figsize=(12, 12))
+    plot_confusion_matrix(cm, ax, model_name, test_words, fscore, train_words)
+
+    fig_name = f"{model_name}_test{test_words_type}_cm.{{}}"
+    cm_folder = Path("plot_results") / "cm_all01"
+    if not cm_folder.exists():
+        cm_folder.mkdir(parents=True, exist_ok=True)
+
+    plot_cm_path = cm_folder / fig_name.format("png")
+    fig.savefig(plot_cm_path)
+    plot_cm_path = cm_folder / fig_name.format("pdf")
+    fig.savefig(plot_cm_path)
+
+    # plt.show()
+    return fscore
+
+
 def evaluate_results_all() -> None:
     """MAKEDOC: what is evaluate_results_all doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_results_all")
@@ -806,6 +993,13 @@ def run_evaluate_all(args: argparse.Namespace) -> None:
 
     evaluation_type = args.evaluation_type
 
+    train_words_type = args.train_words_type
+    model_name = args.model_name
+
+    rec_words_type = args.rec_words_type
+    if rec_words_type == "train":
+        rec_words_type = train_words_type
+
     if evaluation_type == "results":
         evaluate_results_all()
     elif evaluation_type == "evaluate_augmentation":
@@ -818,6 +1012,10 @@ def run_evaluate_all(args: argparse.Namespace) -> None:
         build_megacomparison_v02()
     elif evaluation_type == "build_megacomparison_v03":
         build_megacomparison_v03()
+    elif evaluation_type == "evaluate_model_cm":
+        evaluate_model_cm(model_name, rec_words_type)
+    elif evaluation_type == "evaluate_model_cm_all":
+        evaluate_model_cm_all(rec_words_type)
 
 
 if __name__ == "__main__":

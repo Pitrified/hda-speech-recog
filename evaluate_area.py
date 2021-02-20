@@ -7,6 +7,7 @@ import logging
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
+import re
 import typing as ty
 
 from plot_utils import plot_confusion_matrix
@@ -60,6 +61,14 @@ def parse_arguments() -> argparse.Namespace:
         default="train",
         choices=rec_types,
         help="Words to record and test",
+    )
+
+    parser.add_argument(
+        "-mn",
+        "--model_name",
+        type=str,
+        default="VAN_opa1_lr03_bs32_en15_dsaug07_wnum_noval",
+        help="Which model to use",
     )
 
     # last line to parse the args
@@ -444,7 +453,7 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     plt.show()
 
 
-def evaluate_model_area(train_words_type: str, test_words_type: str) -> None:
+def evaluate_model_area(model_name: str, test_words_type: str) -> None:
     r"""MAKEDOC: what is evaluate_model_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_model_area")
     # logg.setLevel("INFO")
@@ -453,34 +462,46 @@ def evaluate_model_area(train_words_type: str, test_words_type: str) -> None:
     # magic to fix the GPUs
     setup_gpus()
 
-    # VAN_opa1_lr05_bs32_en15_dsaug07_wLTall
-    hypa = {
-        "batch_size_type": "32",
-        "dataset_name": "aug07",
-        "epoch_num_type": "15",
-        "learning_rate_type": "03",
-        "net_type": "VAN",
-        "optimizer_type": "a1",
-        # "words_type": "LTall",
-        "words_type": train_words_type,
-    }
-    # use_validation = True
-    use_validation = False
-    dataset_name = hypa["dataset_name"]
+    # # VAN_opa1_lr05_bs32_en15_dsaug07_wLTall
+    # hypa = {
+    #     "batch_size_type": "32",
+    #     "dataset_name": "aug07",
+    #     "epoch_num_type": "15",
+    #     "learning_rate_type": "03",
+    #     "net_type": "VAN",
+    #     "optimizer_type": "a1",
+    #     # "words_type": "LTall",
+    #     "words_type": train_words_type,
+    # }
+    # # use_validation = True
+    # use_validation = False
+    # dataset_name = hypa["dataset_name"]
 
     # get the model name
-    model_name = build_area_name(hypa, use_validation)
+    # model_name = build_area_name(hypa, use_validation)
     logg.debug(f"model_name: {model_name}")
+
+    dataset_re = re.compile("_ds(.*?)_")
+    match = dataset_re.search(model_name)
+    if match is not None:
+        logg.debug(f"match[1]: {match[1]}")
+        dataset_name = match[1]
+
+    train_words_type_re = re.compile("_w(.*?)[_.]")
+    match = train_words_type_re.search(model_name)
+    if match is not None:
+        logg.debug(f"match[1]: {match[1]}")
+        train_words_type = match[1]
 
     # load the model
     model_folder = Path("trained_models") / "area"
     model_path = model_folder / f"{model_name}.h5"
     model = tf_models.load_model(model_path)
-    model.summary()
+    # model.summary()
 
     train_words = words_types[train_words_type]
-    test_words = words_types[test_words_type]
     logg.debug(f"train_words: {train_words}")
+    test_words = words_types[test_words_type]
     logg.debug(f"test_words: {test_words}")
 
     # input data
@@ -503,7 +524,7 @@ def evaluate_model_area(train_words_type: str, test_words_type: str) -> None:
     logg.debug(f"fscore: {fscore}")
 
     fig, ax = plt.subplots(figsize=(12, 12))
-    plot_confusion_matrix(cm, ax, model_name, test_words, fscore, test_words)
+    plot_confusion_matrix(cm, ax, model_name, test_words, fscore, train_words)
 
     fig_name = f"{model_name}_test{test_words_type}_cm.{{}}"
     cm_folder = Path("plot_results") / "cm"
@@ -596,6 +617,7 @@ def run_evaluate_area(args: argparse.Namespace) -> None:
 
     evaluation_type = args.evaluation_type
     train_words_type = args.train_words_type
+    model_name = args.model_name
 
     rec_words_type = args.rec_words_type
     if rec_words_type == "train":
@@ -611,7 +633,7 @@ def run_evaluate_area(args: argparse.Namespace) -> None:
     elif evaluation_type == "delete_bad_models":
         delete_bad_models_area()
     elif evaluation_type == "evaluate_model_area":
-        evaluate_model_area(train_words_type, rec_words_type)
+        evaluate_model_area(model_name, rec_words_type)
 
 
 if __name__ == "__main__":

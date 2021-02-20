@@ -191,8 +191,8 @@ def hyper_train_attention(
     hypa_grid["dropout_type"] = ["01"]
 
     ###### the shape of the kernels in the conv layers
-    hypa_grid["kernel_size_type"] = ["01", "02"]
-    # hypa_grid["kernel_size_type"] = ["01"]
+    # hypa_grid["kernel_size_type"] = ["01", "02"]
+    hypa_grid["kernel_size_type"] = ["01"]
 
     ###### the dimension of the LSTM
     # hypa_grid["lstm_units_type"] = ["01", "02"]
@@ -202,8 +202,8 @@ def hyper_train_attention(
     qs = []
     # hypa_grid["query_style_type"] = ["01", "02", "03", "04", "05"]
     # qs.extend(["01"])  # dense01
-    qs.extend(["03"])  # conv02 (LSTM)
-    qs.extend(["04"])  # conv03 (inputs)
+    # qs.extend(["03"])  # conv02 (LSTM)
+    # qs.extend(["04"])  # conv03 (inputs)
     qs.extend(["05"])  # dense02
     hypa_grid["query_style_type"] = qs
 
@@ -267,43 +267,43 @@ def hyper_train_attention(
     # '04'], 'optimizer_type': ['a1'], 'batch_size_type': ['02'], 'epoch_num_type':
     # ['01']}
 
-    hypa_base = {
-        "batch_size_type": "02",
-        "conv_size_type": "02",
-        # "dataset_name": "mel04L",
-        # "dataset_name": "mel04",
-        "dense_width_type": "01",
-        "dropout_type": "01",
-        "epoch_num_type": "02",
-        "kernel_size_type": "01",
-        "learning_rate_type": "03",
-        "lstm_units_type": "01",
-        "optimizer_type": "a1",
-        "query_style_type": "01",
-        # "words_type": "LTnumLS",
-        # "words_type": "LTBnumLS",
-        # "words_type": "LTnum",
-    }
-    the_grid = []
+    # hypa_base = {
+    #     "batch_size_type": "02",
+    #     "conv_size_type": "02",
+    #     # "dataset_name": "mel04L",
+    #     # "dataset_name": "mel04",
+    #     "dense_width_type": "01",
+    #     "dropout_type": "01",
+    #     "epoch_num_type": "02",
+    #     "kernel_size_type": "01",
+    #     "learning_rate_type": "03",
+    #     "lstm_units_type": "01",
+    #     "optimizer_type": "a1",
+    #     "query_style_type": "01",
+    #     # "words_type": "LTnumLS",
+    #     # "words_type": "LTBnumLS",
+    #     # "words_type": "LTnum",
+    # }
+    # the_grid = []
 
-    from copy import deepcopy
-    hypa = deepcopy(hypa_base)
-    hypa["dataset_name"] = "mel04"
-    hypa["words_type"] = "LTBnum"
-    the_grid.append(hypa)
-    hypa = deepcopy(hypa_base)
-    hypa["dataset_name"] = "mel04"
-    hypa["words_type"] = "LTBall"
-    the_grid.append(hypa)
+    # from copy import deepcopy
+    # hypa = deepcopy(hypa_base)
+    # hypa["dataset_name"] = "mel04"
+    # hypa["words_type"] = "LTBnum"
+    # the_grid.append(hypa)
+    # hypa = deepcopy(hypa_base)
+    # hypa["dataset_name"] = "mel04"
+    # hypa["words_type"] = "LTBall"
+    # the_grid.append(hypa)
 
-    hypa = deepcopy(hypa_base)
-    hypa["dataset_name"] = "mel04L"
-    hypa["words_type"] = "LTBnumLS"
-    the_grid.append(hypa)
-    hypa = deepcopy(hypa_base)
-    hypa["dataset_name"] = "mel04L"
-    hypa["words_type"] = "LTBallLS"
-    the_grid.append(hypa)
+    # hypa = deepcopy(hypa_base)
+    # hypa["dataset_name"] = "mel04L"
+    # hypa["words_type"] = "LTBnumLS"
+    # the_grid.append(hypa)
+    # hypa = deepcopy(hypa_base)
+    # hypa["dataset_name"] = "mel04L"
+    # hypa["words_type"] = "LTBallLS"
+    # the_grid.append(hypa)
 
     num_hypa = len(the_grid)
     logg.debug(f"num_hypa: {num_hypa}")
