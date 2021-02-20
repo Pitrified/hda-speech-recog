@@ -9,9 +9,12 @@ import numpy as np  # type: ignore
 import pandas as pd  # type: ignore
 import typing as ty
 
+from plot_utils import plot_confusion_matrix
 from preprocess_data import load_processed
 from train_area import build_area_name
+from utils import analyze_confusion
 from utils import compute_permutation
+from utils import pred_hot_2_cm
 from utils import setup_logger
 from utils import words_types
 
@@ -33,6 +36,7 @@ def parse_arguments() -> argparse.Namespace:
             # "make_plots_clr",
             # "audio",
             "delete_bad_models",
+            "evaluate_model_area",
         ],
         help="Which evaluation to perform",
     )
@@ -45,6 +49,17 @@ def parse_arguments() -> argparse.Namespace:
         default="f1",
         choices=tra_types,
         help="Words the dataset was trained on",
+    )
+
+    rec_types = [w for w in words_types.keys() if not w.startswith("_")]
+    rec_types.append("train")
+    parser.add_argument(
+        "-rw",
+        "--rec_words_type",
+        type=str,
+        default="train",
+        choices=rec_types,
+        help="Words to record and test",
     )
 
     # last line to parse the args
@@ -429,6 +444,80 @@ def evaluate_attention_weights(train_words_type: str) -> None:
     plt.show()
 
 
+def evaluate_model_area(train_words_type: str, test_words_type: str) -> None:
+    r"""MAKEDOC: what is evaluate_model_area doing?"""
+    logg = logging.getLogger(f"c.{__name__}.evaluate_model_area")
+    # logg.setLevel("INFO")
+    logg.debug("Start evaluate_model_area")
+
+    # magic to fix the GPUs
+    setup_gpus()
+
+    # VAN_opa1_lr05_bs32_en15_dsaug07_wLTall
+    hypa = {
+        "batch_size_type": "32",
+        "dataset_name": "aug07",
+        "epoch_num_type": "15",
+        "learning_rate_type": "03",
+        "net_type": "VAN",
+        "optimizer_type": "a1",
+        # "words_type": "LTall",
+        "words_type": train_words_type,
+    }
+    # use_validation = True
+    use_validation = False
+    dataset_name = hypa["dataset_name"]
+
+    # get the model name
+    model_name = build_area_name(hypa, use_validation)
+    logg.debug(f"model_name: {model_name}")
+
+    # load the model
+    model_folder = Path("trained_models") / "area"
+    model_path = model_folder / f"{model_name}.h5"
+    model = tf_models.load_model(model_path)
+    model.summary()
+
+    train_words = words_types[train_words_type]
+    test_words = words_types[test_words_type]
+    logg.debug(f"train_words: {train_words}")
+    logg.debug(f"test_words: {test_words}")
+
+    # input data
+    processed_path = Path("data_proc") / f"{dataset_name}"
+    data, labels = load_processed(processed_path, test_words)
+    logg.debug(f"list(data.keys()): {list(data.keys())}")
+    logg.debug(f"data['testing'].shape: {data['testing'].shape}")
+
+    # evaluate on the words you trained on
+    logg.debug("Evaluate on test data:")
+    model.evaluate(data["testing"], labels["testing"])
+    # model.evaluate(data["validation"], labels["validation"])
+
+    # predict labels/cm/fscore
+    y_pred = model.predict(data["testing"])
+    cm = pred_hot_2_cm(labels["testing"], y_pred, test_words)
+    # y_pred = model.predict(data["validation"])
+    # cm = pred_hot_2_cm(labels["validation"], y_pred, test_words)
+    fscore = analyze_confusion(cm, test_words)
+    logg.debug(f"fscore: {fscore}")
+
+    fig, ax = plt.subplots(figsize=(12, 12))
+    plot_confusion_matrix(cm, ax, model_name, test_words, fscore, test_words)
+
+    fig_name = f"{model_name}_test{test_words_type}_cm.{{}}"
+    cm_folder = Path("plot_results") / "cm"
+    if not cm_folder.exists():
+        cm_folder.mkdir(parents=True, exist_ok=True)
+
+    plot_cm_path = cm_folder / fig_name.format("png")
+    fig.savefig(plot_cm_path)
+    plot_cm_path = cm_folder / fig_name.format("pdf")
+    fig.savefig(plot_cm_path)
+
+    plt.show()
+
+
 def delete_bad_models_area() -> None:
     """MAKEDOC: what is delete_bad_models_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.delete_bad_models_area")
@@ -508,6 +597,10 @@ def run_evaluate_area(args: argparse.Namespace) -> None:
     evaluation_type = args.evaluation_type
     train_words_type = args.train_words_type
 
+    rec_words_type = args.rec_words_type
+    if rec_words_type == "train":
+        rec_words_type = train_words_type
+
     pd.set_option("max_colwidth", 100)
     pd.set_option("display.max_rows", None)
 
@@ -517,6 +610,8 @@ def run_evaluate_area(args: argparse.Namespace) -> None:
         evaluate_attention_weights(train_words_type)
     elif evaluation_type == "delete_bad_models":
         delete_bad_models_area()
+    elif evaluation_type == "evaluate_model_area":
+        evaluate_model_area(train_words_type, rec_words_type)
 
 
 if __name__ == "__main__":

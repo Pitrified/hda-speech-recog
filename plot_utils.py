@@ -117,10 +117,15 @@ def plot_cat_acc(train_cat_acc, val_cat_acc, ax, model_name):
     ax.legend(["Train", "Val"], loc="lower right")
 
 
-def plot_confusion_matrix(conf_mat, ax, model_name, words, fscore=None):
+def plot_confusion_matrix(
+    conf_mat, ax, model_name, words, fscore=None, pred_words=None
+):
     """MAKEDOC: what is plot_confusion_matrix doing?
 
     https://matplotlib.org/3.1.1/gallery/images_contours_and_fields/image_annotated_heatmap.html
+
+    words are observed words
+    pred_word are predicted words, leave None to use observed labels
     """
     # logg = logging.getLogger(f"c.{__name__}.plot_confusion_matrix")
     # logg.debug("Start plot_confusion_matrix")
@@ -136,16 +141,19 @@ def plot_confusion_matrix(conf_mat, ax, model_name, words, fscore=None):
         xtlr = 90
         lfs = 10
 
+    if pred_words is None:
+        pred_words = words
+
     tick_marks = np.arange(num_words)
     ax.set_xticks(tick_marks)
     ax.set_yticks(tick_marks)
-    ax.set_xticklabels(words, rotation=xtlr, fontsize=14)
+    ax.set_xticklabels(pred_words, rotation=xtlr, fontsize=14)
     ax.set_yticklabels(words, fontsize=14)
-    ax.set_ylabel("Observed", fontsize=16)
     ax.set_xlabel("Predicted", fontsize=16)
+    ax.set_ylabel("Observed", fontsize=16)
 
     # title = f"{model_name.replace('_', ' ')}"
-    model_name_split = model_name.split('_')
+    model_name_split = model_name.split("_")
     title = f"{model_name_split[0]}"
 
     if len(model_name_split) > 0:

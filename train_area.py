@@ -144,9 +144,9 @@ def hyper_train_area(
 
     ###### the net type
     nt = []
-    nt.append("SIM")
-    nt.append("SI2")
-    nt.append("AAN")
+    # nt.append("SIM")
+    # nt.append("SI2")
+    # nt.append("AAN")
     nt.append("VAN")
     hypa_grid["net_type"] = nt
 
@@ -157,7 +157,8 @@ def hyper_train_area(
     # wtl.extend(["LTnum", "yn"])
     # wtl.extend(["LTnum", "yn", "f1", "k1"])
     # wtl.extend(["LTBnum", "LTBall"])
-    wtl.extend(["LTBnum"])
+    # wtl.extend(["LTBnum"])
+    wtl.extend(["num"])
     # wtl.extend(["LTBnumLS", "LTBallLS"])
     # wtl.extend(["lr"])
     # wtl.extend(["similar", "all"])
