@@ -525,12 +525,18 @@ GitHub \cite{afshineaKDG}.
 
 \subsection{Architecture}
 
-As a starting benchmark, a standard Convolutional Neural Network was implemented.
+As a starting benchmark, a standard Convolutional Neural Network was
+implemented.
+%
 Three convolutional modules are instantiated, followed by a dense classifier.
+%
 Each convolutional module is composed of the convolutional layer, a batch
 normalization layer, a max pooling layer and a dropout layer.
+%
 The classifier is composed by three dense layers, the last with softmax
 activation and a number of units equal to the number of classes to predict.
+
+This architecture is referred as StandardConv throughout the report.
 
 \subsection{Model hyper-parameters}
 
@@ -817,6 +823,7 @@ The possible values for the hyper-parameters are:
 % TODO: hyper-parameter for training (e.g. lr)
 
 \section{SimpleNet, AreaNet and VerticalAreaNet}
+\label{sec:area_net}
 % Dream a dream
 
 \subsubsection{SimpleNet}

@@ -1,12 +1,13 @@
 from pathlib import Path
-import argparse
-import logging
-import typing as ty
-import json
-import math
-import re
 from tensorflow.keras import models as tf_models  # type: ignore
+import argparse
+import json
+import logging
+import math
 import matplotlib.pyplot as plt  # type: ignore
+import pandas as pd  # type: ignore
+import re
+import typing as ty
 
 from augment_data import do_augmentation
 from evaluate_area import build_area_results_df
@@ -19,6 +20,7 @@ from preprocess_data import preprocess_spec
 from utils import analyze_confusion
 from utils import pred_hot_2_cm
 from utils import setup_gpus
+from utils import which_arch
 from utils import setup_logger
 from utils import words_types
 
@@ -846,7 +848,7 @@ def evaluate_model_cm_all(test_words_type: str) -> None:
 
     train_type_tags = []
     train_type_tags.append("area")
-    # train_type_tags.append("attention")
+    train_type_tags.append("attention")
     # train_type_tags.append("cnn")
     # train_type_tags.append("transfer")
 
@@ -854,6 +856,7 @@ def evaluate_model_cm_all(test_words_type: str) -> None:
 
     all_models = []
 
+    # find all the trained models for num
     for train_type_tag in train_type_tags:
         model_folder = trained_folder / train_type_tag
         logg.debug(f"model_folder: {model_folder}")
@@ -882,18 +885,108 @@ def evaluate_model_cm_all(test_words_type: str) -> None:
 
     # load the existing results
     if res_path.exists():
-        all_fscores = json.loads(res_path.read_text())
+        fsdd_fscores = json.loads(res_path.read_text())
     else:
-        all_fscores = {}
+        fsdd_fscores = {}
 
+    # compute the new fscores on fsdd
     for model_name in all_models:
-        if model_name in all_fscores:
-            logg.debug(f"{model_name} fscore {all_fscores[model_name]}")
+        if model_name in fsdd_fscores:
+            logg.debug(f"{model_name} fscore {fsdd_fscores[model_name]}")
             continue
         fscore = evaluate_model_cm(model_name, test_words_type)
-        all_fscores[model_name] = fscore
+        fsdd_fscores[model_name] = fscore
 
-    res_path.write_text(json.dumps(all_fscores, indent=4))
+    res_path.write_text(json.dumps(fsdd_fscores, indent=4))
+
+    train_fscore = {}
+
+    # get the fscores on the num data
+    for model_name in all_models:
+        train_type_tag = which_arch(model_name)
+
+        info_folder = Path("info") / train_type_tag
+        model_info_folder = info_folder / model_name
+
+        res_path = model_info_folder / "results_recap.json"
+        if not res_path.exists():
+            logg.info(f"Skipping res_path: {res_path}, not found")
+            continue
+        res = json.loads(res_path.read_text())
+
+        fscore = res["fscore"]
+        train_fscore[model_name] = fscore
+
+    # build the DataFrame
+
+    pandito: ty.Dict[str, ty.List[ty.Any]] = {
+        "model_name": [],
+        "arch_type": [],
+        "train_fscore": [],
+        "fsdd_fscore": [],
+    }
+
+    for model_name in train_fscore:
+        pandito["model_name"].append(model_name)
+        pandito["train_fscore"].append(train_fscore[model_name])
+        pandito["fsdd_fscore"].append(fsdd_fscores[model_name])
+        arch_type = model_name[:3]
+        pandito["arch_type"].append(arch_type)
+
+    res_df = pd.DataFrame(pandito)
+
+    ###### build the table
+
+    table_str = ""
+    indent = "    "
+    newline = " \\\\\n"
+    hline = indent * 2 + "\\hline\n"
+
+    header = indent * 2
+    header += "Arch & Train & FSDD"
+    header += newline
+
+    table_str += hline
+    table_str += header
+    table_str += hline
+
+    arch_types = res_df["arch_type"].unique()
+
+    for arch_type in arch_types:
+        logg.debug(f"arch_type: {arch_type}")
+
+        df_f = res_df
+        df_f = df_f.query(f"arch_type == '{arch_type}'")
+
+        fsdd_fscore_mean = df_f.fsdd_fscore.mean()
+        fsdd_fscore_stddev = df_f.fsdd_fscore.std()
+        # fsdd_fscore_min = df_f.fsdd_fscore.min()
+        fsdd_fscore_max = df_f.fsdd_fscore.max()
+
+        train_fscore_mean = df_f.train_fscore.mean()
+        train_fscore_stddev = df_f.train_fscore.std()
+        # train_fscore_min = df_f.train_fscore.min()
+        train_fscore_max = df_f.train_fscore.max()
+
+        # write the arch name
+        table_str += indent * 2
+        table_str += f"\\multirow{{2}}{{*}}{{{arch_type}}}"
+        table_str += "\n"
+
+        # write the train and fsdd mean/std
+        table_str += indent * 2
+        table_str += f"    & ${train_fscore_mean:.3f} \\pm {train_fscore_stddev:.3f}$"
+        table_str += f"    & ${fsdd_fscore_mean:.3f} \\pm {fsdd_fscore_stddev:.3f}$"
+        table_str += newline
+
+        # write the train and fsdd max
+        table_str += indent * 2
+        table_str += f"    & ${train_fscore_max:.3f}$"
+        table_str += f"              & ${fsdd_fscore_max:.3f}$"
+        table_str += newline
+
+    table_str += hline
+    logg.debug(f"{table_str}")
 
 
 def evaluate_model_cm(model_name: str, test_words_type: str) -> float:

@@ -281,22 +281,33 @@ def load_trained_model_area(override_hypa) -> ty.Tuple[models.Model, str]:
 
     hypa = {
         "batch_size_type": "32",
-        # "dataset_name": "auA07",
         "epoch_num_type": "15",
         "learning_rate_type": "03",
-        "net_type": "VAN",
-        # "net_type": "AAN",
+        # "net_type": "VAN",
+        "net_type": "AAN",
         "optimizer_type": "a1",
-        # "words_type": "LTnumLS"
     }
     # use_validation = False
     use_validation = True
+
+    # SI2_opa1_lr03_bs32_en15_dsmel04_wLTBnum_noval
+    # hypa = {
+    #     "batch_size_type": "32",
+    #     "dataset_name": "mel04",
+    #     "epoch_num_type": "15",
+    #     "learning_rate_type": "03",
+    #     "net_type": "SI2",
+    #     "optimizer_type": "a1",
+    #     "words_type": "LTBnum"
+    # }
+    # use_validation = False
 
     # override the values
     for hypa_name in override_hypa:
         hypa[hypa_name] = override_hypa[hypa_name]
 
     model_name = build_area_name(hypa, use_validation)
+
     logg.debug(f"model_name: {model_name}")
 
     model_folder = Path("trained_models") / "area"
@@ -381,7 +392,7 @@ def plot_sentence_pred(
 
     fig.tight_layout()
 
-    plot_folder = Path("plot_stream") / "all2"
+    plot_folder = Path("plot_stream") / "all3"
     if not plot_folder.exists():
         plot_folder.mkdir(parents=True, exist_ok=True)
     fig.savefig(plot_folder / fig_name.format("pdf"))

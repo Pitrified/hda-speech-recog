@@ -49,7 +49,7 @@ def parse_arguments():
         "--model_name",
         type=str,
         default="VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum",
-        help="Which word to show",
+        help="Which model to use",
     )
 
     # last line to parse the args

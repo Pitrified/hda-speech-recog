@@ -3,11 +3,22 @@
 \section{Concluding Remarks}
 \label{sec:conclusions}
 
-A gripping conclusion
+% A gripping conclusion
 
-Using Hypertune di Keras
+The task of identifing a command in a single audio sample has been successfully
+solved, with varying degree of accuracy, by every architecture tested.
 
-Normalizing spectrograms might be useful
+Further works might focus on different types of attention, and the performance
+of SimpleNet and AreaNet should be evaluated on standard image
+classification datasets, such as ImageNet.
 
-I should have more carefully examined the graphs and aggregated results earlier
-There might be a peak combination that you miss.
+Regarding the methodology used, a definite improvement would be using existing
+frameworks for hyper-parameter tuning, such as Hypertune, readily available
+with Keras Tuner library. A very interesting approach is Hyperband, that trains
+every model built from the hyper-parameter grid for a few epochs, then prunes
+the set of models, only keeping the best performing ones.
+
+The methodical hyper-parameter analysis done while writing the report was very
+informative, and while the plots confirmed what I believed to be the best
+combinations, they gave me a couple of ideas regarding some explorations that I
+had missed.

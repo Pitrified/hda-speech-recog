@@ -480,6 +480,22 @@ def find_free_file_index(base_folder: Path, name_template: str) -> int:
     return -1
 
 
+def which_arch(model_name: str) -> str:
+    r"""MAKEDOC: what is which_arch doing?"""
+    # logg = logging.getLogger(f"c.{__name__}.which_arch")
+    # logg.setLevel("INFO")
+    # logg.debug("Start which_arch")
+
+    arch_type = model_name[:3]
+
+    if arch_type == "ATT":
+        train_type_tag = "attention"
+    else:
+        train_type_tag = "area"
+
+    return train_type_tag
+
+
 def pr2fscore(precision, recall) -> np.ndarray:
     """MAKEDOC: what is pr2fscore doing?"""
     logg = logging.getLogger(f"c.{__name__}.pr2fscore")

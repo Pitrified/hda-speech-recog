@@ -69,32 +69,29 @@ blue line tells the standard deviation around the mean.
 % Hypa comparison
 % First specific hypas
 
-A total of $5064$
-% TODO
-experiment were performed for the convolutional architecture.
+A total of $5064$ experiment were performed for the standard convolutional
+architecture.
 
 \subsubsection{Model parameters performance comparison}
 
 The effects of tweaking the parameters of the model structure are shown in
 \fig{fig:cnn_comparison_kernel_filter_dense_pool}.
+%
 The graph sums up the F-Score values for variation of
-a)
-the number of convolutional filters learned,
-b)
-the shape of the filters ($01$ for square kernel sizes, $02$ for a vertical
+%
+a) the number of convolutional filters learned,
+%
+b) the shape of the filters ($01$ for square kernel sizes, $02$ for a vertical
 filter followed by two square filters),
-c)
-the shape of the pooling window ($01$ for square, $02$ for a rectangular
-window followed by two square ones)
-and
-d)
-the number of units in the dense classifier.
-% clear see kernel
-% clear see dense
-% pool vague
-% filter useless
+%
+c) the shape of the pooling window ($01$ for square, $02$ for a rectangular
+window followed by two square ones) and
+%
+d) the number of units in the dense classifier.
+% clear see kernel clear see dense pool vague filter useless
 % Fscore__kernel_size__filters__dense_width__pool_size.png
 Several insights can be extrapolated, in order of clarity:
+
 \begin{itemize}
     \item The vertical kernel helps extract information along the frequency axis,
         and provides a clear increase in performance.
@@ -110,7 +107,13 @@ Several insights can be extrapolated, in order of clarity:
 \begin{figure*}[h!]
     \centering
     \includegraphics[width=0.9\linewidth]{Fscore_CNN_kernel_size__filters__dense_width__pool_size.pdf}
-    \caption{Comparison CNN model}%
+    \caption{F-score for varying
+        pool size,
+        dense classifier width,
+        number of convolutional filters,
+        kernel size.
+        Solved by the StandardConv architecture.
+    }%
     \label{fig:cnn_comparison_kernel_filter_dense_pool}
 \end{figure*}
 
@@ -139,15 +142,18 @@ Two main conclusions can be reached:
 \begin{figure*}[h!]
     \centering
     \includegraphics[width=0.9\linewidth]{Fscore_CNN_epoch_num__lr__dataset__words.pdf}
-    \caption{Comparison CNN}%
+    \caption{F-score for varying
+        dataset type and learning rate type.
+        Solved by the StandardConv architecture.
+        The mel spectrogams clearly perform better, and the augmented data can
+        improve the training, especially with a fixed learning rate.
+    }%
     \label{fig:cnn_comparison_epoch_lr_dataset}
 \end{figure*}
 
 \subsection{Hyper-parameter analysis: Transfer learning}
 
-A total of $144$
-% TODO
-experiment were performed for the transfer learning approach.
+A total of $144$ experiment were performed for the transfer learning approach.
 
 % TODO: on what are you averaging
 
@@ -170,7 +176,12 @@ influence the training.
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.8\linewidth]{Fscore_TRA_batch_size__epoch_num__dense_width__words.pdf}
-    \caption{TRA comparison batch epoch dense}%
+    \caption{F-score for varying
+        dense classifier width,
+        number of training epochs,
+        batch size.
+        Solved by the Xception architecture with transfer learning.
+    }%
     \label{fig:tra_comparison_batch_epoch_dense}
 \end{figure}
 
@@ -202,7 +213,11 @@ cross-channel correlations between different types of spectrograms.
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.8\linewidth]{Fscore_TRA_dataset_comparison.pdf}
-    \caption{Dataset TRA comparison}%
+    % \caption{Dataset TRA comparison}%
+    \caption{F-score for varying
+        dataset types.
+        Solved by the Xception architecture with transfer learning.
+    }%
     \label{fig:tra_comparison_dataset}
 \end{figure}
 
@@ -228,33 +243,35 @@ EfficientNetB0, with 5.3M parameters, cannot reach the same results.
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.8\linewidth]{Fscore_TRA_arch_comparison.pdf}
-    \caption{Architecture TRA comparison}%
+    % \caption{Architecture TRA comparison}%
+    \caption{F-score for varying
+        architecture types.
+        The 4-words task was solved on the same dataset by the 
+        Xception, DenseNet121, EfficientNetB0, EfficientNetB4 and
+        EfficientNetB7 architectures.
+    }%
     \label{fig:tra_comparison_arch}
 \end{figure}
 
 \subsection{Hyper-parameter analysis: Attention}
 
-A total of $1688$
-% TODO
-experiment were performed for the LSTM+attention model.
+A total of $1698$ experiment were performed for the LSTM+attention model.
 
 \subsubsection{Model parameters performance comparison}
 
-\fig{fig:att_dropout_conv_query_dense} shows F-score values for 
-variation of 
-a)
-the width of the dense classifier ($32$ or $64$),
-b)
-the dropout rate
-after the initial convolutional layers
-($0.2$ or $0$),
-c)
-the number of initial convolutional layers ($1$ or $2$)
-and
-d)
-the query style ($01$ and $05$ pick a single LSTM vector to compute the scores,
-$02$ and $03$ use convolutional layers connected to the LSTM outputs to extract
-the scores and $04$  uses convolutional layers connected to the spectrograms).
+\fig{fig:att_dropout_conv_query_dense} shows F-score values for variation of 
+%
+a) the width of the dense classifier ($32$ or $64$),
+%
+b) the dropout rate after the initial convolutional layers ($0.2$ or $0$),
+%
+c) the number of initial convolutional layers ($1$ or $2$) and
+%
+d) the query style ($01$ and $05$ pick a single LSTM vector to compute the
+scores, $02$ and $03$ use convolutional layers connected to the LSTM outputs to
+extract the scores and $04$  uses convolutional layers connected to the
+spectrograms).
+%
 The results are very close but two conclusions can be tentatively reached:
 
 \begin{itemize}
@@ -322,7 +339,25 @@ Two main conclusions can be reached:
 
 \subsection{AreaNet and SimpleNet performance}
 
-TODO: So good!
+% TODO: So good!
+
+A total of $590$ experiment were performed for the convolutional+attention
+architecture.
+%
+The models proposed in \secref{sec:area_net} perform quite well.
+%
+The F-Score values are listed in \tab{tab:mega_comparison}.
+%
+Surprisingly, the SimpleNet architecture works extremely well, consistently
+outperforming every other architecture on every task. The larger SimpleNet2 is
+only fractionally better than SimpleNet, at the price of $407,604$ trainable
+parameters instead of $277,004$.
+%
+The added complexity of computing the attention scores and weighing the input
+spectrograms does not lead to better results, even if a visual inspection of
+the weights shows that the model did in fact learn which portions of the input
+is more relevant, as shown in \fig{fig:attention_weights_area} and
+\fig{fig:attention_weights_vertical}.
 
 \subsection{Data augmentation performance}
 \label{sec:augmentation_performance}
@@ -521,14 +556,12 @@ architecture performs well not only regarding to the best model in the class,
 but also according to the very low standard deviation values, that indicate a
 very robust training.
 %
-The VerticalAreaNet tends to perform better than the AreaNet, showing that
-emphasizing the temporal correlations helps the training as the attention
-weights only have to select the relevant \textit{temporal} portion of the
-input, while selecting also along the frequency axes (as AreaNet does) does not
-improve performances.
+VerticalAreaNet tends to perform better than AreaNet, showing that emphasizing
+the temporal correlations helps the training, while selecting also along the
+frequency axes (as AreaNet does) does not improve performances.
 %
-It is expected that on a standard image dataset, that lacks this vertical
-correlation, AreaNet would perform better than VerticalAreaNet.
+It is expected that on a standard image dataset, that lacks this strong
+vertical correlation, AreaNet would perform better than VerticalAreaNet.
 
 % \input{megacomparison_manual}
 \input{megacomparison_auto}
@@ -546,36 +579,73 @@ shows the confusion matrix for LSTM+attention model solving the ``LTBall''
 task.
 
 % visual wow
-Note that for all architectures the largest mistake is regarding
-the classification of ``wow'' that is sometimes predicted as ``visual''.
-Indeed, the two words sound very similar: one of the possible pronunciations
-for visual includes the 
+Note that for all architectures the largest mistake is regarding the
+classification of ``wow'' that is sometimes predicted as ``visual''. Indeed,
+the two words can sound very similar: one of the possible pronunciations for
+visual includes the 
 % https://tex.stackexchange.com/a/370073
-/\includegraphics[width=0.6em]{usound.pdf}/
-sound,
-which is the main phoneme uttered when saying wow.
+/\includegraphics[width=0.6em]{usound.pdf}/ sound, which is the main phoneme
+uttered when saying wow.
 
-% TODO: 93.9% (35-word)
-The results obtained with the LSTM+attention model closely match the ones obtained in the
-paper that proposed the model \cite{2018arXiv180808929C}.
-
-\begin{figure}[t!]
-    \centering
-    \includegraphics[width=0.9\linewidth]{VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum_cm.pdf}
-    \caption{TODO put the fsdd one}%
-    \label{fig:VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum_cm}
-\end{figure}
+% 93.9% (35-word)
+The results obtained with the LSTM+attention model closely match the ones
+obtained in the paper that proposed the model \cite{2018arXiv180808929C}.
 
 \subsubsection{FSDD performance}
 
-% TODO: Test all on that
+% Test all on that
 The models were also tested on audio samples in the Free Spoken Digit Dataset.
-The results are quite good, as the F-Score reached $95.72\%$
-when the F-Score on the GSCD test data was $98.30\%$.
+\tab{tab:fsdd_performance} shows the performances of the attention
+architectures trained on the 10-words number task and evaluated on the FSDD
+audios.
 %
-A loss in accuracy is present, but it might be explained in the
-lower quality of the dataset, as $2$ out of $6$ speakers' recording
-are with extremely low volume.
+A $2-3\%$ loss of accuracy is present, but the models retain most of the
+classification capabilities, especially for the convolutional+attention models.
+%
+\fig{fig:SI2_opa1_lr04_bs32_en15_dsaug07_wnum_noval_testfsdd_cm} shows the
+confusion matrix for SimpleNet2 evaluated on the FSDD.
+%
+Some of the accuracy loss might be explained in the lower quality of the
+dataset, as $2$ out of $6$ speakers' recording have a quite low volume.
+
+\begin{table}[h!]
+    \centering
+    \caption{Performances of models trained on the ``num'' task with GSCD
+        recordings and tested on the FSDD audios.
+    }
+    \label{tab:fsdd_performance}
+    \begin{tabular}{|c|cc|}
+        \hline
+        Arch & GSCD & FSDD \\
+        \hline
+        \multirow{2}{*}{ATT}
+            & $0.979 \pm 0.002$    & $0.910 \pm 0.017$ \\
+            & $0.982$              & $0.935$ \\
+        \hline
+        \multirow{2}{*}{SIM}
+            & $0.985 \pm 0.001$    & $0.948 \pm 0.008$ \\
+            & $0.987$              & $0.957$ \\
+        \multirow{2}{*}{SI2}
+            & $0.987 \pm 0.001$    & $0.953 \pm 0.009$ \\
+            & $0.988$              & $0.966$ \\
+        \multirow{2}{*}{AAN}
+            & $0.982 \pm 0.004$    & $0.951 \pm 0.009$ \\
+            & $0.986$              & $0.965$ \\
+        \multirow{2}{*}{VAN}
+            & $0.983 \pm 0.003$    & $0.947 \pm 0.009$ \\
+            & $0.986$              & $0.957$ \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{figure}[t!]
+    \centering
+    \includegraphics[width=0.9\linewidth]{SI2_opa1_lr04_bs32_en15_dsaug07_wnum_noval_testfsdd_cm.pdf}
+    \caption{Confusion matrix for SimpleNet2 predicting the
+        FSDD audios after being trained on the GSCD audios for the ``num'' task.
+    }%
+    \label{fig:SI2_opa1_lr04_bs32_en15_dsaug07_wnum_noval_testfsdd_cm}
+\end{figure}
 
 \subsection{Attention weights}
 
@@ -642,40 +712,54 @@ actually spoken.
 % bad_count: 85
 % total: 116
 
-TODO: write meaningful captions
-
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.9\linewidth]{stream2_attention_ltts_meL04_LTnumLS_26.pdf}
-    \caption{Stream 26}%
+    \caption{Stream predictions for ``Three o'clock came, four, five, six, and no letter.''
+        Note that the clearly apart words are easily identified.
+    }%
     \label{fig:stream_attention_ltts_meL04_LTnumLS_26}
 \end{figure}
 
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.9\linewidth]{stream2_attention_ltts_meL04_LTnumLS_67.pdf}
-    \caption{Stream 67}%
+    \caption{Stream predictions for
+        ``Of the four other company engineers, two were now stirring and partly
+        conscious.'', using $0.5$ seconds windows. The small window length
+        can almost identify the ``four'' hidden by the neightbouring
+        words, but it is still not sufficient.
+    }%
     \label{fig:stream_attention_ltts_meL04_LTnumLS_67}
 \end{figure}
 
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.9\linewidth]{stream_attention_ltts_mel04_LTnum_67.pdf}
-    \caption{Stream 67 long words}%
+    \caption{Stream predictions for
+        ``Of the four other company engineers, two were now stirring and partly conscious.'',
+        using $1$ seconds windows.
+        Note that the very fast sequence of words hides completely the ``four''
+        utterance at the beginning of the sentence, while the silence before
+        the ``two'' allows for recognition.
+    }%
     \label{fig:stream_attention_ltts_mel04_LTnum_67}
 \end{figure}
 
 \begin{figure}[h!]
     \centering
     \includegraphics[width=0.9\linewidth]{stream2_attention_ltts_meL04_LTnumLS_19.pdf}
-    \caption{Stream 19}%
+    \caption{Stream predictions for
+        ``Chapter three - Two misfortunes make one piece of good fortune''
+        Note the absence of the silence class, that confuses the model.
+    }%
     \label{fig:stream_attention_ltts_meL04_LTnumLS_19}
 \end{figure}
 
 % Attention vs Simple vs AreaNet vs VerticalAreaNet
 
-TODO: Compare inference time, model size
+% TODO: Compare inference time, model size
 
-TODO: Show stream with silence label
+% TODO: Show stream with silence label
 
 % Little difference in performance

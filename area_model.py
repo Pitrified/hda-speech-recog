@@ -392,18 +392,19 @@ def test_build_aa() -> None:
     logg.debug("Start test_build_aa")
 
     # input_shape = (64, 64, 1)
-    input_shape = (80, 128, 1)
+    input_shape = (256, 256, 3)
+    # input_shape = (80, 128, 1)
     num_classes = 4
 
     # area_model = AreaNet.build(input_shape, num_classes)
-    # area_model = ActualAreaNet.build(input_shape, num_classes)
+    area_model = ActualAreaNet.build(input_shape, num_classes)
     # area_model = VerticalAreaNet.build(input_shape, num_classes)
-    area_model = SimpleNet.build(input_shape, num_classes, sim_type="2")
+    # area_model = SimpleNet.build(input_shape, num_classes, sim_type="2")
 
     area_model.summary(line_length=120)
 
     model_folder = Path("plot_models")
-    model_pic_name = model_folder / "actual_area_model_01.png"
+    model_pic_name = model_folder / "actual_area_model_04.png"
     U.plot_model(area_model, model_pic_name, show_shapes=True, dpi=400)
 
     asc = ascii_model(area_model)

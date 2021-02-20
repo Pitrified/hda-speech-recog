@@ -144,9 +144,9 @@ def hyper_train_area(
 
     ###### the net type
     nt = []
-    # nt.append("SIM")
-    # nt.append("SI2")
-    # nt.append("AAN")
+    nt.append("SIM")
+    nt.append("SI2")
+    nt.append("AAN")
     nt.append("VAN")
     hypa_grid["net_type"] = nt
 
