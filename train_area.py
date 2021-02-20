@@ -151,15 +151,18 @@ def hyper_train_area(
     hypa_grid["net_type"] = nt
 
     ###### the words to train on
-    # hypa_grid["words_type"] = [words_type]
-    # hypa_grid["words_type"] = ["LTnum", "LTall", "yn"]
-    # hypa_grid["words_type"] = ["LTnum", "yn"]
-    # hypa_grid["words_type"] = ["LTnum", "yn", "f1", "k1"]
-    # hypa_grid["words_type"] = ["LTBnum", "LTBall"]
-    # hypa_grid["words_type"] = ["LTBnumLS", "LTBallLS"]
-    # hypa_grid["words_type"] = ["lr"]
-    # hypa_grid["words_type"] = ["similar", "all"]
-    hypa_grid["words_type"] = ["all"]
+    wtl = []
+    # wtl.extend([words_type])
+    # wtl.extend(["LTnum", "LTall", "yn"])
+    # wtl.extend(["LTnum", "yn"])
+    # wtl.extend(["LTnum", "yn", "f1", "k1"])
+    wtl.extend(["LTBnum", "LTBall"])
+    # wtl.extend(["LTBnumLS", "LTBallLS"])
+    # wtl.extend(["lr"])
+    # wtl.extend(["similar", "all"])
+    wtl.extend(["all"])
+
+    hypa_grid["words_type"] = wtl
 
     ###### the dataset to train on
     ds = []
@@ -171,7 +174,7 @@ def hyper_train_area(
     ds.extend(["mela1"])
     ds.extend(["aug07"])
     ds.extend(["aug14"])
-    # ds.extend(["aug15"])
+    ds.extend(["aug15"])
 
     # TODO auL6789 auL18901 on all net_type
     # TODO auA5678 on VAN (on LTnumLS)

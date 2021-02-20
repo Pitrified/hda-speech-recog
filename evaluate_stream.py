@@ -188,7 +188,7 @@ def split_sentence(
     return splits
 
 
-def load_trained_model_att(override_hypa) -> models.Model:
+def load_trained_model_att(override_hypa) -> ty.Tuple[models.Model, str]:
     """MAKEDOC: what is load_trained_model_att doing?"""
     logg = logging.getLogger(f"c.{__name__}.load_trained_model_att")
     # logg.setLevel("INFO")
@@ -230,10 +230,10 @@ def load_trained_model_att(override_hypa) -> models.Model:
 
     model = models.load_model(model_path)
 
-    return model
+    return model, model_name
 
 
-def load_trained_model_cnn(override_hypa) -> models.Model:
+def load_trained_model_cnn(override_hypa) -> ty.Tuple[models.Model, str]:
     """MAKEDOC: what is load_trained_model_cnn doing?"""
     logg = logging.getLogger(f"c.{__name__}.load_trained_model_cnn")
     # logg.setLevel("INFO")
@@ -270,10 +270,10 @@ def load_trained_model_cnn(override_hypa) -> models.Model:
 
     model = models.load_model(model_path)
 
-    return model
+    return model, model_name
 
 
-def load_trained_model_area(override_hypa) -> models.Model:
+def load_trained_model_area(override_hypa) -> ty.Tuple[models.Model, str]:
     """MAKEDOC: what is load_trained_model_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.load_trained_model_area")
     # logg.setLevel("INFO")
@@ -285,10 +285,12 @@ def load_trained_model_area(override_hypa) -> models.Model:
         "epoch_num_type": "15",
         "learning_rate_type": "03",
         "net_type": "VAN",
+        # "net_type": "AAN",
         "optimizer_type": "a1",
         # "words_type": "LTnumLS"
     }
-    use_validation = False
+    # use_validation = False
+    use_validation = True
 
     # override the values
     for hypa_name in override_hypa:
@@ -306,12 +308,12 @@ def load_trained_model_area(override_hypa) -> models.Model:
 
     model = models.load_model(model_path)
 
-    return model
+    return model, model_name
 
 
 def load_trained_model(
     model_type: str, datasets_type: str, train_words_type: str
-) -> models.Model:
+) -> ty.Tuple[models.Model, str]:
     """MAKEDOC: what is load_trained_model doing?"""
     logg = logging.getLogger(f"c.{__name__}.load_trained_model")
     # logg.setLevel("INFO")
@@ -319,17 +321,17 @@ def load_trained_model(
 
     if model_type == "cnn":
         override_hypa = {"dataset": datasets_type, "words": train_words_type}
-        model = load_trained_model_cnn(override_hypa)
+        model, model_name = load_trained_model_cnn(override_hypa)
 
     elif model_type == "attention":
         override_hypa = {"dataset_name": datasets_type, "words_type": train_words_type}
-        model = load_trained_model_att(override_hypa)
+        model, model_name = load_trained_model_att(override_hypa)
 
     elif model_type == "area":
         override_hypa = {"dataset_name": datasets_type, "words_type": train_words_type}
-        model = load_trained_model_area(override_hypa)
+        model, model_name = load_trained_model_area(override_hypa)
 
-    return model
+    return model, model_name
 
 
 def plot_sentence_pred(
@@ -393,6 +395,7 @@ def evaluate_stream(
     train_words_type: str,
     architecture_type: str,
     sentence_index: int,
+    model_name: str,
 ) -> None:
     """MAKEDOC: what is evaluate_stream doing?
 
@@ -462,9 +465,6 @@ def evaluate_stream(
 
     # a random number generator to use
     rng = np.random.default_rng(12345)
-
-    # model = load_trained_model(architecture_type, datasets_type, train_words_type)
-    # model.summary()
 
     if evaluation_type == "ltts":
         sentence_wav_paths, sentence_norm_tra = build_ltts_sentence_list(
@@ -545,7 +545,8 @@ def evaluate_stream(
     logg.debug(f"Predictions {clean_labels}")
 
     # fig_name = f"{architecture_type}_{evaluation_type}_{datasets_type}_{train_words_type}_{norm_tra}.{{}}"
-    fig_name = f"{architecture_type}"
+    # fig_name = f"{architecture_type}"
+    fig_name = f"{model_name}"
     fig_name += f"_{evaluation_type}"
     fig_name += f"_{datasets_type}"
     fig_name += f"_{train_words_type}"
@@ -585,7 +586,9 @@ def run_evaluate_stream(args: argparse.Namespace) -> None:
 
     # magic to fix the GPUs
     setup_gpus()
-    model = load_trained_model(architecture_type, which_dataset, train_words_type)
+    model, model_name = load_trained_model(
+        architecture_type, which_dataset, train_words_type
+    )
 
     # for sentence_index in range(116):
     # for sentence_index in range(6):
@@ -597,6 +600,7 @@ def run_evaluate_stream(args: argparse.Namespace) -> None:
             train_words_type,
             architecture_type,
             sentence_index,
+            model_name,
         )
         # wasgood = input()
         # if wasgood == "y":

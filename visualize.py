@@ -2,6 +2,7 @@ from functools import partial
 from pathlib import Path
 import argparse
 import logging
+import json
 
 from tensorflow_addons.image import sparse_image_warp  # type: ignore
 import librosa  # type: ignore
@@ -13,6 +14,7 @@ from augment_data import do_augmentation
 from preprocess_data import preprocess_spec
 from plot_utils import plot_spec
 from plot_utils import plot_waveform
+from plot_utils import plot_confusion_matrix
 from schedules import exp_decay_step
 from schedules import exp_decay_smooth
 from utils import find_rowcol
@@ -30,7 +32,7 @@ def parse_arguments():
         "--visualization_type",
         type=str,
         default="augment",
-        choices=["augment", "spec", "datasets", "waveform", "lr_decay"],
+        choices=["augment", "cm", "spec", "datasets", "waveform", "lr_decay"],
         help="Which visualization to perform",
     )
 
@@ -39,6 +41,14 @@ def parse_arguments():
         "--word_index",
         type=int,
         default=0,
+        help="Which word to show",
+    )
+
+    parser.add_argument(
+        "-mn",
+        "--model_name",
+        type=str,
+        default="VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum",
         help="Which word to show",
     )
 
@@ -482,6 +492,53 @@ def visualize_lr_decay() -> None:
     plt.show()
 
 
+def visualize_cm(model_name: str) -> None:
+    r"""MAKEDOC: what is visualize_cm doing?"""
+    logg = logging.getLogger(f"c.{__name__}.visualize_cm")
+    # logg.setLevel("INFO")
+    logg.debug("Start visualize_cm")
+
+    # the location of this file
+    this_file_folder = Path(__file__).parent.absolute()
+    logg.debug(f"this_file_folder: {this_file_folder}")
+
+    if model_name.startswith("ATT"):
+        train_type_tag = "attention"
+    elif model_name.startswith("VAN"):
+        train_type_tag = "area"
+    elif model_name.startswith("S"):
+        train_type_tag = "area"
+    elif model_name.startswith("AAN"):
+        train_type_tag = "area"
+
+    info_folder = Path("info") / train_type_tag
+    model_folder = info_folder / model_name
+    res_path = model_folder / "results_recap.json"
+    res = json.loads(res_path.read_text())
+    recap_path = model_folder / "recap.json"
+    recap = json.loads(recap_path.read_text())
+
+    cm = np.array(res["cm"])
+    fscore = res["fscore"]
+    words = recap["words"]
+
+    fig, ax = plt.subplots(figsize=(12, 12))
+    plot_confusion_matrix(cm, ax, model_name, words, fscore)
+    fig.tight_layout()
+
+    fig_name = f"{model_name}_cm.{{}}"
+    cm_folder = Path("plot_results") / "cm"
+    if not cm_folder.exists():
+        cm_folder.mkdir(parents=True, exist_ok=True)
+
+    plot_cm_path = cm_folder / fig_name.format("png")
+    fig.savefig(plot_cm_path)
+    plot_cm_path = cm_folder / fig_name.format("pdf")
+    fig.savefig(plot_cm_path)
+
+    plt.close(fig)
+
+
 def run_visualize(args):
     """MAKEDOC: What is visualize doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_visualize")
@@ -489,6 +546,7 @@ def run_visualize(args):
 
     visualization_type = args.visualization_type
     word_index = args.word_index
+    model_name = args.model_name
 
     if visualization_type == "augment":
         visualize_augment()
@@ -500,6 +558,8 @@ def run_visualize(args):
         visualize_waveform()
     elif visualization_type == "lr_decay":
         visualize_lr_decay()
+    elif visualization_type == "cm":
+        visualize_cm(model_name)
 
     plt.show()
 
