@@ -2,13 +2,13 @@
 
 \section{Processing Pipeline}
 \label{sec:processing_architecture}
-% High level descripion of the processing flow:
+% High level description of the processing flow:
 
 For each architecture used in this report, the high-level processing flow is
 mostly the same:
 \begin{enumerate}
     \item Preprocess the signals by extracting the loudest section
-    \item Extract speech features using mel spectrogram or MFCCs
+    \item Extract speech features computing the spectrograms
     \item Augment the data with image warping
     \item Classify the augmented speech features using a Neural Network
 \end{enumerate}
@@ -26,10 +26,10 @@ four architectures were evaluated:
     \item Convolutional model with attention mechanism
 \end{itemize}
 
-Finally, the models were tested on an audio stream rather than an audio sample
-containing one command, to evaluate their performances with respect to online
-keyword spotting.
 % Test against a stream of sounds.
+Finally, the models were tested on an audio stream rather than an audio sample
+containing a single command, to evaluate their performances with respect to
+the keyword spotting task.
 
 \section{Signals and Features}
 \label{sec:model}
@@ -42,13 +42,13 @@ keyword spotting.
 
 The Speech Commands datasets \cite{warden2018speech} (GSCD), provides thousands
 of one second recording of $35$ different words. The recordings are mainly of
-volounteers, who used their own device to record the words in a closed room
-wherever they happened to be (not in a studio setting). Ideally each volounteer
+volunteers, who used their own device to record the words in a closed room
+wherever they happened to be (not in a studio setting). Ideally each volunteer
 only recorded the $135$ requested utterances once, so the dataset provides good
 variability of voices.
 The utterances have a duration of one second.
 To more precisely align the recorded clips, the audio was acquired for $1.5$
-seconds and the $1$ second clip that contained the highest overrall volume was
+seconds and the $1$ second clip that contained the highest overall volume was
 extracted.
 Several background noise recording are included as well.
 The full dataset includes $105829$ utterances of $35$ words, saved in
@@ -60,7 +60,7 @@ test folds, as well as two example lists of validation data ($9981$ utterances)
 and test data ($11005$ utterances).
 Throughout the experiments, those lists were used.
 % MAYBE both for the practicality of having them ready, but also to keep with
-% the spirit of the dataset as a tool to enable meaningf
+% the spirit of the dataset as a tool to enable meaningful
 
 The Speech Commands dataset was preprocessed, extracting for each $1$ second
 utterance the loudest $0.5$ second section, using a simple analysis of the
@@ -81,7 +81,7 @@ License \cite{ccbysa4}.
 This dataset was only used after all hyper-parameters were tuned, to evaluate
 the performances on fresh data.
 
-\subsubsection{LibriTTS}
+\subsubsection{LibriTTS dataset}
 
 To evaluate the models in a streaming setting, a part of the LibriTTS dataset
 was used \cite{zen2019libritts}. This dataset contains approximately $585$
@@ -96,13 +96,12 @@ available, but was not needed in this project. The dataset is released under
 the Creative Commons Attribution $4.0$ International (CC~BY~$4.0$) License
 \cite{ccby4}.
 
-The ``dev-clean'' portion of the database was used.
+The ``dev-clean'' portion of the dataset was used, containing $5736$ sentences.
 To extract the audio samples, the original signal is simply split in $1$ or
-$0.5$ seconds intervals: this is considered a good approximation of random
-background conversations.
-The sentences in the dataset were split by checking whether or not
-one of the training word was used in the sentece.
-
+$0.5$ seconds intervals: this is considered a good approximation of random, not
+aligned, background conversations. The sentences in the dataset were split in
+train/test folds by checking whether or not one of the training word was used
+in the sentence.
 
 \subsubsection{Silence class}
 
@@ -115,47 +114,52 @@ corresponding to roughly $600$ samples.
 %
 To have a similar number of samples to the other classes, all the background
 audios were composed in a single vector and random $1$ second portions were
-extracted.
+extracted as needed.
 
 \subsection{Problem definition}
 
-\subsubsection{Keyword recognition}
+\subsubsection{Command recognition}
 
-The keyword recognition problem consists in identifying which word is spoken in
+The command recognition problem consists in identifying which word is spoken in
 a given $1$ second audio sample.
+%
 The Speech Commands dataset provides $35$ classes of words, that were grouped
 in smaller tasks to perform the hyper-parameter search and to evaluate the
 performance of the various architectures.
-The sub-tasks contain $4$, $6$, $10$, $20$ and $35$ words.
-Appendix \tab{tab:task_word_composition} lists the composition of each
-task.
+%
+The sub-tasks contain $4$, $6$, $10$, $20$ and $35$ words. Appendix
+\tab{tab:task_word_composition} lists the composition of each task.
+%
 Another word class (\texttt{\_other\_ltts}) is added, containing the audio
-samples extracted from the LibriTTS dataset.
-This category is used to discriminate a conversation that does not contain any
-of the $35$ command words.
+samples extracted from the LibriTTS dataset. This category is used to
+discriminate a conversation that does not contain any of the $35$ command
+words.
+%
 Each task for GSCD is expanded by adding the \texttt{\_other\_ltts} category,
 and is referred as \texttt{LT\_\{task\_key\}}.
+%
 For the Free Spoken Digit Dataset, the number label is prefixed with
 \texttt{fsdd\_} to track the different origin of the recording.
-% while testing
-% the performance of a model trained on the number classes of GSCD.
+%
 For the shortened utterances extracted from GSCD, each word is prefixed with
-\texttt{loudest\_}, and
-the set of words is referred as
+\texttt{loudest\_}, and the set of words is referred as
 \texttt{\{task\_key\}\_LS}.
+%
 An additional \texttt{\_other\_ltts\_loud} class also exists for audio samples
 from the LibriTTS dataset with sample length compatible with the shortened
 version of the dataset.
 
-\subsubsection{Streaming setting}
+\subsubsection{Keyword spotting}
 
-The models were also evaluated in a streaming setting, by feeding
-a sentence and trying to predict at which point one of the known words is spoken.
+The models were also evaluated in a streaming setting, by feeding a sentence
+and trying to predict at which point one of the known keywords is spoken.
+%
 From the LibriTTS dataset, one sentence that contains one of the known words is
-analysed by computing the predictions for overlapping one second samples,
+analyzed by computing the predictions for overlapping one second samples,
 extracted every $100$ ms.
-Most of the predictions should be \texttt{\_other\_ltts}, except for
-the sections of sentence corresponding to the known words.
+%
+The predictions for most of the windows should be \texttt{\_other\_ltts},
+except for the sections of sentence corresponding to the known words.
 
 \subsection{Mel spectrogram and Mel-frequency Cepstral Coefficients}
 
@@ -183,7 +187,7 @@ The mel spectrogram is a spectrogram where the frequencies are converted to the
 mel scale. To do so, a Mel spaced filterbank is generated (a 10 filters version
 is shown in \fig{fig:mel10_filterbank}) and the FFT results are multiplied with
 a dot product with each filter, obtaining \texttt{n\_mel} values for each
-timestep.
+time step.
 
 \begin{figure}[t!]
     \centering
@@ -201,7 +205,7 @@ The spectrograms were obtained using the \texttt{librosa} library
 \cite{brian_mcfee_2020_3955228}.
 The values used to generate the mel spectrograms are listed in
 \tab{tab:mel_values}.
-The values used to generate the mel frequency cepstral coefficients are listed
+The values used to generate the Mel Frequency Cepstral Coefficients are listed
 in \tab{tab:mfcc_values}.
 An example waveform for the word ``happy'' and the relative spectrograms are
 shown in \fig{fig:happy_specs}.
@@ -220,22 +224,22 @@ The values used to stack the spectrograms are listed in \tab{tab:ch3_values}.
 \begin{figure}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{happy_specs.pdf}
-    \caption{
-    Waveform and spectrograms for the word happy. Note that the y axis of the
-spectrograms are labeled as Hz, but this is only to read more easily the plot
-and understand to which frequencies the important bins correspond to. }%
+    \caption{ Waveform and spectrograms for the word happy. Note that the y
+        axis of the spectrograms are labeled as Hz, but this is only to read
+        more easily the plot and understand to which frequencies the important
+        bins correspond to.
+    }%
     \label{fig:happy_specs}
 \end{figure}
 
 \begin{figure}[t!]
     \centering
-    % \includegraphics[width=0.9\linewidth]{happy_mel01_mel04_mel06_melc1_specs.pdf}
     \includegraphics[width=0.9\linewidth]{happy_mel04_mel04a_mel04b_melc1_specs.pdf}
     \caption{Different spectrograms for the same word. Note the effects of the
         window length: in \texttt{mel04} the window size is $1024$, in
         \texttt{mel04a} the window is shorter ($512$) and in \texttt{mel04b} it
         is longer ($2048$). This results in a noisier spectrogram for
-        \texttt{mel04a}, as the window covers less data, and a much smoother
+        \texttt{mel04a}, as the window covers less data, and a smoother
         spectrogram for \texttt{mel04b}.
     }%
     \label{fig:happy_mel01_mel04_mel06_melc1_specs}
@@ -250,7 +254,7 @@ Data augmentation is a technique to increase the amount of data available by
 applying random, but meaningful, transformations to the data. This leads to a
 noisier dataset, that should make the trained model more robust and less prone
 to overfitting. The data was augmented both by modifying the waveform and the
-spectrograms. An option to include the originals in the augmente dataset is
+spectrograms. An option to include the originals in the augmented dataset is
 available.
 
 \subsubsection{Time shift}
@@ -266,14 +270,14 @@ parameter \texttt{stretch\_rate}.
 \subsubsection{Spectrogram warp}
 
 The spectrogram is warped using the \texttt{sparse\_image\_warp} function
-available as a tensorflow addon.
+available as a Tensorflow add-on.
 A sequence of source landmarks is randomly selected within the image, and the
 points are shifted by a random amount along both time and frequency axis. The
 warp is controlled by the parameters \texttt{num\_landmarks},
 \texttt{max\_warp\_time} and \texttt{max\_warp\_freq}.
 The effect of warping an image is shown in \fig{fig:warp_grid}.
 
-Several augmentations were performed, mostly focussing on the spectrogram
+Several augmentations were performed, mostly focusing on the spectrogram
 warping, along one or both time and frequency axis.
 Values used to augment the dataset are listed in \tab{tab:aug_values}.
 
@@ -293,7 +297,7 @@ landmarks.}%
 
 % MAYBE: See Kumar Xception 4.4
 
-The training was done using the tensorflow library \cite{tensorflow2015-whitepaper}.
+The training was done using the Tensorflow library \cite{tensorflow2015-whitepaper}.
 % MAYBE: intro to this section.
 Several training details can be adjusted to achieve optimal performance.
 An overview of the parameters tweaked during the experiments is provided in
@@ -360,7 +364,6 @@ Different schedules for the learning rate can be used, to set a specific learnin
 
 The simplest schedule consist in a constant function that keeps the value fixed
 (e.g. \texttt{lr}$=1e-3$).
-% , \texttt{lr}$=1e-4$).
 
 \paragraph{Exponential decay}
 
@@ -412,7 +415,7 @@ A low learning rate might not be sufficient to escape the area and descend
 towards the global minimum.
 A cyclic learning rate schedule \cite{smith2017cyclical} can solve this problem,
 oscillating the learning rate cyclically between two values.
-One implementation of this policy as a tensorflow callback is available on
+One implementation of this policy as a Tensorflow callback is available on
 GitHub \cite{bckenstlerCLR}.
 An example of the \texttt{triangular2} policy is shown by
 \fig{fig:cyclic_lr_example}: a sharp initial drop in loss can be seen, as the
@@ -429,7 +432,7 @@ peak of the second cycle. Finally with the last two cycles the model converges.
 \end{figure}
 
 % \subsection{Regularization and Batch Normalization}
-% MAYBE or maybenot?
+% MAYBE or maybe not?
 
 \subsection{Early stopping}
 
@@ -438,7 +441,7 @@ data. After a certain number of training epochs, the model has learned
 everything it can from the current data, and starts overfitting the
 \textit{noise} in the data, instead of meaningful information.
 When trying to use the model to make predictions, the results generalize badly.
-To prevent this behaviour, a part of the data is kept separate, in the so
+To prevent this behavior, a part of the data is kept separate, in the so
 called validation fold, and is used to track the performances of the model on
 data that it is not training on.
 When the validation loss (or any metric that is being tracked, e.g. categorical
@@ -446,18 +449,18 @@ accuracy) starts to increase, the training is stopped.
 A patience parameter can be set to train for a certain amount of additional
 epochs, hoping that the tracked metric will decrease below the current minimum.
 Tensorflow allows for model checkpointing, that neatly implements this
-behaviour.
+behavior.
 TensorBoard is a tool to visualize various metrics and other useful information
 during the training of a model, and can be used to compare different training
 runs.
 During the experiments, early stopping with patience 4 was used.
 
-% MAYBEnot: Show a plot
+% MAYBE not: Show a plot
 
 % \subsection{Optimizer, epochs number and batch size}
-% MAYBE or maybenot?
+% MAYBE or maybe not?
 % Adam \cite{kingma2017adam}.
-% Epoche/batch, tempo di computazione
+% Epoch/batch, computation time
 % In each epoch, every sample in the dataset is seen once.
 % A batch is a set of samples that is used by the optimizer 
 % algorithm to.
@@ -477,7 +480,7 @@ in the first step, the parameters in the first set were kept to a fixed value,
 while the others were allowed to change, thus investigating the effects of the
 second set of parameters on the training.
 In the second step, the roles were reversed:
-Once the best values for the second set of parameters were found, these
+once the best values for the second set of parameters were found, these
 parameters were kept fixed and the parameters in the first set were allowed to
 change.
 In the final step, each parameter was allowed to change between the one or two
@@ -498,11 +501,7 @@ missing one: $(1, 10)$.
 No formal way to check for consistency in the grid was developed,
 but some care was taken in being methodical when exploring.
 
-% overshadow
-% Ovviamente non su tutte le combinazioni
-% Pay attention (no pun) to over-representation of the good params.
-
-% MAYBE: Usare Pool, MAYBE in conclusion/what I learned section.
+% MAYBE: Use Pool, MAYBE in conclusion/what I learned section.
 
 \subsection{Dataset loading}
 
@@ -512,7 +511,7 @@ the size can grow to 20 gigabytes, which is inconvenient to load at once.
 Considering that the training is done in small batches of samples, loading only
 the images needed for the current batch is a reasonable approach.
 %
-This behaviour was implemented by subclassing the \texttt{Sequence} tensorflow
+This behavior was implemented by subclassing the \texttt{Sequence} Tensorflow
 class, that provides an interface for loading data as needed in a thread safe
 way (i.e. it assures that each sample is loaded once per epoch, even when
 loading data from multiple threads).
@@ -535,7 +534,7 @@ normalization layer, a max pooling layer and a dropout layer.
 %
 The classifier is composed by three dense layers, the last with softmax
 activation and a number of units equal to the number of classes to predict.
-
+%
 This architecture is referred as StandardConv throughout the report.
 
 \subsection{Model hyper-parameters}
@@ -549,11 +548,10 @@ input shape of the spectrogram, five parameters can be set:
     \item Shape of the convolutional filters:
         both square and rectangular filters were tested.
         A vertical rectangular filters (e.g. (5, 1)) emphasizes the
-        relationship between mel coefficients within the same time step
-    \item Shape of the pooling window: 
-        both square and rectangular windows were tested.
-        Again, a rectangular filter allows to push into deeper layers more
-        information along the time or frequency axis.
+        relationship between mel coefficients within the same time step.
+    \item Shape of the pooling window: both square and rectangular windows were
+        tested. A rectangular filter allows to propagate into deeper layers
+        more information along the time or frequency axis.
     \item Dropout rates after the convolutional modules.
     \item Width of the dense classifier layers.
 \end{enumerate}
@@ -565,7 +563,7 @@ The possible values for the model hyper-parameters are:
     \item kernel\_size = [[(2,2), (2,2), (2,2)], [(5,1), (3,3), (3,3)]]
     \item pool\_size = [[(2,2), (2,2), (2,2)], [(2,1), (2,2), (2,2)]]
 \end{itemize}
-% MAYBE write better info for exp_decay, chi sa cosa stia facendo:
+% MAYBE write better info for exp_decay 
 The possible values for the training hyper-parameters are:
 \begin{itemize}
     \item batch\_size = [32, 64, 128]
@@ -607,7 +605,6 @@ follows:
     \item Train the model again, with a very small learning rate, to fine tune
         the feature extractor to the current dataset.
 \end{enumerate}
-
 The first four steps are the transfer learning part, followed by the fine
 tuning steps five and six.
 
@@ -642,7 +639,7 @@ the mapping of spatial and cross-channel correlations.
 Scaling a Convolutional Neural Network can lead to increased performance:
 adding more layers, more filters of more convolutional modules can make the
 model more accurate. On the other hand, a bigger model means slower training
-and higher memory consumption to the point of being infeasible to train.
+and higher memory consumption to the point of being unfeasible to train.
 On top of that, often CNN can be over-parametrized: model compression
 techniques can trade little accuracy for a great reduction in model size
 \cite{han2016deep}.
@@ -674,13 +671,13 @@ With this topology, a network with $L$ layers has roughly $L^2$ connections.
 
 The inputs to the pre-trained Xception, DenseNet and EfficientNet models have
 to be square images with three channels.
-To appropriatley shape the input data, three square spectrograms were stacked
+To appropriately shape the input data, three square spectrograms were stacked
 along the depth dimension.
 On top of that, to obtain square inputs, two rectangular spectrograms were
 concatenated horizontally (e.g. two $\left( 128, 64 \right)$ spectrograms are
 composed into one $\left( 128, 128 \right)$), before being stacked.
 The inputs also need to be normalized, which can be easily done with a
-Normalization layer provided by tensorflow.
+Normalization layer provided by Tensorflow.
 It is to note that the inputs should be of higher resolution (e.g. $\left( 299,
 299, 3 \right)$ for Xception), whereas the spectrograms used were of size
 $\left( 128, 128, 3 \right)$, so some loss of performance can be expected.
@@ -737,7 +734,7 @@ to produce image captions with the Show, Attend and Tell approach
 
 In the paper by Douglas et al. \cite{2018arXiv180808929C}, the attention
 mechanism is used for speech command recognition.
-The ouput shapes of each layers are reported to better track along which axis
+The output shapes of each layers are reported to better track along which axis
 the dot multiplications are done.
 As a first step, the mel spectrogram
 (shape [spec\_len, nMel])
@@ -791,7 +788,7 @@ spectrogram, using a CNN.
 A third query style tested is regarding the choice of LSTM output vector to
 pick to compute the query: instead of the last, the central vector was chosen.
 
-% TODO: un grafichetto sarebbe bellissimo
+% MAYBE: a block model would be nice
 
 \subsection{Model building and hyper-parameters}
 
@@ -803,7 +800,7 @@ input shape of the spectrograms, six parameters can be set:
     \item Shape of the convolutional filters:
         both square and rectangular filters were tested.
         A vertical rectangular filters (e.g. (5, 1)) emphasizes the
-        relationship between mel coefficients within the same time step
+        relationship between mel coefficients within the same time step.
     \item Number of LSTM units.
     \item Query style: either a single output vector from the LSTM or the
         result of a convolutional operation, that takes as input the original

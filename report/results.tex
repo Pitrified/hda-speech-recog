@@ -6,18 +6,20 @@
 
 \subsection{Performance measure}
 
-% \subsubsection{F-Score}
-
+% F-Score
 The F-Score is a metric that combines the values of precision and recall to
 provide an estimate of the quality of the predictions made on a test dataset.
+% precision
 Precision is the fraction of relevant data among the selected instances, the
-number of true positives over all the samples selected (a high precision score
-means that there are few false positives).
-% MAYBE how confident you are that a selected is really in that class.
+number of true positives over all the samples selected: a high precision score
+means that there are few false positives, and indicates the confidence that an
+item predicted to be in a class is really in that class.
+% recall
 Recall is the fraction of selected instances among all the relevant samples,
-the number of true positives over all the true samples (a high recall score
-means that there are few false negatives). The F-Score is obtained as the
-harmonic mean of precision and recall.
+the number of true positives over all the true samples: a high recall score
+means that there are few false negatives.
+%
+The F-Score is obtained as the harmonic mean of precision and recall.
 
 % Confusion matrix
 Another tool used to visually show the performance of a model
@@ -27,14 +29,13 @@ the real labels are listed on the y-axis.
 % On the x-axis the predicted labels are listed,
 % on the y-axis the real labels are listed.
 The confusion matrix contains
-the number of occurences
+the number of occurrences
 for each combination of predicted/real labels.
 The main diagonal contains the correctly identified samples.
 Along the rows there are the false negatives for a label,
 and along the columns there are the false positives for a label.
 
-% \subsubsection{Graphs}
-
+% Graphs
 Throughout this section, several groups of graphs will be shown, that present
 at once the F-score value for combinations of up to four hyper-parameters.
 For example, say there is a graph 
@@ -45,14 +46,8 @@ grouped by paramD: [valuesD]''.
 This graph is part of a group of graphs, where the value of the first parameter
 (valueA) is fixed for each sub-graph.
 The other three parameters vary within the sub-graph:
-% each packet of columns shows the variation of the parameter B,
-% whose values are shown in the legend.
 within each group of column the parameter B is changing,
 whose values are shown in the legend.
-% The groups of columns show the variation of the parameter C,
-% whose values are shown as labels of the x axis.
-% Each super group of columns show the variation of the parameter D,
-% whose values are shown between parenthesis as labels of the x axis.
 The other two parameters vary for each group of columns:
 the values are indicated in the label of the x axis as ``valueC (valueD)''.
 The other hyper-parameters are averaged for each column.
@@ -65,10 +60,7 @@ blue line tells the standard deviation around the mean.
 
 \subsection{Hyper-parameter analysis: CNN}
 
-% \subsection{Hyper-parameter analysis}
 % Hypa comparison
-% First specific hypas
-
 A total of $5064$ experiment were performed for the standard convolutional
 architecture.
 
@@ -121,7 +113,7 @@ Several insights can be extrapolated, in order of clarity:
 
 \fig{fig:cnn_comparison_epoch_lr_dataset} shows F-Score values for
 variation of
-the dataset used (MFCC spectrograms, mel sectrograms, agumented mel spectrograms)
+the dataset used (MFCC spectrograms, mel spectrograms, augmented mel spectrograms)
 and the learning rate used (fixed or with exponential decay).
 Two main conclusions can be reached:
 \begin{itemize}
@@ -187,8 +179,6 @@ influence the training.
 
 \subsubsection{Dataset performance comparison}
 
-\fig{fig:tra_comparison_dataset}
-
 % TODO: what are you averaging?
 
 The different ways used to stack the spectrograms to obtain a 3-channels image
@@ -229,7 +219,7 @@ The best model architectures are DenseNet121 and EfficientNetB7.
 It is worth noting that the latter is a far larger network, as DenseNet121 only
 has 7M parameters compared to the 66M of EfficientNetB7.
 EfficientNetB4 also achieves very good results, using only 19M parameters,
-outperformimg by a little Xception, with 22.8M parameters.
+outperforming by a little Xception, with 22.8M parameters.
 EfficientNetB0, with 5.3M parameters, cannot reach the same results.
 
 % TODO: EfficientNet exactly like in the paper the nice curve precision vs number params
@@ -295,7 +285,7 @@ The results are very close but two conclusions can be tentatively reached:
         convolution type,
         dropout.
         Averaged on 20 and 35 words task, solved by the LSTM+attention architecture.
-        % MAYBE should also average on non ugmented dataset
+        % MAYBE should also average on non augmented dataset
         }%
     \label{fig:att_dropout_conv_query_dense}
 \end{figure*}
@@ -344,14 +334,12 @@ Two main conclusions can be reached:
 A total of $590$ experiment were performed for the convolutional+attention
 architecture.
 %
-The models proposed in \secref{sec:area_net} perform quite well.
-%
 The F-Score values are listed in \tab{tab:mega_comparison}.
 %
-Surprisingly, the SimpleNet architecture works extremely well, consistently
-outperforming every other architecture on every task. The larger SimpleNet2 is
-only fractionally better than SimpleNet, at the price of $407,604$ trainable
-parameters instead of $277,004$.
+The SimpleNet architecture works quite well, consistently outperforming every
+other architecture on every task. The larger SimpleNet2 is only fractionally
+better than SimpleNet, at the price of $407,604$ trainable parameters instead
+of $277,004$.
 %
 The added complexity of computing the attention scores and weighing the input
 spectrograms does not lead to better results, even if a visual inspection of
@@ -374,7 +362,7 @@ were performed on the dataset.
 % The bulk of the investigation was to determine which kind of augmentation
 % performed better.
 Each type of augmentation is based on one set of spectrogram parameters, and
-there are four styles of warp based aumentation: the landmarks are shifted 1)
+there are four styles of warp based augmentation: the landmarks are shifted 1)
 along both axes of the spectrogram, 2) only along the time axis, 3) only along
 the frequency axis, 4) along no axis, to provide a reference measure. Three
 different spectrogram parameters and two different warping parameters were
@@ -419,12 +407,7 @@ using non-augmented data.
         Aug ID & Spec+Type & F-Score \\
         \hline
         \hline
-        % CNN & & (4 words)  \\
-        % \multicolumn{2}{|c}{CNN} & (4 words) \\
         \multicolumn{3}{|c|}{CNN (4-words task)} \\
-        % \hline
-        % \hline
-        % Aug ID & Spec+Type & F-Score \\
         \hline
         mel04 & None & $0.939 \pm 0.017$ \\
         02,03,04 & mel\_02+big   & $0.940 \pm 0.014$ \\
@@ -433,14 +416,9 @@ using non-augmented data.
         14,15,16 & mel\_03+small & $0.960 \pm 0.008$ \\
         \hline
         \hline
-        % \multicolumn{2}{c}{Multi-column}
-        % LSTM+att & & (10 words) \\
         \multicolumn{3}{|c|}{LSTM+att (10-words task)} \\
         \hline
-        % mel01   &  0.954 & 0.0073 \\
         mel04   &  None & $0.963 \pm 0.0126$ \\
-        % mel05   & None &  $0.954 \pm 0.0184$ \\
-        % mela1   &  0.958 & 0.0155 \\
         02,03,04 & mel\_02+big   &  $0.929 \pm 0.0362$ \\
         06,07,08 & mel\_01+big   &  $0.939 \pm 0.0392$ \\
         10,11,12 & mel\_03+big   &  $0.932 \pm 0.0852$ \\
@@ -458,9 +436,9 @@ using non-augmented data.
         \hline
         Epoch num & Regular & Augmented \\
         \hline
-        2 & $0.923 \pm 0.034$ & $0.941 \pm 0.019$ \\
-        4 & $0.948 \pm 0.016$ & $0.958 \pm 0.011$ \\
-        15 & $0.959 \pm 0.013$ & $0.962 \pm 0.014$ \\
+        2  & $0.923 \pm 0.034$      & $0.941 \pm 0.019$ \\
+        4  & $0.948 \pm 0.016$      & $\bf{0.958} \pm 0.011$ \\
+        15 & $\bf{0.959} \pm 0.013$ & $0.962 \pm 0.014$ \\
         \hline
     \end{tabular}
 \end{table}
@@ -487,20 +465,20 @@ no particular type emerges as better than the others.
         Augmentation type & F-Score \\
         \hline
         \hline
-        \multicolumn{2}{|c|}{LSTM+attention (10 words task)} \\
-        \hline
-        Both axis & $0.9326 \pm 0.0615$ \\
-        Time      & $0.9448 \pm 0.0323$ \\
-        Frequency & $0.9355 \pm 0.0383$ \\
-        None      & $0.9311 \pm 0.0794$ \\
-        \hline
-        \hline
         \multicolumn{2}{|c|}{CNN (4 words task)} \\
         \hline
         Both axis & $0.945 \pm 0.016$ \\
         Time      & $0.946 \pm 0.014$ \\
         Frequency & $0.944 \pm 0.014$ \\
         None      & $0.940 \pm 0.016$ \\
+        \hline
+        \hline
+        \multicolumn{2}{|c|}{LSTM+attention (10 words task)} \\
+        \hline
+        Both axis & $0.9326 \pm 0.0615$ \\
+        Time      & $0.9448 \pm 0.0323$ \\
+        Frequency & $0.9355 \pm 0.0383$ \\
+        None      & $0.9311 \pm 0.0794$ \\
         \hline
     \end{tabular}
 \end{table}
@@ -512,18 +490,17 @@ no particular type emerges as better than the others.
 As an additional preprocessing step, the loudest $0.5$s section of the audio
 signal was selected.
 %
-It might seem surprising, but both the LSTM+attention and the AreaNet
-architectures performed better on the full audio samples, 
-as shown in \tab{tab:comparison_loud_section}.
+Surprisingly, the LSTM+attention, the AreaNet and the SimpleNet architectures
+performed better on the full audio samples, as shown in
+\tab{tab:comparison_loud_section}.
 %
-This however could partly be explained by the fact that those are \textit{attention}
-architectures, so by design they will identify the relevant portion of the data.
-By only feeding important data to the networks, the attention mechanism has more
-difficulty to learn which sections to select, because all of them are useful.
+The preprocessing step of extracting the relevant section of the sample was
+manually inspected and proved to be quite robust (every sample listened was
+correct), so the performance decrease can not be imputed to that.
 %
-On the other hand, the SimpleNet was also trained on the loudest section of the data
-and that also did not lead to an improvement.
-% MAYBE
+It is not clear why explicitly providing only the important part of the
+spectrograms causes a \textit{decrease} in performance, as at least matching
+training quality was expected.
 
 \begin{table}[t!]
     \centering
@@ -581,8 +558,8 @@ task.
 % visual wow
 Note that for all architectures the largest mistake is regarding the
 classification of ``wow'' that is sometimes predicted as ``visual''. Indeed,
-the two words can sound very similar: one of the possible pronunciations for
-visual includes the 
+the two words can sometime sound very similar: one of the possible
+pronunciations for visual includes the 
 % https://tex.stackexchange.com/a/370073
 /\includegraphics[width=0.6em]{usound.pdf}/ sound, which is the main phoneme
 uttered when saying wow.
@@ -649,16 +626,13 @@ dataset, as $2$ out of $6$ speakers' recording have a quite low volume.
 
 \subsection{Attention weights}
 
-% \subsubsection{Attention model}
-
 % Show attention weights for Att model
-
 The LSTM+attention model described in \secref{sec:attention_model} computes a query
 vector that is used to weigh the LSTM outputs. Showing the attention weights
 can help understand which parts of the recording were relevant for the
 classification.
 \fig{fig:attention_weights_standard} shows the spectrograms, the attention
-weigths and the predictions for three sample words.
+weights and the predictions for three sample words.
 Indeed, the attention weights show which some sections of the data is more important
 and is used to extract information from the signal.
 
@@ -682,26 +656,29 @@ in \fig{fig:attention_weights_area} and \fig{fig:attention_weights_vertical}.
 
 The effectiveness of using a model trained on single word utterances to
 identify a word in a sentence is examined in this section.
+%
 \fig{fig:stream_attention_ltts_meL04_LTnumLS_26} is an example of a very good
 scenario: of the four numbers spoken, three are well isolated in the sentence,
 and are clearly picked up. The initial utterance of ``three'' is also
 identified, albeit with a lower probability, as it is very close to the next
 word (``\textit{three} o'clock'' is spoken with barely a pause).
+%
 \fig{fig:stream_attention_ltts_meL04_LTnumLS_67} shows a more common situation,
 when the interesting word is in the middle of the sentence (``of the
 \textit{four} other\ldots''). The model can only barely identify the presence
 of the word.
+%
 \fig{fig:stream_attention_ltts_meL04_LTnumLS_19} shows why a ``silence'' class
-would be useful: when background converation is present, the model consistently
-identifies \texttt{\_other} as the predicted word, but in the section where no
-word is spoken, the model fires randomly.
+would be useful: when background conversation is present, the model
+consistently identifies \texttt{\_other} as the predicted class, but in the
+section where no word is spoken, the model fires randomly.
 
 Training only on the loudest $0.5$ second section of the audio samples improves
-the performance of the models quite a lot: the ``four'' in the second example
-is completely missed by a model trained with identical parameters except the
-longer words, as shown in \fig{fig:stream_attention_ltts_mel04_LTnum_67}: only
-the more isolated ``two'' is found, as there is space to align a window that
-ends with the utterance and starts with silence.
+the performance of the models: the ``four'' in the second example is completely
+missed by a model trained with identical parameters except the longer words, as
+shown in \fig{fig:stream_attention_ltts_mel04_LTnum_67}: only the more isolated
+``two'' is found, as there is space to align a window that ends with the
+utterance and starts with silence.
 
 A manual inspection was conducted on $116$ sentences containing numbers, and
 only $31$ were correctly identified, amounting to $26.7\%$ recall.
@@ -727,7 +704,7 @@ actually spoken.
     \caption{Stream predictions for
         ``Of the four other company engineers, two were now stirring and partly
         conscious.'', using $0.5$ seconds windows. The small window length
-        can almost identify the ``four'' hidden by the neightbouring
+        can almost identify the ``four'' hidden by the neighboring
         words, but it is still not sufficient.
     }%
     \label{fig:stream_attention_ltts_meL04_LTnumLS_67}

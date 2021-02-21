@@ -4,7 +4,7 @@
 \label{sec:conclusions}
 
 % A gripping conclusion
-The task of identifing a command in a single audio sample has been successfully
+The task of identifying a command in a single audio sample has been successfully
 solved, with varying degree of accuracy, by every architecture tested.
 
 %
@@ -12,13 +12,13 @@ It was proved that the attention mechanism is not very effective when dealing
 with spectrogram images.
 %
 A possible reason is that the relevant portion is already very clear, while in
-the background regions that do not contain sound the spectrogram very uniform
-and with very low values.
+the background regions that do not contain sound the spectrogram is very
+uniform and with very low values.
 %
 In these regions, the convolutional filters already have very low output
 values, so using the attention mechanism to further emphasize the relevant
-portions does not help, but can instead hinder the learning by mistakenly
-dimming useful regions of the spectrogram.
+portions does not help, but can instead hinder the learning by sometime
+mistakenly dimming useful regions of the spectrogram.
 
 % further work
 Further works might focus on different types of attention, and the performance
@@ -39,9 +39,9 @@ help, as the model only has to learn to spot the relevant portion of the data
 in order to maximize the SimpleNet performance.
 % And can that extractor be reused on a different task.
 
-Yet another approach might be training the attention weight extractor by using
-known object bounding boxes, making the model predict the boxes instead of the
-image class, then using the predictions to weigh the input.
+Yet another approach might consist in training the attention weight extractor
+by using known object bounding boxes, making the model predict the boxes
+instead of the image class, then using the predictions to weigh the input.
 
 % TODO: after all learning attention weights is an *unsupervised* task
 % as we do not know which regions are useful
@@ -52,8 +52,6 @@ image class, then using the predictions to weigh the input.
 % 0001111000
 % 0000000000
 % then use that to weigh the images
-
-% TODO dighe che vuoi vedere se si rivela utile
 
 Regarding the methodology used, a definite improvement would be using existing
 frameworks for hyper-parameter tuning, such as Hypertune, readily available
