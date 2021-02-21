@@ -15,12 +15,30 @@ datasets, such as ImageNet.
 Moreover, the more complex datasets might provide insight to whether the
 proposed attention mechanism is capable of learning to pinpoint more complex
 features that can be considered useful.
+%
+Having proved the 
+effectiveness of SimpleNets
+use them with transfer learning.
+
+% TODO: after all learning attention weights is an *unsupervised* task
+% as we do not know which regions are useful
+% using object bounding boxes might be interesting first train the general
+% feature extractor on loss measured against the boxes
+% 0000000000
+% 0001111000
+% 0001111000
+% 0000000000
+% then use that to weigh the images
+
+% TODO dighe che vuoi vedere se si rivela utile
 
 Regarding the methodology used, a definite improvement would be using existing
 frameworks for hyper-parameter tuning, such as Hypertune, readily available
 with Keras Tuner library. A very interesting approach is Hyperband, that trains
 every model built from the hyper-parameter grid for a few epochs, then prunes
 the set of models, only keeping the best performing ones.
+
+% TODO also much better preprocessing pipeline in ImageNetGenerator
 
 The methodical hyper-parameter analysis done while writing the report was very
 informative, and while the plots confirmed what I believed to be the best

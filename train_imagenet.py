@@ -204,10 +204,10 @@ def hyper_train_img(
 
     ###### the net type
     nt = []
-    nt.append("SIM")
+    # nt.append("SIM")
     nt.append("SI2")
-    nt.append("AAN")
-    nt.append("VAN")
+    # nt.append("AAN")
+    # nt.append("VAN")
     hypa_grid["net_type"] = nt
 
     ###### the words to train on
@@ -217,13 +217,17 @@ def hyper_train_img(
 
     ###### the dataset to train on
     ds = []
-    ds.append("aug01")
+    # ds.append("aug01")
+    # ds.append("aug02")
+    ds.append("aug03")
     hypa_grid["dataset_name"] = ds
 
     ###### the learning rates for the optimizer
     lr = []
-    lr.append("03")  # exp_decay_step_01
-    lr.append("04")  # exp_decay_smooth_01
+    # lr.append("03")  # exp_decay_step_01
+    # lr.append("04")  # exp_decay_smooth_01
+    lr.append("05")  # clr_triangular2_01
+    # lr.append("06")  # clr_triangular2_02
     hypa_grid["learning_rate_type"] = lr
 
     ###### which optimizer to use
@@ -237,7 +241,8 @@ def hyper_train_img(
 
     ###### the number of epochs (the key is converted to int)
     en = []
-    en.append("15")
+    # en.append("15")
+    en.append("30")
     hypa_grid["epoch_num_type"] = en
 
     ###### build the combinations

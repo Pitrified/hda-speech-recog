@@ -10,8 +10,6 @@ from tensorflow.keras.utils import Sequence  # type: ignore
 from tensorflow.keras.utils import to_categorical  # type: ignore
 import numpy as np  # type: ignore
 
-# from random import seed as rseed
-
 
 def prepare_partitions(
     label_list: ty.List[str],
@@ -167,10 +165,19 @@ class ImageNetGenerator(Sequence):
         self.all_preprocess_params = {}
 
         # aug01 params
-        preprocess_params = {
+        self.all_preprocess_params["aug01"] = {
             "img_shape": (128, 128, 3),
         }
-        self.all_preprocess_params["aug01"] = preprocess_params
+
+        # aug02 params
+        self.all_preprocess_params["aug02"] = {
+            "img_shape": (64, 64, 3),
+        }
+
+        # aug03 params
+        self.all_preprocess_params["aug03"] = {
+            "img_shape": (200, 200, 3),
+        }
 
         # set the current ones
         self.preprocess_params = self.all_preprocess_params[self.preprocess_type]
@@ -249,45 +256,20 @@ class ImageNetGenerator(Sequence):
         resize_size = self.img_shape[0 : 1 + 1]
         res_width, res_height = resize_size
 
-        # resize the image according to the specified preprocess_type
-        if self.preprocess_type == "aug01":
-
-            # we need to resize it doooown
-            if width == height:
-                box = [0, 0, width, height]
-
-            # tall image
-            elif width < height:
-                pad = height - res_height
-                top = pad // 2
-                bottom = height - pad // 2
-                box = [0, top, width, bottom]
-                # logg.debug(f"TALL bottom-top: {bottom-top}")
-
-            elif width > height:
-                pad = width - res_width
-                left = pad // 2
-                right = width - pad // 2
-                box = [left, 0, right, height]
-
-            # FIXME if an image is smaller than the resize_size it will fail
-            if box[0] < 0:
-                box[0] = 0
-            if box[1] < 0:
-                box[1] = 0
-            if box[2] >= width:
-                box[2] = width
-            if box[3] >= height:
-                box[3] = height
-
-            # logg.debug(f"box: {box}")
-            img_resized = img_pil.resize(resize_size, box=box)
-            # logg.debug(f"img_resized.size: {img_resized.size}")
-            # img_resized.show()
-
         # convert grayscale pics
         if not img_pil.mode == "RGB":
-            img_resized = img_resized.convert("RGB")
+            img_pil = img_pil.convert("RGB")
+
+        # resize the image according to the specified preprocess_type
+
+        if self.preprocess_type == "aug01":
+            img_resized = self.extract_inner_square(img_pil, resize_size)
+
+        elif self.preprocess_type == "aug02":
+            img_resized = self.extract_inner_square(img_pil, resize_size)
+
+        elif self.preprocess_type == "aug03":
+            img_resized = self.extract_inner_square(img_pil, resize_size)
 
         # convert to numpy
         img_np = np.array(img_resized)
@@ -337,6 +319,51 @@ class ImageNetGenerator(Sequence):
         y_le = self.label_encoder.transform(y)
         y_hot = to_categorical(y_le, num_classes=self.n_classes)
         return X, y_hot
+
+    def extract_inner_square(self, img_pil, resize_size) -> Image:
+        r"""MAKEDOC: what is extract_inner_square doing?"""
+        # logg = logging.getLogger(f"c.{__name__}.extract_inner_square")
+        # logg.setLevel("INFO")
+        # logg.debug("Start extract_inner_square")
+
+        width, height = img_pil.size
+        res_width, res_height = resize_size
+
+        # we need to resize it doooown
+        if width == height:
+            box = [0, 0, width, height]
+
+        # tall image
+        elif width < height:
+            pad = height - res_height
+            top = pad // 2
+            bottom = height - pad // 2
+            box = [0, top, width, bottom]
+            # logg.debug(f"TALL bottom-top: {bottom-top}")
+
+        # wide image
+        elif width > height:
+            pad = width - res_width
+            left = pad // 2
+            right = width - pad // 2
+            box = [left, 0, right, height]
+
+        # FIXME if an image is smaller than the resize_size it will fail
+        if box[0] < 0:
+            box[0] = 0
+        if box[1] < 0:
+            box[1] = 0
+        if box[2] >= width:
+            box[2] = width
+        if box[3] >= height:
+            box[3] = height
+
+        # logg.debug(f"box: {box}")
+        img_resized = img_pil.resize(resize_size, box=box)
+        # logg.debug(f"img_resized.size: {img_resized.size}")
+        # img_resized.show()
+
+        return img_resized
 
 
 def parse_arguments() -> argparse.Namespace:

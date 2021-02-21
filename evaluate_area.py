@@ -111,7 +111,8 @@ def build_area_results_df() -> pd.DataFrame:
         "model_name": [],
     }
 
-    info_folder = Path("info") / "area"
+    # info_folder = Path("info") / "area"
+    info_folder = Path("info") / "image"
 
     for model_folder in info_folder.iterdir():
         # model_name = model_folder.name
