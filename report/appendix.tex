@@ -13,35 +13,43 @@ Several large tables and figures are here for ease of reading.
 \begin{figure}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{VAN_opa1_lr03_bs32_en14_dsaug14_wyn_cm.pdf}
-    \caption{VAN opa1 lr03 bs32 en14 dsaug14 wyn cm}%
+    \caption{Confusion matrix for VerticalAreaNet trained on the ``yes/no'' task.}%
     \label{fig:VAN_opa1_lr03_bs32_en14_dsaug14_wyn_cm}
 \end{figure}
 
 \begin{figure}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum_cm.pdf}
-    \caption{VAN opa1 lr03 bs32 en15 dsaug14 wLTBnum cm}%
+    \caption{Confusion matrix for VerticalAreaNet trained on the ``LTBnum'' task, that contains
+        the 10 number, one background conversation and one background noise classes.
+    }%
     \label{fig:VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum_cm}
 \end{figure}
 
 \begin{figure*}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{VAN_opa1_lr03_bs32_en15_dsmel04_wLTBall_noval_cm.pdf}
-    \caption{VAN opa1 lr03 bs32 en15 dsmel04 wLTBall noval cm}%
+    \caption{Confusion matrix for VerticalAreaNet trained on the ``LTBall'' task, that contains
+        the 35 words, one background conversation and one background noise classes.
+    }%
     \label{fig:VAN_opa1_lr03_bs32_en15_dsmel04_wLTBall_noval_cm}
 \end{figure*}
 
 \begin{figure*}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{SI2_opa1_lr04_bs32_en15_dsmel04_wLTBall_noval_cm.pdf}
-    \caption{SI2 opa1 lr04 bs32 en15 dsmel04 wLTBall noval cm}%
+    \caption{Confusion matrix for SimpleNet2 trained on the ``LTBall'' task, that contains
+        the 35 words, one background conversation and one background noise classes.
+    }%
     \label{fig:SI2_opa1_lr04_bs32_en15_dsmel04_wLTBall_noval_cm}
 \end{figure*}
 
 \begin{figure*}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{ATT_ct02_dr01_ks01_lu01_qt01_dw01_opa1_lr03_bs02_en02_dsmel04_wLTBall_cm.pdf}
-    \caption{ATT ct02 dr01 ks01 lu01 qt01 dw01 opa1 lr03 bs02 en02 dsmel04 wLTBall cm}%
+    \caption{Confusion matrix for LSTM+attention trained on the ``LTBall'' task, that contains
+        the 35 words, one background conversation and one background noise classes.
+    }%
     \label{fig:ATT_ct02_dr01_ks01_lu01_qt01_dw01_opa1_lr03_bs02_en02_dsmel04_wLTBall_cm}
 \end{figure*}
 
@@ -168,11 +176,11 @@ has the parameter \texttt{fmin}$=40$.}
 % \begin{table}[H]
 \begin{table}[h!]
     \centering
-    \caption{Values used to compose the spectrogams}
+    \caption{Values used to compose the spectrograms}
     \label{tab:compose_values}
     \begin{tabular}{|c|cc|}
         \hline
-        name & left spectrogam & right spectrogam \\
+        name & left spectrogram & right spectrogram \\
         \hline
         melc1 & mel06 & mel08 \\
         melc2 & mel07 & mel12 \\
@@ -247,3 +255,14 @@ has the parameter \texttt{fmin}$=40$.}
         \hline
     \end{tabular}
 \end{table*}
+
+\begin{figure*}[h!]
+    \centering
+    \includegraphics[width=0.8\linewidth]{SI2_opa1_lr05_bs16_en30_dsaug03_wim01_cm.pdf}
+    \caption{SimpleNet2 experiment on $10$ ImageNet classes of $800$ images.
+        Note that the largest mistakes are between ``heron'' and ``night heron'',
+        ``cicada'' and ``bee'', ``daisy'' and ``bee'':
+        image classes that are indeed very similar.
+    }%
+    \label{fig:heron}
+\end{figure*}

@@ -4,21 +4,44 @@
 \label{sec:conclusions}
 
 % A gripping conclusion
-
 The task of identifing a command in a single audio sample has been successfully
 solved, with varying degree of accuracy, by every architecture tested.
 
+%
+It was proved that the attention mechanism is not very effective when dealing
+with spectrogram images.
+%
+A possible reason is that the relevant portion is already very clear, while in
+the background regions that do not contain sound the spectrogram very uniform
+and with very low values.
+%
+In these regions, the convolutional filters already have very low output
+values, so using the attention mechanism to further emphasize the relevant
+portions does not help, but can instead hinder the learning by mistakenly
+dimming useful regions of the spectrogram.
+
+% further work
 Further works might focus on different types of attention, and the performance
 of SimpleNet and AreaNet should be evaluated on standard image classification
 datasets, such as ImageNet.
 %
-Moreover, the more complex datasets might provide insight to whether the
-proposed attention mechanism is capable of learning to pinpoint more complex
-features that can be considered useful.
+A more complex dataset might provide an insight to whether the proposed
+attention mechanism is capable of learning to spot useful features when faced
+with more evenly distributed input images, where the interesting part is not
+immediately clear.
+% can I spot the beak of the heron or do I just learn that the center is useful?
+
 %
-Having proved the 
-effectiveness of SimpleNets
-use them with transfer learning.
+Having proved the effectiveness of SimpleNets, a transfer learning approach
+that builds the AreaNet by using an SimpleNet already trained on the same task
+as the final block (that is not modified in the first stage of learning) might
+help, as the model only has to learn to spot the relevant portion of the data
+in order to maximize the SimpleNet performance.
+% And can that extractor be reused on a different task.
+
+Yet another approach might be training the attention weight extractor by using
+known object bounding boxes, making the model predict the boxes instead of the
+image class, then using the predictions to weigh the input.
 
 % TODO: after all learning attention weights is an *unsupervised* task
 % as we do not know which regions are useful
@@ -40,7 +63,7 @@ the set of models, only keeping the best performing ones.
 
 % TODO also much better preprocessing pipeline in ImageNetGenerator
 
-The methodical hyper-parameter analysis done while writing the report was very
-informative, and while the plots confirmed what I believed to be the best
-combinations, they gave me a couple of ideas regarding some explorations that I
-had missed.
+% The methodical hyper-parameter analysis done while writing the report was very
+% informative, and while the plots confirmed what I believed to be the best
+% combinations, they gave me a couple of ideas regarding some explorations that I
+% had missed.

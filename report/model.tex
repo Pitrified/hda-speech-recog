@@ -208,14 +208,14 @@ shown in \fig{fig:happy_specs}.
 
 Some of the architectures that were tested require a square image as input,
 with three color channels.
-To obtain them, some spectrogams were purposefully generated with parameters
+To obtain them, some spectrograms were purposefully generated with parameters
 that created a square result, others, shaped like a half square, were
 concatenated, as shown in the ``melc1'' spectrogram in
 \fig{fig:happy_mel01_mel04_mel06_melc1_specs}.
-Three square spectrogams are then stacked depthwise to obtain a valid three
+Three square spectrograms are then stacked depthwise to obtain a valid three
 channel image.
-The values used to compose the spectrogams are listed in \tab{tab:compose_values}.
-The values used to stack the spectrogams are listed in \tab{tab:ch3_values}.
+The values used to compose the spectrograms are listed in \tab{tab:compose_values}.
+The values used to stack the spectrograms are listed in \tab{tab:ch3_values}.
 
 \begin{figure}[t!]
     \centering
@@ -677,7 +677,7 @@ to be square images with three channels.
 To appropriatley shape the input data, three square spectrograms were stacked
 along the depth dimension.
 On top of that, to obtain square inputs, two rectangular spectrograms were
-concatenated horizontally (e.g. two $\left( 128, 64 \right)$ spectrogams are
+concatenated horizontally (e.g. two $\left( 128, 64 \right)$ spectrograms are
 composed into one $\left( 128, 128 \right)$), before being stacked.
 The inputs also need to be normalized, which can be easily done with a
 Normalization layer provided by tensorflow.
@@ -807,7 +807,7 @@ input shape of the spectrograms, six parameters can be set:
     \item Number of LSTM units.
     \item Query style: either a single output vector from the LSTM or the
         result of a convolutional operation, that takes as input the original
-        spectrogam or the vectors produced by the LSTM.
+        spectrogram or the vectors produced by the LSTM.
     \item Width of the dense classifier layers.
 \end{enumerate}
 The possible values for the hyper-parameters are:

@@ -502,7 +502,9 @@ def visualize_cm(model_name: str) -> None:
     this_file_folder = Path(__file__).parent.absolute()
     logg.debug(f"this_file_folder: {this_file_folder}")
 
-    if model_name.startswith("ATT"):
+    if "im01" in model_name:
+        train_type_tag = "image"
+    elif model_name.startswith("ATT"):
         train_type_tag = "attention"
     elif model_name.startswith("VAN"):
         train_type_tag = "area"
