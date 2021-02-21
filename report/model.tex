@@ -852,6 +852,25 @@ using a softmax activation layer.
 
 The driving idea behind AreaNet and VerticalAreaNet is to score the original
 spectrogram image with a grid of attention scores.
+%
+To compute the grid weights, the input image is fed into a convolutional
+network, that includes several MaxPooling layers that downsample the feature
+maps generated.
+%
+For AreaNet, in the last layer of the weight extractor the mean along the depth
+axis is computed to reduce the feature maps to a single image,
+then the scores are converted into a valid probability distribution using a
+softmax activation function, and finally the weights are upsampled back to the
+original shape of the input.
+%
+For VerticalAreaNet, the mean is also computed along the time axis to obtain a
+one dimensional vector, that is then upsampled.
+%
+For both architectures, the weighted spectrogram is then used as input for a
+SimpleNet, used to classify the audio sample.
+%
+\fig{fig:areanet_diagram_blocks} shows the block diagram of AreaNet.
+%
 AreaNet builds a $8 \times 8$ grid to weigh the input data,
 (\fig{fig:attention_weights_area}),
 while
@@ -860,18 +879,16 @@ VerticalAreaNet builds a $1 \times 16$ grid to weigh the input data,
 By using a one dimensional grid, VerticalAreaNet only weighs the input along
 the time axis.
 
-To compute the grid weights, the input image is fed into a convolutional network,
-that includes several MaxPooling layers that downsample the feature maps generated.
-For AreaNet, in the last layer of the weight extractor the mean along the depth
-axis is computed to reduce the $num\_filter$ feature maps to a single image,
-then the scores are converted into a valid probability distribution using a
-softmax activation function, and finally the weights are upsampled back to the
-original shape of the input.
-For VerticalAreaNet, the mean is also computed along the time axis to obtain
-a one dimensional vector, that is then upsampled.
-
-For both architectures, the weighted spectrogram is then used as input for a
-SimpleNet, used to classify the audio sample.
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\linewidth]{Diagram02_crop.pdf}
+    \caption{Block diagram of AreaNet.
+        Note that the attention weight grid shape depends from the
+        MaxPooling operations: $3$ poolings with $(2, 2)$ windows
+        are done, which results in a $(2^3, 2^3)$ grid.
+    }%
+    \label{fig:areanet_diagram_blocks}
+\end{figure}
 
 \begin{figure}[t!]
     \centering
@@ -888,7 +905,9 @@ SimpleNet, used to classify the audio sample.
     \centering
     \includegraphics[width=0.9\linewidth]{VAN_opa1_lr04_bs32_en15_dsaug14_wLTall_0001.pdf}
     \caption{VerticalAreaNet computes a $1 \times 16$ grid that is used to
-        weigh the original 
-    spectrogram.}%
+        weigh the original spectrogram.
+    }%
     \label{fig:attention_weights_vertical}
 \end{figure}
+
+% TODO: block model of the thing

@@ -391,8 +391,8 @@ def test_build_aa() -> None:
     # logg.setLevel("INFO")
     logg.debug("Start test_build_aa")
 
-    # input_shape = (64, 64, 1)
-    input_shape = (256, 256, 3)
+    input_shape = (64, 64, 1)
+    # input_shape = (256, 256, 3)
     # input_shape = (80, 128, 1)
     num_classes = 4
 
