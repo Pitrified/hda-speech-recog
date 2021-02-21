@@ -199,7 +199,6 @@ def load_trained_model_att(override_hypa) -> ty.Tuple[models.Model, str]:
     hypa = {
         "batch_size_type": "02",
         "conv_size_type": "02",
-        # "dataset_name": "meL04",
         "dense_width_type": "01",
         "dropout_type": "01",
         "epoch_num_type": "02",
@@ -208,10 +207,9 @@ def load_trained_model_att(override_hypa) -> ty.Tuple[models.Model, str]:
         "lstm_units_type": "01",
         "optimizer_type": "a1",
         "query_style_type": "01",
-        # "words_type": "LTnumLS",
-        # "words_type": "LTnum",
     }
-    use_validation = False
+    # use_validation = False
+    use_validation = True
 
     # override the values
     for hypa_name in override_hypa:

@@ -96,7 +96,7 @@ class Demo:
         # self.fig, self.axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 12))
 
         # self.fig = plt.figure(constrained_layout=True)
-        self.fig = plt.figure()
+        self.fig = plt.figure(figsize=(12, 12))
         gs = self.fig.add_gridspec(3, 2)
         self.ax_wave = self.fig.add_subplot(gs[0, 0])
         self.ax_spec = self.fig.add_subplot(gs[1, 0])
@@ -104,6 +104,7 @@ class Demo:
         self.ax_pred = self.fig.add_subplot(gs[:, 1])
 
         # setup dynamic title for predictions
+        self.ax_pred.set_title("Predictions")
         self.pred_title = self.ax_pred.text(
             0.5,
             # 1.01,
@@ -117,6 +118,7 @@ class Demo:
 
         # the waveform ax
         # self.ax_wave = self.axes[0][0]
+        self.ax_wave.set_title("Audio signal")
         self.lines_wave = self.ax_wave.plot(
             self.audio_signal[:: self.plot_downsample, 0]
         )
@@ -127,6 +129,7 @@ class Demo:
 
         # the spectrogram ax
         # self.ax_spec = self.axes[1][0]
+        self.ax_spec.set_title("Mel Spectrogram")
         self.im_spec = self.ax_spec.imshow(
             self.spec, origin="lower", vmin=-80, vmax=-10, aspect="auto"
         )
@@ -135,6 +138,7 @@ class Demo:
         # the attention weights ax
         # self.ax_attw = self.axes[0][1]
         # self.im_attw = self.ax_attw.imshow(self.att_weights, origin="lower", vmin=0, vmax=1)
+        self.ax_attw.set_title("Attention weights")
         self.im_attw = self.ax_attw.imshow(
             self.att_weights, origin="lower", vmin=0, vmax=0.005, aspect="auto"
         )
@@ -151,7 +155,7 @@ class Demo:
         self.ax_pred.set_xticklabels(self.sorted_train_words, rotation=90)
 
         # fig setup
-        self.fig.suptitle(f"Demo for {self.arch_type}")
+        self.fig.suptitle(f"Demo for {self.arch_type} {self.train_words_type}")
         self.fig.tight_layout()
 
         # setup the animations
@@ -262,10 +266,12 @@ class Demo:
         log_mel = librosa.power_to_db(mel, **self.p2d_kwargs)
 
         # pad it
-        pad_needed = self.spec_shape[1] - log_mel.shape[1]
-        pad_needed = max(0, pad_needed)
+        logg.debug(f"log_mel.shape: {log_mel.shape}")
+        pad_needed_ = self.spec_shape[1] - log_mel.shape[1]
+        pad_needed = max(0, pad_needed_)
         pad_width = ((0, 0), (0, pad_needed))
         padded_log_mel = np.pad(log_mel, pad_width=pad_width)
+        # padded_log_mel[:, -pad_needed_:] = -80
         self.spec = padded_log_mel
 
         # plot it
@@ -389,25 +395,12 @@ class Demo:
 
         if self.arch_type.startswith("VAN"):
 
-            if self.train_words_type == "LTnum":
-
-                # which is this FIXME add the filename
+            if self.train_words_type == "LTBnum":
+                # FOR DEMO NO MOVE
+                # VAN_opa1_lr03_bs32_en15_dsaug14_wLTBnum
                 hypa = {
                     "batch_size_type": "32",
-                    "dataset_name": "aug07",
-                    "epoch_num_type": "15",
-                    "learning_rate_type": "05",
-                    "net_type": "VAN",
-                    "optimizer_type": "a1",
-                    "words_type": "LTnum",
-                }
-                use_validation = True
-
-            elif self.train_words_type == "LTBnum":
-                # which is this FIXME add the filename
-                hypa = {
-                    "batch_size_type": "32",
-                    "dataset_name": "mel04",
+                    "dataset_name": "aug14",
                     "epoch_num_type": "15",
                     "learning_rate_type": "03",
                     "net_type": "VAN",
@@ -416,19 +409,50 @@ class Demo:
                 }
                 use_validation = True
 
+            elif self.train_words_type == "LTBnumLS":
+                # FOR DEMO NO MOVE
+                # VAN_opa1_lr03_bs32_en15_dsmel04L_wLTBnumLS_noval
+                hypa = {
+                    "batch_size_type": "32",
+                    "dataset_name": "mel04L",
+                    "epoch_num_type": "15",
+                    "learning_rate_type": "03",
+                    "net_type": "VAN",
+                    "optimizer_type": "a1",
+                    "words_type": "LTBnumLS",
+                }
+                use_validation = False
+
+            elif self.train_words_type == "LTBall":
+                # FOR DEMO NO MOVE
+                # VAN_opa1_lr03_bs32_en15_dsmel04_wLTBall_noval
+                hypa = {
+                    "batch_size_type": "32",
+                    "dataset_name": "mel04",
+                    "epoch_num_type": "15",
+                    "learning_rate_type": "03",
+                    "net_type": "VAN",
+                    "optimizer_type": "a1",
+                    "words_type": "LTBall",
+                }
+                use_validation = False
+
+            elif self.train_words_type == "LTBallLS":
+                # FOR DEMO NO MOVE
+                # VAN_opa1_lr03_bs32_en15_dsmel04L_wLTBallLS
+                hypa = {
+                    "batch_size_type": "32",
+                    "dataset_name": "mel04L",
+                    "epoch_num_type": "15",
+                    "learning_rate_type": "03",
+                    "net_type": "VAN",
+                    "optimizer_type": "a1",
+                    "words_type": "LTBallLS",
+                }
+                use_validation = True
+
             else:
                 raise ValueError(f"Not available {self.train_words_type}")
-
-            # hypa = {
-            #     "batch_size_type": "32",
-            #     # "dataset_name": "auA07",
-            #     "epoch_num_type": "15",
-            #     "learning_rate_type": "03",
-            #     "net_type": "VAN",
-            #     "optimizer_type": "a1",
-            #     # "words_type": "LTnumLS",
-            # }
-            # use_validation = False
 
         elif self.arch_type.startswith("AAN"):
 
@@ -455,7 +479,9 @@ class Demo:
 
         ###### build the model
         model_name = build_area_name(hypa, use_validation)
-        model_folder = Path("trained_models") / "area"
+        logg.debug(f"model_name: {model_name}")
+
+        model_folder = Path("demo_models") / "area"
         model_path = model_folder / f"{model_name}.h5"
         model = tf_models.load_model(model_path)
 
@@ -596,7 +622,7 @@ class Demo:
         logg.debug(f"model_name: {model_name}")
 
         # load the model
-        model_folder = Path("trained_models") / "attention"
+        model_folder = Path("demo_models") / "attention"
         model_path = model_folder / f"{model_name}.h5"
 
         # model = tf.keras.models.load_model(model_path)
@@ -643,7 +669,7 @@ def parse_arguments() -> argparse.Namespace:
         "-twt",
         "--train_words_type",
         type=str,
-        default="LTBnum",
+        default="LTBallLS",
         help="Which set of words to predict ",
     )
 

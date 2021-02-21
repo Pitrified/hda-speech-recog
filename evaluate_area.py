@@ -111,8 +111,8 @@ def build_area_results_df() -> pd.DataFrame:
         "model_name": [],
     }
 
-    # info_folder = Path("info") / "area"
-    info_folder = Path("info") / "image"
+    info_folder = Path("info") / "area"
+    # info_folder = Path("info") / "image"
 
     for model_folder in info_folder.iterdir():
         # model_name = model_folder.name
@@ -218,6 +218,19 @@ def evaluate_results_area() -> None:
         df_f = df_f.sort_values("fscore", ascending=False)
         logg.info(f"\nOnly on {word}")
         logg.info(f"{df_f.head(10)}")
+
+    arch_type = ["VAN", "AAN"]
+    word_res = ["LTBall", "LTBallLS", "LTBnum", "LTBnumLS"]
+    for word in word_res:
+        for arch in arch_type:
+            df_f = results_df
+            df_f = df_f.query(f"words == '{word}'")
+            df_f = df_f.query(f"model_name.str.startswith('{arch}')")
+            if len(df_f) == 0:
+                continue
+            df_f = df_f.sort_values("fscore", ascending=False)
+            logg.info(f"\nOnly on {word} {arch}")
+            logg.info(f"{df_f.head(1)}")
 
     # df_f = results_df
     # df_f = df_f.query("words == 'LTnumLS'")
