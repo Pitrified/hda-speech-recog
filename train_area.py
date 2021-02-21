@@ -158,8 +158,9 @@ def hyper_train_area(
     # wtl.extend(["LTnum", "yn", "f1", "k1"])
     # wtl.extend(["LTBnum", "LTBall"])
     # wtl.extend(["LTBnum"])
-    wtl.extend(["num"])
+    # wtl.extend(["num"])
     # wtl.extend(["LTBnumLS", "LTBallLS"])
+    wtl.extend(["LTBnumLS"])
     # wtl.extend(["lr"])
     # wtl.extend(["similar", "all"])
     # wtl.extend(["all"])
@@ -174,9 +175,9 @@ def hyper_train_area(
     # TODO AAN on LTnum for all datasets, only one lr
     # ds.extend(["mel04"])
     # ds.extend(["mela1"])
-    ds.extend(["aug07"])
-    ds.extend(["aug14"])
-    ds.extend(["aug15"])
+    # ds.extend(["aug07"])
+    # ds.extend(["aug14"])
+    # ds.extend(["aug15"])
 
     # TODO auL6789 auL18901 on all net_type
     # TODO auA5678 on VAN (on LTnumLS)
@@ -185,7 +186,7 @@ def hyper_train_area(
     # ds.extend(["auA01", "auA02", "auA03", "auA04"])
     # ds.extend(["auA05", "auA06", "auA07", "auA08"])
     # ds.extend(["auA04"])
-    # ds.extend(["mel04L"])
+    ds.extend(["mel04L"])
 
     # TODO just the 3 best per architecture on noval
 
