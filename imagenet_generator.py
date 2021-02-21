@@ -114,6 +114,11 @@ class ImageNetGenerator(Sequence):
             if self.dataset_proc_folder is None:
                 logg.warn("No processed folder passed, will not save output.")
                 self.save_processed = False
+            else:
+                for label in self.label_names:
+                    label_folder = self.dataset_proc_folder / label
+                    if not label_folder.exists():
+                        label_folder.mkdir(parents=True, exist_ok=True)
 
         # define the preprocess_params to use
         self.define_preprocess_types()
@@ -163,7 +168,7 @@ class ImageNetGenerator(Sequence):
 
         # aug01 params
         preprocess_params = {
-            "img_shape": (256, 256, 3),
+            "img_shape": (128, 128, 3),
         }
         self.all_preprocess_params["aug01"] = preprocess_params
 
@@ -178,6 +183,45 @@ class ImageNetGenerator(Sequence):
 
         return self.preprocess_params["img_shape"]
 
+    def pred2labelnames(self, y_pred) -> ty.List[str]:
+        """MAKEDOC: what is pred2labelnames doing?
+
+        >>> lab = ['a', 'b', 'c', 'a']
+        >>> y = LabelEncoder().fit_transform(lab)
+        array([0, 1, 2, 0])
+        >>> cat = to_categorical(y)
+        array([[1., 0., 0.], [0., 1., 0.], [0., 0., 1.], [1., 0., 0.]], dtype=float32)
+        >>> le = LabelEncoder()
+        >>> le.fit(lab)
+        >>> le.classes_
+        array(['a', 'b', 'c'], dtype='<U1')
+        >>> ind = np.argmax([0.9, 0.04, 0.06])
+        0
+        >>> le.inverse_transform([ind])
+        array(['a'], dtype='<U1')
+        """
+        # logg = logging.getLogger(f"c.{__name__}.pred2labelnames")
+        # logg.setLevel("INFO")
+        # logg.debug("Start pred2labelnames")
+
+        y_ind = np.argmax(y_pred, axis=1)
+        y_lab = self.label_encoder.inverse_transform(y_ind)
+        return y_lab
+
+    def get_true_labels(self) -> ty.List[str]:
+        """MAKEDOC: what is get_true_labels doing?"""
+        # logg = logging.getLogger(f"c.{__name__}.get_true_labels")
+        # logg.setLevel("INFO")
+        # logg.debug("Start get_true_labels")
+
+        # if the data was shuffled follow that order
+        list_IDs_temp = [self.list_IDs[k] for k in self.indexes]
+
+        y_true = []
+        for ID in list_IDs_temp:
+            y_true.append(self.ids2labels[ID][0])
+        return y_true
+
     def __preprocess_img(self, label: str, img_stem: str) -> np.ndarray:
         r"""MAKEDOC: what is __preprocess_img doing?
 
@@ -186,9 +230,9 @@ class ImageNetGenerator(Sequence):
         scaled. The values must be within (0, 0, width, height) rectangle
 
         """
-        logg = logging.getLogger(f"c.{__name__}.__preprocess_img")
+        # logg = logging.getLogger(f"c.{__name__}.__preprocess_img")
         # logg.setLevel("INFO")
-        logg.debug("Start __preprocess_img")
+        # logg.debug("Start __preprocess_img")
 
         # the original image
         img_raw_path = self.dataset_raw_folder / label / f"{img_stem}.jpg"
@@ -200,7 +244,7 @@ class ImageNetGenerator(Sequence):
         # logg.debug(img_pil.mode)
 
         width, height = img_pil.size
-        logg.debug(f"width: {width} height: {height}")
+        # logg.debug(f"width: {width} height: {height}")
 
         resize_size = self.img_shape[0 : 1 + 1]
         res_width, res_height = resize_size
@@ -208,39 +252,51 @@ class ImageNetGenerator(Sequence):
         # resize the image according to the specified preprocess_type
         if self.preprocess_type == "aug01":
 
-            # FIXME if an image is smaller than the resize_size it will fail
-
             # we need to resize it doooown
             if width == height:
-                box = (0, 0, width, height)
+                box = [0, 0, width, height]
 
             # tall image
             elif width < height:
                 pad = height - res_height
                 top = pad // 2
                 bottom = height - pad // 2
-                box = (0, top, width, bottom)
-                logg.debug(f"TALL bottom-top: {bottom-top}")
+                box = [0, top, width, bottom]
+                # logg.debug(f"TALL bottom-top: {bottom-top}")
 
             elif width > height:
                 pad = width - res_width
                 left = pad // 2
                 right = width - pad // 2
-                box = (left, 0, right, height)
+                box = [left, 0, right, height]
 
-            logg.debug(f"box: {box}")
+            # FIXME if an image is smaller than the resize_size it will fail
+            if box[0] < 0:
+                box[0] = 0
+            if box[1] < 0:
+                box[1] = 0
+            if box[2] >= width:
+                box[2] = width
+            if box[3] >= height:
+                box[3] = height
+
+            # logg.debug(f"box: {box}")
             img_resized = img_pil.resize(resize_size, box=box)
-            logg.debug(f"img_resized.size: {img_resized.size}")
+            # logg.debug(f"img_resized.size: {img_resized.size}")
             # img_resized.show()
+
+        # convert grayscale pics
+        if not img_pil.mode == "RGB":
+            img_resized = img_resized.convert("RGB")
 
         # convert to numpy
         img_np = np.array(img_resized)
-        logg.debug(f"img_np.shape: {img_np.shape}")
+        # logg.debug(f"img_np.shape: {img_np.shape}")
 
         # save the processed image
         if self.save_processed and self.dataset_proc_folder is not None:
-            img_proc_path = self.dataset_proc_folder / f"{img_stem}.npy"
-            np.save(img_proc_path, None)
+            img_proc_path = self.dataset_proc_folder / label / f"{img_stem}.npy"
+            np.save(img_proc_path, img_np)
 
         return img_np
 
@@ -250,7 +306,7 @@ class ImageNetGenerator(Sequence):
         X : (n_samples, *img_shape, n_channels)
         """
         # Initialization
-        X = np.empty((self.batch_size, *self.img_shape))
+        X = np.empty((self.batch_size, *self.img_shape), dtype=np.float32)
         y: ty.List[str] = []
 
         # Generate data
@@ -263,7 +319,7 @@ class ImageNetGenerator(Sequence):
 
             if self.dataset_proc_folder is not None:
                 # generate the processed path
-                img_proc_path = self.dataset_proc_folder / f"{img_stem}.npy"
+                img_proc_path = self.dataset_proc_folder / label / f"{img_stem}.npy"
                 # if the image is already processed with this tag, load it
                 if img_proc_path.exists():
                     load_available = True
@@ -380,7 +436,8 @@ def test_imagenetgenerator() -> None:
 
     preprocess_type = "aug01"
     dataset_proc_folder = dataset_proc_base_folder / preprocess_type
-    save_processed = False
+    # save_processed = False
+    save_processed = True
     batch_size = 2
     shuffle = True
 
@@ -399,6 +456,9 @@ def test_imagenetgenerator() -> None:
 
     X, y = training_generator[0]
     logg.debug(f"X.shape: {X.shape} y.shape: {y.shape}")
+
+    for X, y in training_generator:
+        pass
 
 
 def run_imagenet_generator(args: argparse.Namespace) -> None:
