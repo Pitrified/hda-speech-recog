@@ -204,30 +204,31 @@ def hyper_train_img(
 
     ###### the net type
     nt = []
-    # nt.append("SIM")
+    nt.append("SIM")
     nt.append("SI2")
-    # nt.append("AAN")
+    nt.append("AAN")
     # nt.append("VAN")
     hypa_grid["net_type"] = nt
 
     ###### the words to train on
     wtl = []
-    wtl.append("im01")
+    # wtl.append("im01")
+    wtl.append("im02")
     hypa_grid["words_type"] = wtl
 
     ###### the dataset to train on
     ds = []
-    # ds.append("aug01")
+    ds.append("aug01")
     # ds.append("aug02")
-    ds.append("aug03")
+    # ds.append("aug03")
     hypa_grid["dataset_name"] = ds
 
     ###### the learning rates for the optimizer
     lr = []
-    # lr.append("03")  # exp_decay_step_01
-    # lr.append("04")  # exp_decay_smooth_01
+    lr.append("03")  # exp_decay_step_01
+    lr.append("04")  # exp_decay_smooth_01
     lr.append("05")  # clr_triangular2_01
-    # lr.append("06")  # clr_triangular2_02
+    lr.append("06")  # clr_triangular2_02
     hypa_grid["learning_rate_type"] = lr
 
     ###### which optimizer to use
@@ -307,6 +308,118 @@ def get_label_list(label_type: str) -> ty.List[str]:
             "ice cream",
             "night heron",
             "tarantula",
+        ]
+
+    elif label_type == "im02":
+        label_list = [
+            "agaric",
+            "anemone fish",
+            "architecture",
+            "armlet",
+            "banana",
+            "banana bread",
+            "barred owl",
+            "basenji",
+            "basketball player",
+            "bee",
+            "belted kingfisher",
+            "beverage",
+            "bird",
+            "bomber",
+            "book",
+            "bridesmaid",
+            "cake mix",
+            "calliandra",
+            "canna",
+            "cannon",
+            "cardigan",
+            "car mirror",
+            "cassette tape",
+            "cathedral",
+            "chancel",
+            "cherry tomato",
+            "chickpea",
+            "child",
+            "chocolate",
+            "chronograph",
+            "cicada",
+            "cichlid",
+            "clasp",
+            "column",
+            "convertible",
+            "cosmos",
+            "covered bridge",
+            "crocodile",
+            "cue",
+            "cygnet",
+            "daisy",
+            "Dalai Lama",
+            "dandelion green",
+            "drummer",
+            "drunkard",
+            "entree",
+            "fairground",
+            "fly",
+            "footbridge",
+            "garden",
+            "gazebo",
+            "giant panda",
+            "granddaughter",
+            "grandfather",
+            "grate",
+            "green snake",
+            "helix",
+            "hen",
+            "heron",
+            "hip",
+            "hookah",
+            "ice cream",
+            "invertebrate",
+            "junco",
+            "kilt",
+            "kitten",
+            "lavender",
+            "lizard",
+            "moray",
+            "musician",
+            "niece",
+            "Nigerian",
+            "night heron",
+            "office building",
+            "pan",
+            "Pembroke",
+            "porthole",
+            "rat snake",
+            "ready-to-wear",
+            "rhododendron",
+            "robber fly",
+            "rock",
+            "rodent",
+            "Roman arch",
+            "rose mallow",
+            "sea turtle",
+            "Segway",
+            "side dish",
+            "sky",
+            "snowbank",
+            "sparrow",
+            "spider web",
+            "strawberry",
+            "sulphur-crested cockatoo",
+            "suspension bridge",
+            "tarantula",
+            "tennis racket",
+            "toast",
+            "tom",
+            "tramline",
+            "trolleybus",
+            "Tulipa gesneriana",
+            "viper",
+            "wild carrot",
+            "wing",
+            "woman",
+            "woodpecker",
+            "world",
         ]
 
     return label_list

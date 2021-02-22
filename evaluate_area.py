@@ -174,7 +174,7 @@ def evaluate_results_area() -> None:
     df_f = results_df
     df_f = df_f.sort_values("fscore", ascending=False)
     logg.info("All results:")
-    logg.info(f"{df_f.head(30)}")
+    logg.info(f"{df_f.head(300)}")
     logg.info(f"{df_f.tail(10)}")
 
     # by word

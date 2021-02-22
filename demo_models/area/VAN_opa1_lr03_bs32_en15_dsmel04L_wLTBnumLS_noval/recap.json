@@ -1,0 +1,39 @@
+{
+    "model_name": "VAN_opa1_lr03_bs32_en15_dsmel04L_wLTBnumLS_noval",
+    "words": [
+        "loudest_zero",
+        "loudest_one",
+        "loudest_two",
+        "loudest_three",
+        "loudest_four",
+        "loudest_five",
+        "loudest_six",
+        "loudest_seven",
+        "loudest_eight",
+        "loudest_nine",
+        "_other_ltts_loud",
+        "_background_loud"
+    ],
+    "hypa": {
+        "batch_size_type": "32",
+        "dataset_name": "mel04L",
+        "epoch_num_type": "15",
+        "learning_rate_type": "03",
+        "net_type": "VAN",
+        "optimizer_type": "a1",
+        "words_type": "LTBnumLS"
+    },
+    "model_param": {
+        "num_classes": 12,
+        "input_shape": [
+            64,
+            32,
+            1
+        ]
+    },
+    "use_validation": false,
+    "batch_size": 32,
+    "epochs": 15,
+    "lr_name": "exp_decay_step_01",
+    "version": "002"
+}
