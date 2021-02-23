@@ -204,31 +204,32 @@ def hyper_train_img(
 
     ###### the net type
     nt = []
-    nt.append("SIM")
+    # nt.append("SIM")
     nt.append("SI2")
-    nt.append("AAN")
+    # nt.append("AAN")
     # nt.append("VAN")
     hypa_grid["net_type"] = nt
 
     ###### the words to train on
     wtl = []
     # wtl.append("im01")
-    wtl.append("im02")
+    # wtl.append("im02")
+    wtl.append("im03")
     hypa_grid["words_type"] = wtl
 
     ###### the dataset to train on
     ds = []
-    ds.append("aug01")
-    # ds.append("aug02")
-    # ds.append("aug03")
+    # ds.append("aug01")  # (128, 128, 3)
+    # ds.append("aug02")  # (64, 64, 3)
+    ds.append("aug03")  # (200, 200, 3)
     hypa_grid["dataset_name"] = ds
 
     ###### the learning rates for the optimizer
     lr = []
-    lr.append("03")  # exp_decay_step_01
-    lr.append("04")  # exp_decay_smooth_01
+    # lr.append("03")  # exp_decay_step_01
+    # lr.append("04")  # exp_decay_smooth_01
     lr.append("05")  # clr_triangular2_01
-    lr.append("06")  # clr_triangular2_02
+    # lr.append("06")  # clr_triangular2_02
     hypa_grid["learning_rate_type"] = lr
 
     ###### which optimizer to use
@@ -420,6 +421,110 @@ def get_label_list(label_type: str) -> ty.List[str]:
             "woman",
             "woodpecker",
             "world",
+        ]
+
+    elif label_type == "im03":
+        label_list = [
+            "African elephant",
+            "agaric",
+            "anemone fish",
+            "architecture",
+            "armlet",
+            "baboon",
+            "banana",
+            "barred owl",
+            "bee",
+            "bomber",
+            "book",
+            "bottle",
+            "bridesmaid",
+            "cake mix",
+            "calliandra",
+            "canna",
+            "cannon",
+            "cardigan",
+            "car mirror",
+            "chancel",
+            "cherry tomato",
+            "child",
+            "chocolate",
+            "cicada",
+            "convertible",
+            "cosmos",
+            "covered bridge",
+            "cricket",
+            "crocodile",
+            "cygnet",
+            "daisy",
+            "Dalai Lama",
+            "dandelion green",
+            "drake",
+            "drummer",
+            "English setter",
+            "entree",
+            "fairground",
+            "fly",
+            "garden",
+            "gazebo",
+            "giant panda",
+            "goose",
+            "granddaughter",
+            "grandfather",
+            "grasshopper",
+            "grate",
+            "helix",
+            "hen",
+            "heron",
+            "hip",
+            "hookah",
+            "hummingbird",
+            "ice cream",
+            "invertebrate",
+            "jackfruit",
+            "junco",
+            "kilt",
+            "kitten",
+            "Komodo dragon",
+            "lavender",
+            "lemon",
+            "lesser panda",
+            "lionfish",
+            "mantis",
+            "meerkat",
+            "moray",
+            "mushroom",
+            "musician",
+            "niece",
+            "night heron",
+            "orange",
+            "Persian cat",
+            "pomegranate",
+            "rapeseed",
+            "ready-to-wear",
+            "rhododendron",
+            "robber fly",
+            "rock",
+            "rodent",
+            "Roman arch",
+            "seahorse",
+            "sea turtle",
+            "Segway",
+            "side dish",
+            "snowbank",
+            "sparrow",
+            "spider web",
+            "strawberry",
+            "suspension bridge",
+            "tarantula",
+            "trolleybus",
+            "Tulipa gesneriana",
+            "viper",
+            "walking stick",
+            "weevil",
+            "whippet",
+            "wild carrot",
+            "wing",
+            "woodpecker",
         ]
 
     return label_list

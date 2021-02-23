@@ -32,7 +32,7 @@ def parse_arguments():
         "--visualization_type",
         type=str,
         default="augment",
-        choices=["augment", "cm", "spec", "datasets", "waveform", "lr_decay"],
+        choices=["augment", "cm", "spec", "datasets", "waveform", "lr_decay", "loss"],
         help="Which visualization to perform",
     )
 
@@ -541,6 +541,46 @@ def visualize_cm(model_name: str) -> None:
     plt.close(fig)
 
 
+def visualize_loss() -> None:
+    r"""MAKEDOC: what is visualize_loss doing?"""
+    logg = logging.getLogger(f"c.{__name__}.visualize_loss")
+    # logg.setLevel("INFO")
+    logg.debug("Start visualize_loss")
+
+    # the location of this file
+    this_file_folder = Path(__file__).parent.absolute()
+    logg.debug(f"this_file_folder: {this_file_folder}")
+
+    model_name = "CNN_nf32_ks02_ps03_dw32_dr01_lr04_opa1_dsmel04_bs32_en18_wf2"
+    train_type_tag = "cnn"
+    info_folder = Path("info") / train_type_tag
+    model_folder = info_folder / model_name
+    res_path = model_folder / "results_recap.json"
+    res = json.loads(res_path.read_text())
+    # recap_path = model_folder / "recap.json"
+    # recap = json.loads(recap_path.read_text())
+    loss = res["history"]["loss"]
+    val_loss = res["history"]["val_loss"]
+
+    fig, ax = plt.subplots(figsize=(6, 6))
+    ax.plot(loss, label="Loss")
+    ax.plot(val_loss, label="Validation loss")
+    ax.set_xlabel("Epochs")
+    ax.set_ylabel("Loss")
+    ax.legend()
+    fig.tight_layout()
+
+    fig_name = f"{model_name}_loss.{{}}"
+    loss_folder = Path("plot_results") / "loss"
+    if not loss_folder.exists():
+        loss_folder.mkdir(parents=True, exist_ok=True)
+
+    plot_loss_path = loss_folder / fig_name.format("pdf")
+    fig.savefig(plot_loss_path)
+
+    plt.show()
+
+
 def run_visualize(args):
     """MAKEDOC: What is visualize doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_visualize")
@@ -562,6 +602,8 @@ def run_visualize(args):
         visualize_lr_decay()
     elif visualization_type == "cm":
         visualize_cm(model_name)
+    elif visualization_type == "loss":
+        visualize_loss()
 
     plt.show()
 

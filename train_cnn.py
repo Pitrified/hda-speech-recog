@@ -141,13 +141,14 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     ###########################################################################
     hypa_grid_big = {}
 
-    hypa_grid_big["base_dense_width"] = [16, 32, 64]
+    # hypa_grid_big["base_dense_width"] = [16, 32, 64]
     # hypa_grid_big["base_dense_width"] = [16, 32, 64, 128]
     # hypa_grid_big["base_dense_width"] = [128]
-    # hypa_grid_big["base_dense_width"] = [32]
+    hypa_grid_big["base_dense_width"] = [32]
 
     # hypa_grid_big["base_filters"] = [10, 20, 30, 32, 64, 128]
-    hypa_grid_big["base_filters"] = [20, 32]
+    # hypa_grid_big["base_filters"] = [20, 32]
+    hypa_grid_big["base_filters"] = [32]
 
     # hypa_grid_big["batch_size"] = [16, 32, 64]
     hypa_grid_big["batch_size"] = [32]
@@ -177,20 +178,20 @@ def hyper_train(words_type, force_retrain, use_validation, dry_run):
     hypa_grid_big["dropout_type"] = ["01"]
 
     # hypa_grid_big["epoch_num"] = [15, 30, 60]
-    hypa_grid_big["epoch_num"] = [15]
+    hypa_grid_big["epoch_num"] = [18]
     # hypa_grid_big["epoch_num"] = [15, 30]
 
-    hypa_grid_big["kernel_size_type"] = ["01", "02", "03"]
-    # hypa_grid_big["kernel_size_type"] = ["02"]
+    # hypa_grid_big["kernel_size_type"] = ["01", "02", "03"]
+    hypa_grid_big["kernel_size_type"] = ["02"]
 
-    hypa_grid_big["pool_size_type"] = ["01", "02", "03"]
-    # hypa_grid_big["pool_size_type"] = ["03"]
+    # hypa_grid_big["pool_size_type"] = ["01", "02", "03"]
+    hypa_grid_big["pool_size_type"] = ["03"]
 
     lr = []
     # lr.extend(["01", "02", "03"])  # fixed
     # lr.extend(["e1"])  # exp_decay_keras_01
     lr.extend(["04"])  # exp_decay_step_01
-    lr.extend(["05"])  # exp_decay_smooth_01
+    # lr.extend(["05"])  # exp_decay_smooth_01
     # lr.extend(["06"])  # exp_decay_smooth_02
     hypa_grid_big["learning_rate_type"] = lr
 
@@ -445,15 +446,15 @@ def train_model(hypa, force_retrain):
         lrate = LearningRateScheduler(exp_decay_part)
         callbacks.append(lrate)
 
-    # setup early stopping
-    early_stop = EarlyStopping(
-        # monitor="val_categorical_accuracy",
-        monitor="val_loss",
-        patience=4,
-        verbose=1,
-        restore_best_weights=True,
-    )
-    callbacks.append(early_stop)
+    # # setup early stopping
+    # early_stop = EarlyStopping(
+    #     # monitor="val_categorical_accuracy",
+    #     monitor="val_loss",
+    #     patience=4,
+    #     verbose=1,
+    #     restore_best_weights=True,
+    # )
+    # callbacks.append(early_stop)
 
     # get training parameters
     BATCH_SIZE = hypa["batch_size"]
