@@ -854,11 +854,15 @@ To compute the grid weights, the input image is fed into a convolutional
 network, that includes several MaxPooling layers that downsample the feature
 maps generated.
 %
+Note that the attention weight grid shape depends from the MaxPooling
+operations: $3$ poolings with $(2, 2)$ windows are done, which results in a
+$(w/2^3, h/2^3)$ grid, and each grid block has shape $(2^3, 2^3)$.
+%
 For AreaNet, in the last layer of the weight extractor the mean along the depth
-axis is computed to reduce the feature maps to a single image,
-then the scores are converted into a valid probability distribution using a
-softmax activation function, and finally the weights are upsampled back to the
-original shape of the input.
+axis is computed to reduce the feature maps to a single image, then the scores
+are converted into a valid probability distribution using a softmax activation
+function, and finally the weights are upsampled back to the original shape of
+the input.
 %
 For VerticalAreaNet, the mean is also computed along the time axis to obtain a
 one dimensional vector, that is then upsampled.
@@ -868,11 +872,9 @@ SimpleNet, used to classify the audio sample.
 %
 \fig{fig:areanet_diagram_blocks} shows the block diagram of AreaNet.
 %
-AreaNet builds a $8 \times 8$ grid to weigh the input data,
-(\fig{fig:attention_weights_area}),
-while
-VerticalAreaNet builds a $1 \times 16$ grid to weigh the input data,
-(\fig{fig:attention_weights_vertical}).
+AreaNet builds a $((w/8), (h/8))$ grid to weigh the input data,
+(\fig{fig:attention_weights_area}), while VerticalAreaNet builds a $(1,
+(h/16))$ grid to weigh the input data, (\fig{fig:attention_weights_vertical}).
 By using a one dimensional grid, VerticalAreaNet only weighs the input along
 the time axis.
 
@@ -882,7 +884,8 @@ the time axis.
     \caption{Block diagram of AreaNet.
         Note that the attention weight grid shape depends from the
         MaxPooling operations: $3$ poolings with $(2, 2)$ windows
-        are done, which results in a $(2^3, 2^3)$ grid.
+        are done, which results in a $(w/2^3, h/2^3)$ grid,
+        and each grid block has shape $(2^3, 2^3)$.
     }%
     \label{fig:areanet_diagram_blocks}
 \end{figure}
@@ -890,7 +893,7 @@ the time axis.
 \begin{figure}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{AAN_opa1_lr03_bs32_en15_dsaug14_wLTnum_0001.pdf}
-    \caption{AreaNet computes a $8 \times 8$ grid that is used to weigh the
+    \caption{AreaNet computes a $((w/8), (h/8))$ grid that is used to weigh the
     original spectrogram.
     It can be seen that the model focuses on the lowest frequencies aligned
     with the portion of utterance where the word is actually being spoken,
@@ -901,7 +904,7 @@ the time axis.
 \begin{figure}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{VAN_opa1_lr04_bs32_en15_dsaug14_wLTall_0001.pdf}
-    \caption{VerticalAreaNet computes a $1 \times 16$ grid that is used to
+    \caption{VerticalAreaNet computes a $(1, (h/16))$ grid that is used to
         weigh the original spectrogram.
     }%
     \label{fig:attention_weights_vertical}
