@@ -25,10 +25,10 @@ pip install -r requirements.txt
 ```
 
 Please place the Google Speech command dataset in the `data_raw` folder,
-inside the `src` folder:
+inside the `hda-speech-recog` folder:
 
 ```
-src/data_raw
+hda-speech-recog/data_raw
 ```
 
 Be careful to include the validation and testing list provided with the dataset.
