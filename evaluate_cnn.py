@@ -772,6 +772,7 @@ def make_plots_hypa() -> None:
     ]
 
     hypa_labels: ty.Dict[str, ty.Dict[str, str]] = {}
+
     hypa_labels["lr"] = {}
     hypa_labels["lr"]["01"] = "fixed01"
     hypa_labels["lr"]["02"] = "fixed02"
@@ -779,6 +780,14 @@ def make_plots_hypa() -> None:
     hypa_labels["lr"]["04"] = "exp_step_01"
     hypa_labels["lr"]["05"] = "exp_smooth_01"
     hypa_labels["lr"]["06"] = "exp_smooth_02"
+
+    hypa_labels["kernel_size"] = {}
+    hypa_labels["kernel_size"]["01"] = "square"
+    hypa_labels["kernel_size"]["02"] = "vertical"
+
+    hypa_labels["pool_size"] = {}
+    hypa_labels["pool_size"]["01"] = "square"
+    hypa_labels["pool_size"]["02"] = "vertical"
 
     hp_to_plot_names_all = [
         "dataset",
@@ -807,9 +816,9 @@ def make_plots_hypa() -> None:
     # hypa_grid: ty.Dict[str, ty.List[str]] = deepcopy(hypa_grid_all)
 
     # a unique name for this filtering
-    filter_tag = "001"
+    filter_tag = "102"
 
-    if filter_tag == "001":
+    if filter_tag == "101":
         hypa_grid = deepcopy(hypa_grid_all)
         min_lower_limit = 0.60
 
@@ -864,7 +873,7 @@ def make_plots_hypa() -> None:
 
         sub_tag = "__".join(hp_to_plot_names)
 
-    elif filter_tag == "002":
+    elif filter_tag == "102":
         hypa_grid = deepcopy(hypa_grid_all)
         min_lower_limit = 0.50
 

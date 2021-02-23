@@ -249,6 +249,12 @@ def evaluate_results_attention() -> None:
     df_f = df_f.sort_values("fscore", ascending=False)
     logg.info(f"{df_f.head(10)}")
 
+    df_f = results_df
+    df_f = df_f.query("words == 'k1'")
+    df_f = df_f.query("epoch == '01'")
+    df_f = df_f.sort_values("fscore", ascending=False)
+    logg.info(f"{df_f.head(10)}")
+
 
 def evaluate_batch_epoch() -> None:
     """MAKEDOC: what is evaluate_batch_epoch doing?"""
@@ -582,7 +588,9 @@ def compare_augmentation() -> None:
 
     # ATT_ct02_dr01_ks02_lu01_qt05_dw01_opa1_lr06_bs02_en04_dsaug14_wk1
     # augmented, lr 06, en 04
-    model_name_aug = "ATT_ct02_dr01_ks02_lu01_qt05_dw01_opa1_lr06_bs02_en04_dsaug14_wk1"
+    # model_name_aug = "ATT_ct02_dr01_ks02_lu01_qt05_dw01_opa1_lr06_bs02_en04_dsaug14_wk1"
+    model_name_aug = "ATT_ct02_dr01_ks01_lu01_qt01_dw01_opa1_lr04_bs02_en01_dsaug15_wk1"
+
     res_path_aug = info_folder / model_name_aug / "results_recap.json"
     res_aug = json.loads(res_path_aug.read_text())
     logg.debug(f"res_aug.keys(): {res_aug.keys()}")
@@ -619,11 +627,11 @@ def compare_augmentation() -> None:
     ax[1].set_xlabel("Epoch number", fontsize=15)
     ax[1].set_ylabel("Loss", fontsize=15)
 
-    ax[0].legend()
+    ax[0].legend(loc="lower right")
     ax[1].legend()
     fig.tight_layout()
 
-    fig_name = "comparison_augmentation.{}"
+    fig_name = "comparison_augmentation_en0101.{}"
     plot_folder = Path("plot_results")
     results_path = plot_folder / fig_name.format("png")
     fig.savefig(results_path)
@@ -663,7 +671,8 @@ def make_plots_hypa() -> None:
     hypa_grid_all["dropout"] = ["01", "02"]
     hypa_grid_all["kernel"] = ["01", "02"]
     hypa_grid_all["lstm"] = ["01"]
-    hypa_grid_all["query"] = ["01", "02", "03", "04", "05"]
+    # hypa_grid_all["query"] = ["01", "02", "03", "04", "05"]
+    hypa_grid_all["query"] = ["01", "05", "02", "03", "04"]
     hypa_grid_all["dense"] = ["01", "02"]
     hypa_grid_all["lr"] = ["01", "03", "04", "10", "05", "06", "07", "08", "09"]
     hypa_grid_all["optimizer"] = ["a1"]
@@ -686,6 +695,13 @@ def make_plots_hypa() -> None:
     hypa_labels["lr"]["09"] = "clr_tri2_05"
     hypa_labels["lr"]["10"] = "exp_smooth_02"
 
+    hypa_labels["query"] = {}
+    hypa_labels["query"]["01"] = "dense_last"
+    hypa_labels["query"]["05"] = "dense_mid"
+    hypa_labels["query"]["02"] = "conv_LSTM1"
+    hypa_labels["query"]["03"] = "conv_LSTM2"
+    hypa_labels["query"]["04"] = "conv_spec"
+
     hp_to_plot_names_all = [
         "words",
         "dataset",
@@ -704,7 +720,7 @@ def make_plots_hypa() -> None:
     # hp_to_plot_names: ty.List[str] = []
 
     # a unique name for this filtering
-    filter_tag = "004"
+    filter_tag = "104"
 
     # clone the results
     df_f = results_df
@@ -716,7 +732,7 @@ def make_plots_hypa() -> None:
     # and set which hp to plot
     hypa_grid: ty.Dict[str, ty.List[str]] = deepcopy(hypa_grid_all)
 
-    if filter_tag == "001":
+    if filter_tag == "101":
         hypa_grid = deepcopy(hypa_grid_all)
 
         hypa_grid["words"] = ["k1"]
@@ -741,13 +757,13 @@ def make_plots_hypa() -> None:
         ]
         min_lower_limit = 0.92
 
-        sub_tag = "nofilter"
+        sub_tag = "__".join(hp_to_plot_names)
 
         # filter by epochs
         # epoch_list = ["01", "02"]
         # df_f = df_f[df_f["epoch"].isin(epoch_list)]
 
-    elif filter_tag == "003":
+    elif filter_tag == "103":
         logg.debug(f"filter_tag: {filter_tag}")
         # TODO: dropout 12 kernel 2 query 12345 dataset pick 2 (or dense pick 2)
         hypa_grid = deepcopy(hypa_grid_all)
@@ -755,23 +771,49 @@ def make_plots_hypa() -> None:
             "query",
             "conv",
             "dropout",
-            "kernel",
+            # "kernel",
             # "lstm",  # only one, kinda useless
             "dense",
         ]
 
+        word_list = []
+
+        # word_list.append("FJall")
+        # word_list.append("LTBall")
+        # word_list.append("LTBallLS")
+        # word_list.append("LTall")
+
+        # word_list.append("LTBnum")
+        # word_list.append("LTBnumLS")
+
+        # word_list.append("LTnum")
+        # word_list.append("LTnum")
+        # word_list.append("LTnumLS")
+
+        # word_list.append("f1")
+        # word_list.append("f2")
+
+        # word_list.append("k1")
+        # word_list.append("num")
+
+        word_list.append("w2")
+
+        # word_list.append("yn")
+
         # word_list = ["num", "LTnum", "k1"]
-        word_list = ["num", "k1"]
+        # word_list = ["num", "k1"]
         # word_list = ["k1", "LTnum", "LTnumLS", "w2", "FJall", "LTall"]
         # word_list = ["w2", "FJall", "LTall"]
         # word_list = ["k1"]
+
         df_f = df_f[df_f["words"].isin(word_list)]
 
+        word_list = ["nowordfilter"]
         sub_tag = "_".join(word_list)
 
-        min_lower_limit = 0.92
+        min_lower_limit = 0.94
 
-    elif filter_tag == "004":
+    elif filter_tag == "104":
         logg.debug(f"filter_tag: {filter_tag}")
 
         # TODO all lr, all batch, all epochs on k1
@@ -797,7 +839,7 @@ def make_plots_hypa() -> None:
         sub_tag = "_".join(word_list)
         min_lower_limit = 0.92
 
-    elif filter_tag == "005":
+    elif filter_tag == "105":
         logg.debug(f"filter_tag: {filter_tag}")
         hypa_grid = deepcopy(hypa_grid_all)
 

@@ -252,7 +252,8 @@ def test_attention_model():
     # mp["query_style"] = "dense01"
     # mp["dense_width"] = 32
 
-    query_style = "conv03"
+    # query_style = "conv03"
+    query_style = "dense01"
 
     mp["num_labels"] = 8
     # mp["input_shape"] = (128, 32, 1)
@@ -264,7 +265,7 @@ def test_attention_model():
     mp["dropout"] = 0.2
     mp["kernel_sizes"] = [(5, 1), (5, 1), (5, 1)]
     mp["lstm_units"] = [64, 64]
-    mp["att_sample"] = "mid"
+    # mp["att_sample"] = "mid"
     # mp["query_style"] = "dense01"
     mp["query_style"] = query_style
     mp["dense_width"] = 32
@@ -302,5 +303,5 @@ def test_tra_model() -> None:
 
 
 if __name__ == "__main__":
-    # test_attention_model()
-    test_tra_model()
+    test_attention_model()
+    # test_tra_model()

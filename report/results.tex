@@ -391,8 +391,12 @@ However, the speed with which a high performance is achieved is influenced by
 the presence of augmented data. As shown in
 \tab{tab:augmentation_learning_speed} and in
 \fig{fig:augmentation_learning_speed}, peak performance for the model is
-reached after just $4$ epochs of training, compared to $10$ to $15$ epochs when
+reached after
+% less epochs than when 
+just $3$ epochs of training, compared to $8$ to $10$ epochs when
 using non-augmented data.
+%
+Additionally, the learning is smoother.
 
 \begin{table}[t!]
     \centering
@@ -446,7 +450,9 @@ using non-augmented data.
 \begin{figure}[t!]
     \centering
     \includegraphics[width=0.9\linewidth]{comparison_augmentation.pdf}
-    \caption{Comparison of the learning speed on regular vs. augmented data.}%
+    \caption{Comparison of the learning speed on regular vs. augmented data.
+        Notice the faster convergence speed and the smoother learning.
+    }%
     \label{fig:augmentation_learning_speed}
 \end{figure}
 
@@ -540,8 +546,8 @@ frequency axes (as AreaNet does) does not improve performances.
 It is expected that on a standard image dataset, that lacks this strong
 vertical correlation, AreaNet would perform better than VerticalAreaNet.
 
-% \input{megacomparison_manual}
-\input{megacomparison_auto}
+\input{megacomparison_manual}
+% \input{megacomparison_auto}
 
 Confusion matrices for VerticalAreaNet solving the ``yes/no'', ``LTBnum'' and
 ``LTBall'' tasks are shown in \fig{fig:VAN_opa1_lr03_bs32_en14_dsaug14_wyn_cm},
