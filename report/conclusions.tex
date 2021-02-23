@@ -5,15 +5,15 @@
 
 % A gripping conclusion
 The task of identifying a command in a single audio sample has been successfully
-solved, with varying degree of accuracy, by every architecture tested.
+solved, with varying degree of success, by every architecture tested.
 
 %
 It was proved that the attention mechanism is not very effective when dealing
 with spectrogram images.
 %
-A possible reason is that the relevant portion is already very clear, while in
-the background regions that do not contain sound the spectrogram is very
-uniform and with very low values.
+A possible reason is that the relevant portion is already very clear, while the
+spectrogram is very uniform in the background regions that do not contain
+sound.
 %
 In these regions, the convolutional filters already have very low output
 values, so using the attention mechanism to further emphasize the relevant
@@ -57,7 +57,8 @@ Regarding the methodology used, a definite improvement would be using existing
 frameworks for hyper-parameter tuning, such as Hypertune, readily available
 with Keras Tuner library. A very interesting approach is Hyperband, that trains
 every model built from the hyper-parameter grid for a few epochs, then prunes
-the set of models, only keeping the best performing ones.
+the set of models, only keeping the best performing ones in the next round of
+training.
 
 % TODO also much better preprocessing pipeline in ImageNetGenerator
 
