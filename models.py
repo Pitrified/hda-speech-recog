@@ -187,8 +187,18 @@ def TRAmodel(
         pretrained_model = applications.Xception
     elif net_type == "TB0":
         pretrained_model = applications.EfficientNetB0
+    elif net_type == "TB1":
+        pretrained_model = applications.EfficientNetB1
+    elif net_type == "TB2":
+        pretrained_model = applications.EfficientNetB2
+    elif net_type == "TB3":
+        pretrained_model = applications.EfficientNetB3
     elif net_type == "TB4":
         pretrained_model = applications.EfficientNetB4
+    elif net_type == "TB5":
+        pretrained_model = applications.EfficientNetB5
+    elif net_type == "TB6":
+        pretrained_model = applications.EfficientNetB6
     elif net_type == "TB7":
         pretrained_model = applications.EfficientNetB7
     elif net_type == "TD1":

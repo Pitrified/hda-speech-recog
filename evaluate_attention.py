@@ -14,7 +14,6 @@ import tensorflow as tf  # type: ignore
 import typing as ty
 
 from keras_diagram import ascii_model
-from plot_utils import plot_att_weights
 from plot_utils import plot_pred
 from plot_utils import plot_spec
 from plot_utils import plot_waveform
@@ -459,8 +458,12 @@ def evaluate_attention_weights(
 
         # plot the weights
         word_att_weights = att_weights[i]
+        # plot_att_weights(word_att_weights, axes[1 + ax_add][i], title)
+
+        word_att_weights_img = np.expand_dims(word_att_weights, axis=-1).T
+        axes[1 + ax_add][i].imshow(word_att_weights_img, origin="lower", aspect="auto")
         title = f"Attention weights for {word}"
-        plot_att_weights(word_att_weights, axes[1 + ax_add][i], title)
+        axes[1 + ax_add][i].set_title(title)
 
         # plot the predictions
         word_pred = pred[i]
@@ -477,7 +480,7 @@ def evaluate_attention_weights(
 
     fig_name = f"{model_name}"
     fig_name += f"_{train_words_type}"
-    fig_name += f"_{rec_words_type}"
+    fig_name += f"_{rec_words_type}_img"
     if do_new_record:
         fig_name += "_new.{}"
     else:

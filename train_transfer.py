@@ -161,11 +161,16 @@ def hyper_train_transfer(
 
     ###### the architecture to train on
     arch = []
-    arch.append("TRA")  # Xception
-    arch.append("TD1")  # DenseNet121
+    # arch.append("TRA")  # Xception
+    # arch.append("TD1")  # DenseNet121
     arch.append("TB0")  # EfficientNetB0
+    arch.append("TB1")  # EfficientNetB1
+    arch.append("TB2")  # EfficientNetB2
+    arch.append("TB3")  # EfficientNetB3
     arch.append("TB4")  # EfficientNetB4
-    # arch.append("TB7")  # EfficientNetB7
+    arch.append("TB5")  # EfficientNetB5
+    arch.append("TB6")  # EfficientNetB6
+    arch.append("TB7")  # EfficientNetB7
     hypa_grid["net_type"] = arch
 
     ###### the dataset to train on
@@ -177,14 +182,15 @@ def hyper_train_transfer(
     wtl: ty.List[str] = []
     # wtl.extend(["f2", "f1", "dir", "num"])
     # wtl.extend(["k1", "w2", "all"])
-    wtl.extend([words_type])
+    # wtl.extend([words_type])
+    wtl.append("f1")
     hypa_grid["words_type"] = wtl
 
     ###### the dense width of the classifier
     dw = []
     # dw.extend(["01"])  # [4, 0]
-    dw.extend(["02"])  # [16, 16]
-    # dw.extend(["03"])  # [0, 0]
+    # dw.extend(["02"])  # [16, 16]
+    dw.extend(["03"])  # [0, 0]
     # dw.extend(["04"])  # [64, 64]
     hypa_grid["dense_width_type"] = dw
 
@@ -213,7 +219,7 @@ def hyper_train_transfer(
     # lr.extend(["01", "02"])  # fixed
     # lr.extend(["01"])  # fixed
     lr.extend(["03"])  # exp_decay_step_01
-    lr.extend(["04"])  # exp_decay_smooth_01
+    # lr.extend(["04"])  # exp_decay_smooth_01
     hypa_grid["learning_rate_type"] = lr
 
     ###### which optimizer to use

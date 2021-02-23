@@ -144,14 +144,6 @@ def plot_confusion_matrix(
     if pred_words is None:
         pred_words = words
 
-    tick_marks = np.arange(num_words)
-    ax.set_xticks(tick_marks)
-    ax.set_yticks(tick_marks)
-    ax.set_xticklabels(pred_words, rotation=xtlr, fontsize=14)
-    ax.set_yticklabels(words, fontsize=14)
-    ax.set_xlabel("Predicted", fontsize=16)
-    ax.set_ylabel("Observed", fontsize=16)
-
     # title = f"{model_name.replace('_', ' ')}"
     model_name_split = model_name.split("_")
     title = f"{model_name_split[0]}"
@@ -170,11 +162,22 @@ def plot_confusion_matrix(
         title += f" (F-score: {fscore:.4f})"
     ax.set_title(title, fontsize=22)
 
-    thresh = conf_mat.max() * 0.3
-    for i in range(conf_mat.shape[0]):
-        for j in range(conf_mat.shape[1]):
-            c = "white" if conf_mat[i, j] > thresh else "black"
-            ax.text(j, i, conf_mat[i, j], ha="center", va="center", color=c, size=lfs)
+    # only add labels and numbers if there are not too many words
+    if len(words) < 40:
+
+        tick_marks = np.arange(num_words)
+        ax.set_xticks(tick_marks)
+        ax.set_yticks(tick_marks)
+        ax.set_xticklabels(pred_words, rotation=xtlr, fontsize=14)
+        ax.set_yticklabels(words, fontsize=14)
+        ax.set_xlabel("Predicted", fontsize=16)
+        ax.set_ylabel("Observed", fontsize=16)
+
+        thresh = conf_mat.max() * 0.3
+        for i in range(conf_mat.shape[0]):
+            for j in range(conf_mat.shape[1]):
+                c = "white" if conf_mat[i, j] > thresh else "black"
+                ax.text(j, i, conf_mat[i, j], ha="center", va="center", color=c, size=lfs)
 
 
 def plot_double_data(

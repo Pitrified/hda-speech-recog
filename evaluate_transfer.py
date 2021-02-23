@@ -157,7 +157,7 @@ def build_tra_results_df() -> pd.DataFrame:
 def evaluate_results_transfer(args: argparse.Namespace) -> None:
     """MAKEDOC: what is evaluate_results_transfer doing?"""
     logg = logging.getLogger(f"c.{__name__}.evaluate_results_transfer")
-    logg.setLevel("INFO")
+    # logg.setLevel("INFO")
     logg.debug("Start evaluate_results_transfer")
 
     results_df = build_tra_results_df()
@@ -184,6 +184,22 @@ def evaluate_results_transfer(args: argparse.Namespace) -> None:
         logg.info(f"\nOnly on {words_type}")
         logg.info(f"{df_f.head(30)}")
         logg.info(f"{df_f.tail()}")
+
+    logg.debug("\nBNN Comparison")
+    df_f = results_df
+    bn_list = [an for an in results_df.arch_name.unique() if an.startswith("TB")]
+    df_f = df_f[df_f["arch_name"].isin(bn_list)]
+    df_f = df_f.query("use_val == True")
+    df_f = df_f.query("datasets == '01'")
+    df_f = df_f.query("words == 'f1'")
+    df_f = df_f.query("dense_width == '03'")
+    df_f = df_f.query("dropout == '01'")
+    df_f = df_f.query("batch_size == '02'")
+    df_f = df_f.query("epoch_num == '02'")
+    df_f = df_f.query("learning_rate == '03'")
+    df_f = df_f.query("optimizer == 'a1'")
+    df_f = df_f.sort_values("fscore", ascending=False)
+    logg.info(f"{df_f.head(30)}")
 
 
 def delete_bad_models_transfer(args: argparse.Namespace) -> None:
