@@ -4,7 +4,7 @@
 
 ```
 pip install -r requirements.txt
-python demo.py
+python demo_stream.py
 ```
 
 Note that some libraries need external dependencies (e.g. audioread/sounddevice).
@@ -38,9 +38,9 @@ I do not know precisely the list of external libraries needed.
 ##### Preprocessing scripts
 
 * `augment_data.py`
+* `background_noise.py`
 * `fsdd_preprocess.py`
 * `gs_dataset.py`
-* `background_noise.py`
 * `ljspeech_preprocess.py`
 * `ltts_preprocess.py`
 * `preprocess_data.py`
@@ -52,7 +52,7 @@ I do not know precisely the list of external libraries needed.
 
 ##### Demo
 
-* `demo.py`
+* `demo_stream.py`
 
 ##### Utils
 
