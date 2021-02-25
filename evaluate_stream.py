@@ -610,6 +610,7 @@ def do_stream_evaluation(
     # good_sentences = [19, 26, 67]
     # good_sentences = list(range(116))
     # good_sentences = list(range(33, 38))
+    # good_sentences = list(range(3))
     good_sentences = list(range(len(wav_IDs)))
 
     good_count = 0
@@ -624,15 +625,17 @@ def do_stream_evaluation(
 
     # all_y_pred: ty.Dict[str, ty.List[float]] = {}
 
-    stream_folder = Path("plot_stream") / "y_pred"
-    if not stream_folder.exists():
-        stream_folder.mkdir(parents=True, exist_ok=True)
+    ypred_folder = Path("plot_stream") / "y_pred"
+    if not ypred_folder.exists():
+        ypred_folder.mkdir(parents=True, exist_ok=True)
+
+    len_good_sentences = len(good_sentences)
 
     for sentence_index in good_sentences:
 
         # get info for one sentence
         wav_ID = wav_IDs[sentence_index]
-        logg.debug(f"sentence_index {sentence_index}")
+        logg.debug(f"\nsentence_index {sentence_index} / {len_good_sentences-1}")
         orig_wav_path = sentence_wav_paths[wav_ID]
         logg.debug(f"sentence_wav_paths[{wav_ID}]: {orig_wav_path}")
         norm_tra = sentence_norm_tra[wav_ID]
@@ -643,7 +646,7 @@ def do_stream_evaluation(
         pred_name += f"_{wav_ID}"
         pred_name += ".npy"
         logg.debug(f"pred_name SINGLE: {pred_name}")
-        pred_path = stream_folder / pred_name
+        pred_path = ypred_folder / pred_name
 
         if pred_path.exists():
             logg.warn(f"Already predicted {pred_path}")
@@ -682,8 +685,8 @@ def do_stream_evaluation(
     # pred_name += ".json"
     # logg.debug(f"pred_name: {pred_name}")
 
-    # stream_folder = Path("plot_stream")
-    # pred_path = stream_folder / pred_name
+    # ypred_folder = Path("plot_stream")
+    # pred_path = ypred_folder / pred_name
     # pred_path.write_text(json.dumps(all_y_pred, indent=4))
 
     # plt.show()
@@ -833,7 +836,8 @@ def compute_all_roc(architecture_type, which_dataset, train_words_type) -> None:
     # good_sentences = [19, 26, 40, 46, 67]
     # good_sentences = [19, 26, 67]
     # good_sentences = list(range(116))
-    good_sentences = list(range(3))
+    # good_sentences = list(range(3))
+    good_sentences = list(range(len(wav_IDs)))
 
     # magic to fix the GPUs
     setup_gpus()
@@ -844,7 +848,10 @@ def compute_all_roc(architecture_type, which_dataset, train_words_type) -> None:
     )
 
     # where the predictions should be
-    stream_folder = Path("plot_stream") / "y_pred"
+    ypred_folder = Path("plot_stream") / "y_pred"
+    roc_folder = Path("plot_stream") / "roc_results"
+    if not roc_folder.exists():
+        roc_folder.mkdir(parents=True, exist_ok=True)
 
     # get the words the model was trained on
     words = sorted(words_types[train_words_type])
@@ -852,15 +859,33 @@ def compute_all_roc(architecture_type, which_dataset, train_words_type) -> None:
     clean_words(words)
     logg.debug(f"words: {words}")
 
+    # set the thresholds
+    num_th = 20
+    th_list = np.linspace(0, 1, num_th, dtype=np.float32)
+
+    len_good_sentences = len(good_sentences)
+
     # analyze all sentences
     for sentence_index in good_sentences:
+        logg.debug(f"\nsentence_index {sentence_index} / {len_good_sentences-1}")
 
         # get info for one sentence
         wav_ID = wav_IDs[sentence_index]
+
+        # get the result path
+        roc_name = f"{model_name}"
+        roc_name += f"__{wav_ID}"
+        roc_name += f"__{num_th}"
+        roc_name += ".json"
+        roc_path = roc_folder / roc_name
+        if roc_path.exists():
+            continue
+
+        # get the prediction path
         pred_name = f"{model_name}"
         pred_name += f"_{wav_ID}"
         pred_name += ".npy"
-        pred_path = stream_folder / pred_name
+        pred_path = ypred_folder / pred_name
         logg.debug(f"\npred_name: {pred_name}")
 
         # check if there is the prediction
@@ -876,17 +901,16 @@ def compute_all_roc(architecture_type, which_dataset, train_words_type) -> None:
         norm_tra = sentence_norm_tra[wav_ID]
         logg.debug(f"sentence_norm_tra[{wav_ID}]: {norm_tra}")
 
-        num_th = 20
-        th_list = np.linspace(0, 1, num_th, dtype=np.float32)
-
-        roc_recall = compute_roc(words, y_pred, norm_tra, th_list)
+        roc_results = compute_roc(words, y_pred, norm_tra, th_list)
 
         recap: ty.Dict[str, ty.Any] = {}
-        recap['norm_tra'] = norm_tra
-        recap['th_list'] = th_list.tolist()
-        recap['roc_recall'] = roc_recall
+        recap["norm_tra"] = norm_tra
+        recap["th_list"] = th_list.tolist()
+        recap["roc_results"] = roc_results
 
-        logg.debug(f"{json.dumps(recap, indent=4)}")
+        # logg.debug(f"{json.dumps(recap, indent=4)}")
+
+        roc_path.write_text(json.dumps(recap, indent=4))
 
 
 def run_evaluate_stream(args: argparse.Namespace) -> None:
@@ -900,8 +924,8 @@ def run_evaluate_stream(args: argparse.Namespace) -> None:
     architecture_type = args.architecture_type
     # sentence_index = args.sentence_index
 
-    # do_the_stream = True
-    do_the_stream = False
+    do_the_stream = True
+    # do_the_stream = False
     if do_the_stream:
         do_stream_evaluation(
             architecture_type, which_dataset, train_words_type, evaluation_type
