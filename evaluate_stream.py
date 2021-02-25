@@ -1,6 +1,7 @@
 from pathlib import Path
 from tensorflow.keras import models  # type: ignore
 import argparse
+import json
 import librosa  # type: ignore
 import logging
 import matplotlib.pyplot as plt  # type: ignore
@@ -87,7 +88,7 @@ def setup_env() -> argparse.Namespace:
 
 
 def build_ltts_sentence_list(
-    train_words_type: str,
+    train_words_type: str, do_filter: bool = True
 ) -> ty.Tuple[ty.Dict[str, Path], ty.Dict[str, str]]:
     """MAKEDOC: what is build_ltts_sentence_list doing?"""
     logg = logging.getLogger(f"c.{__name__}.build_ltts_sentence_list")
@@ -120,6 +121,8 @@ def build_ltts_sentence_list(
     # from wav_ID to norm_tra
     good_sentences: ty.Dict[str, str] = {}
 
+    no_match_count = 0
+
     for reader_ID_path in ltts_base_folder.iterdir():
         for chapter_ID_path in reader_ID_path.iterdir():
             for file_path in chapter_ID_path.iterdir():
@@ -138,11 +141,14 @@ def build_ltts_sentence_list(
                 # select this row if one of the training words is in the sentence
                 match = train_words_re.search(norm_tra)
                 if match is None:
-                    continue
+                    no_match_count += 1
+                    # and if we *want* to filter out the ones without
+                    if do_filter:
+                        continue
 
                 # filter sentences that are too long or short
-                if not 4 < len(norm_tra.split()) < 15:
-                    continue
+                # if not 4 < len(norm_tra.split()) < 15:
+                #     continue
 
                 # build the wav path
                 #    file_path /path/to/file/wav_ID.normalized.txt
@@ -155,6 +161,10 @@ def build_ltts_sentence_list(
                 # save the file path
                 good_wav_paths[wav_ID] = orig_wav_path
                 good_sentences[wav_ID] = norm_tra
+
+    logg.debug(f"no_match_count: {no_match_count}")
+    len_good = len(good_wav_paths)
+    logg.debug(f"len_good: {len_good}")
 
     return good_wav_paths, good_sentences
 
@@ -219,7 +229,7 @@ def load_trained_model_att(override_hypa) -> ty.Tuple[models.Model, str]:
     logg.debug(f"model_name: {model_name}")
 
     # model_folder = Path("trained_models") / "attention"
-    model_folder = Path("saved_models") / "attention"
+    model_folder = Path("good_models") / "attention"
     model_path = model_folder / f"{model_name}.h5"
     if not model_path.exists():
         logg.error(f"Model not found at: {model_path}")
@@ -308,7 +318,7 @@ def load_trained_model_area(override_hypa) -> ty.Tuple[models.Model, str]:
 
     logg.debug(f"model_name: {model_name}")
 
-    model_folder = Path("trained_models") / "area"
+    model_folder = Path("trained_models") / "area" / model_name
     model_path = model_folder / f"{model_name}.h5"
     if not model_path.exists():
         logg.error(f"Model not found at: {model_path}")
@@ -390,7 +400,7 @@ def plot_sentence_pred(
 
     fig.tight_layout()
 
-    plot_folder = Path("plot_stream") / "all3"
+    plot_folder = Path("plot_stream") / "all4"
     if not plot_folder.exists():
         plot_folder.mkdir(parents=True, exist_ok=True)
     fig.savefig(plot_folder / fig_name.format("pdf"))
@@ -399,13 +409,14 @@ def plot_sentence_pred(
 
 def evaluate_stream(
     model: models.Model,
-    evaluation_type: str,
     datasets_type: str,
     train_words_type: str,
     architecture_type: str,
-    sentence_index: int,
     model_name: str,
-) -> None:
+    orig_wav_path: Path,
+    norm_tra: str,
+    wav_ID: str,
+) -> np.ndarray:
     """MAKEDOC: what is evaluate_stream doing?
 
     CNN_nf32_ks02_ps01_dw32_dr01_lr04_opa1_dsmeL04_bs32_en15_wLTnumLS
@@ -475,22 +486,6 @@ def evaluate_stream(
     # a random number generator to use
     rng = np.random.default_rng(12345)
 
-    if evaluation_type == "ltts":
-        sentence_wav_paths, sentence_norm_tra = build_ltts_sentence_list(
-            train_words_type
-        )
-
-    wav_IDs = list(sentence_wav_paths.keys())
-    logg.debug(f"len(wav_IDs): {len(wav_IDs)}")
-
-    # get info for one sentence
-    wav_ID = wav_IDs[sentence_index]
-    logg.debug(f"sentence_index {sentence_index}")
-    orig_wav_path = sentence_wav_paths[wav_ID]
-    logg.debug(f"sentence_wav_paths[{wav_ID}]: {orig_wav_path}")
-    norm_tra = sentence_norm_tra[wav_ID]
-    logg.debug(f"sentence_norm_tra[{wav_ID}]: {norm_tra}")
-
     # the sample rate to use
     new_sr = 16000
 
@@ -500,6 +495,10 @@ def evaluate_stream(
 
     # split the sentence in chunks every sentence_hop_length
     sentence_hop_length = new_sr // 16
+
+    # the words the model was trained on
+    words = sorted(words_types[train_words_type])
+    logg.debug(f"words: {words}")
 
     # the length of the split is chosen to match the training type
     if train_words_type.endswith("LS"):
@@ -511,6 +510,18 @@ def evaluate_stream(
         sentence_sig, datasets_type, sentence_hop_length, split_length
     )
     logg.debug(f"len(splits): {len(splits)}")
+
+    # if there are no splits available we pretend to have predicted only background
+    # or only random if there are only numbers
+    if len(splits) == 0:
+        num_words = len(words)
+        if num_words == 10:
+            fake_pred = np.ones((1, num_words), dtype=np.float32)
+            fake_pred /= num_words
+        else:
+            fake_pred = np.zeros((1, num_words), dtype=np.float32)
+            fake_pred[0][0] = 1
+        return fake_pred
 
     # compute spectrograms / augment / compose
     if datasets_type.startswith("au"):
@@ -536,8 +547,6 @@ def evaluate_stream(
         )
         logg.debug(f"specs_img.shape: {specs_img.shape}")
 
-    words = sorted(words_types[train_words_type])
-    logg.debug(f"words: {words}")
     y_pred = model.predict(specs_img)
     # logg.debug(f"y_pred: {y_pred}")
     y_index = np.argmax(y_pred, axis=1)
@@ -545,34 +554,339 @@ def evaluate_stream(
     y_pred_labels = [words[i] for i in y_index]
     # logg.debug(f"y_pred_labels: {y_pred_labels}")
 
-    clean_labels = []
-    for yl in y_pred_labels:
-        if yl.startswith("_other"):
-            clean_labels.append(".")
-        else:
-            clean_labels.append(yl)
-    logg.debug(f"Predictions {clean_labels}")
+    save_plots = False
+    if save_plots:
+        clean_labels = []
+        for yl in y_pred_labels:
+            if yl.startswith("_other"):
+                clean_labels.append(".")
+            else:
+                clean_labels.append(yl)
+        logg.debug(f"Predictions {clean_labels}")
 
-    # fig_name = f"{architecture_type}_{evaluation_type}_{datasets_type}_{train_words_type}_{norm_tra}.{{}}"
-    # fig_name = f"{architecture_type}"
-    fig_name = f"{model_name}"
-    fig_name += f"_{evaluation_type}"
-    fig_name += f"_{datasets_type}"
-    fig_name += f"_{train_words_type}"
-    fig_name += f"_{sentence_index}"
-    # fig_name += f"_{norm_tra}.{{}}"
-    fig_name += ".{}"
+        # fig_name = f"{architecture_type}_{evaluation_type}_{datasets_type}_{train_words_type}_{norm_tra}.{{}}"
+        # fig_name = f"{architecture_type}"
+        fig_name = f"{model_name}"
+        # fig_name += f"_{evaluation_type}"
+        fig_name += f"_{datasets_type}"
+        fig_name += f"_{train_words_type}"
+        fig_name += f"_{wav_ID}"
+        # fig_name += f"_{norm_tra}.{{}}"
+        fig_name += ".{}"
 
-    plot_sentence_pred(
-        sentence_sig,
-        y_pred,
-        norm_tra,
-        words,
-        sentence_hop_length,
-        split_length,
-        fig_name,
+        plot_sentence_pred(
+            sentence_sig,
+            y_pred,
+            norm_tra,
+            words,
+            sentence_hop_length,
+            split_length,
+            fig_name,
+        )
+        # plt.show()
+
+    return y_pred
+
+
+def do_stream_evaluation(
+    architecture_type, which_dataset, train_words_type, evaluation_type
+) -> None:
+    r"""MAKEDOC: what is do_stream_evaluation doing?"""
+    logg = logging.getLogger(f"c.{__name__}.do_stream_evaluation")
+    # logg.setLevel("INFO")
+    logg.debug("Start do_stream_evaluation")
+
+    # get the sentence wav paths and transcripts
+    if evaluation_type == "ltts":
+        sentence_wav_paths, sentence_norm_tra = build_ltts_sentence_list(
+            train_words_type, do_filter=False
+        )
+
+    wav_IDs = list(sentence_wav_paths.keys())
+    logg.debug(f"len(wav_IDs): {len(wav_IDs)}")
+
+    # good_sentences = [10, 16, 19, 22, 26, 33, 36, 42, 46, 66, 67, 100]
+    # good_sentences = [19, 26, 40, 46, 67]
+    # good_sentences = [19, 26, 67]
+    # good_sentences = list(range(116))
+    # good_sentences = list(range(33, 38))
+    good_sentences = list(range(len(wav_IDs)))
+
+    good_count = 0
+    bad_count = 0
+
+    # magic to fix the GPUs
+    setup_gpus()
+
+    model, model_name = load_trained_model(
+        architecture_type, which_dataset, train_words_type
     )
+
+    # all_y_pred: ty.Dict[str, ty.List[float]] = {}
+
+    stream_folder = Path("plot_stream") / "y_pred"
+    if not stream_folder.exists():
+        stream_folder.mkdir(parents=True, exist_ok=True)
+
+    for sentence_index in good_sentences:
+
+        # get info for one sentence
+        wav_ID = wav_IDs[sentence_index]
+        logg.debug(f"sentence_index {sentence_index}")
+        orig_wav_path = sentence_wav_paths[wav_ID]
+        logg.debug(f"sentence_wav_paths[{wav_ID}]: {orig_wav_path}")
+        norm_tra = sentence_norm_tra[wav_ID]
+        logg.debug(f"sentence_norm_tra[{wav_ID}]: {norm_tra}")
+
+        # build the output path
+        pred_name = f"{model_name}"
+        pred_name += f"_{wav_ID}"
+        pred_name += ".npy"
+        logg.debug(f"pred_name SINGLE: {pred_name}")
+        pred_path = stream_folder / pred_name
+
+        if pred_path.exists():
+            logg.warn(f"Already predicted {pred_path}")
+            continue
+
+        y_pred = evaluate_stream(
+            model,
+            which_dataset,
+            train_words_type,
+            architecture_type,
+            model_name,
+            orig_wav_path,
+            norm_tra,
+            wav_ID,
+        )
+        logg.debug(f"y_pred.shape: {y_pred.shape}")
+
+        np.save(pred_path, y_pred)
+
+        # all_y_pred[wav_ID] = y_pred.tolist()
+
+        # wasgood = input()
+        # if wasgood == "y":
+        #     good_count += 1
+        # else:
+        #     bad_count += 1
+
+    logg.debug(f"good_count: {good_count}")
+    logg.debug(f"bad_count: {bad_count}")
+    logg.debug(f"total: {bad_count+good_count}")
+
+    # logg.debug(f"all_y_pred: {all_y_pred}")
+
+    # pred_name = f"{model_name}"
+    # pred_name += f"_{sum(good_sentences)}_{good_sentences[0]}_{good_sentences[-1]}"
+    # pred_name += ".json"
+    # logg.debug(f"pred_name: {pred_name}")
+
+    # stream_folder = Path("plot_stream")
+    # pred_path = stream_folder / pred_name
+    # pred_path.write_text(json.dumps(all_y_pred, indent=4))
+
     # plt.show()
+
+
+def clean_words(words) -> None:
+    r"""MAKEDOC: what is clean_words doing?"""
+    logg = logging.getLogger(f"c.{__name__}.clean_words")
+    # logg.setLevel("INFO")
+    logg.debug("Start clean_words")
+
+    for i, word in enumerate(words):
+
+        # remove LS tags
+        if word.startswith("loudest_"):
+            clean_word = word[8:]
+            words[i] = clean_word
+        elif word.endswith("_loud"):
+            clean_word = word[:-5]
+            words[i] = clean_word
+
+        # translate weird labels to readable names
+        if words[i] == "_background":
+            words[i] = "_silence"
+        if words[i] == "_other_ltts":
+            words[i] = "_conversation"
+
+
+def compute_roc(
+    train_words, y_pred, norm_tra, th_list
+) -> ty.Dict[int, ty.Dict[str, float]]:
+    r"""MAKEDOC: what is compute_roc doing?
+
+    train_words: list of words the model was trained on
+    y_pred:      (num_split, num_words) numpy array of predictions
+    norm_tra:    the normalized transcript of the sentence
+
+    false alarm
+    false reject
+
+    4 cases:
+        - a train word is in the sentence
+            - is predicted: CORRECT
+            - is missed:    false reject
+        - no train word is in the sentence
+            - is predicted: false alarm
+            - is missed:    CORRECT
+    """
+    logg = logging.getLogger(f"c.{__name__}.compute_roc")
+    # logg.setLevel("INFO")
+    logg.debug("Start compute_roc")
+
+    # # a regex to find the trained words
+    # train_words_bound = [fr"\b{w}\b" for w in train_words]
+    # train_words_re = re.compile("|".join(train_words_bound))
+
+    # # find out if a train word is in the sentence
+    # match = train_words_re.search(norm_tra)
+    # if match is None:
+    #     is_good_sentence = False
+    # else:
+    #     is_good_sentence = True
+    # logg.debug(f"is_good_sentence: {is_good_sentence}")
+
+    found_words = set()
+    is_good_sentence = False
+    for w in train_words:
+        if w[0] == "_":
+            continue
+        match = re.search(fr"\b{w}\b", norm_tra)
+        if match is None:
+            pass
+        else:
+            found_words.add(w)
+            is_good_sentence = True
+    logg.debug(f"is_good_sentence: {is_good_sentence}")
+    logg.debug(f"found_words: {found_words}")
+
+    num_words = train_words[-10:]
+
+    results: ty.Dict[int, ty.Dict[str, float]] = {}
+
+    # set pred threshold ranges
+    for ti, th in enumerate(th_list):
+        # logg.debug(f"\nth: {th}")
+
+        correct_miss = 0
+        correct_found = 0
+        false_alarm = 0
+        false_reject = 0
+
+        # get the predictions relative to the numbers
+        num_pred = y_pred[:, -10:]
+        # logg.debug(f"num_pred.shape: {num_pred.shape}")
+
+        # for every word get all predictions
+        for wi, word_pred in enumerate(num_pred.T):
+            # logg.debug(f"word_pred.shape: {word_pred.shape}")
+
+            # if it is active
+            if np.any(word_pred > th):
+
+                # if it is actually there set it correct
+                if num_words[wi] in found_words:
+                    # logg.debug(f"Found correct: {num_words[wi]} at {wi}")
+                    correct_found += 1
+
+                # else is a false alarm
+                else:
+                    # logg.debug(f"False alarm: {num_words[wi]} at {wi}")
+                    false_alarm += 1
+
+            # if it is not active
+            else:
+                # but it should have been
+                if num_words[wi] in found_words:
+                    # logg.debug(f"False reject: {num_words[wi]} at {wi}")
+                    false_reject += 1
+                else:
+                    # logg.debug(f"Correct miss: {num_words[wi]} at {wi}")
+                    correct_miss += 1
+
+        results[ti] = {
+            "correct_miss": correct_miss,
+            "correct_found": correct_found,
+            "false_alarm": false_alarm,
+            "false_reject": false_reject,
+        }
+
+    return results
+
+
+def compute_all_roc(architecture_type, which_dataset, train_words_type) -> None:
+    r"""MAKEDOC: what is compute_all_roc doing?"""
+    logg = logging.getLogger(f"c.{__name__}.compute_all_roc")
+    # logg.setLevel("INFO")
+    logg.debug("\n\nStart compute_all_roc")
+
+    # get the sentence info
+    sentence_wav_paths, sentence_norm_tra = build_ltts_sentence_list(
+        train_words_type, do_filter=False
+    )
+    wav_IDs = list(sentence_wav_paths.keys())
+    logg.debug(f"len(wav_IDs): {len(wav_IDs)}")
+
+    # good_sentences = [10, 16, 19, 22, 26, 33, 36, 42, 46, 66, 67, 100]
+    # good_sentences = [19, 26, 40, 46, 67]
+    # good_sentences = [19, 26, 67]
+    # good_sentences = list(range(116))
+    good_sentences = list(range(3))
+
+    # magic to fix the GPUs
+    setup_gpus()
+
+    # get the model name lol so inefficient
+    _, model_name = load_trained_model(
+        architecture_type, which_dataset, train_words_type
+    )
+
+    # where the predictions should be
+    stream_folder = Path("plot_stream") / "y_pred"
+
+    # get the words the model was trained on
+    words = sorted(words_types[train_words_type])
+    logg.debug(f"words: {words}")
+    clean_words(words)
+    logg.debug(f"words: {words}")
+
+    # analyze all sentences
+    for sentence_index in good_sentences:
+
+        # get info for one sentence
+        wav_ID = wav_IDs[sentence_index]
+        pred_name = f"{model_name}"
+        pred_name += f"_{wav_ID}"
+        pred_name += ".npy"
+        pred_path = stream_folder / pred_name
+        logg.debug(f"\npred_name: {pred_name}")
+
+        # check if there is the prediction
+        if not pred_path.exists():
+            logg.warn(f"\nMissing {pred_path}")
+            continue
+
+        # load it
+        y_pred = np.load(pred_path)
+        logg.debug(f"y_pred.shape: {y_pred.shape}")
+
+        # get the normalized transcript of the sentence
+        norm_tra = sentence_norm_tra[wav_ID]
+        logg.debug(f"sentence_norm_tra[{wav_ID}]: {norm_tra}")
+
+        num_th = 20
+        th_list = np.linspace(0, 1, num_th, dtype=np.float32)
+
+        roc_recall = compute_roc(words, y_pred, norm_tra, th_list)
+
+        recap: ty.Dict[str, ty.Any] = {}
+        recap['norm_tra'] = norm_tra
+        recap['th_list'] = th_list.tolist()
+        recap['roc_recall'] = roc_recall
+
+        logg.debug(f"{json.dumps(recap, indent=4)}")
 
 
 def run_evaluate_stream(args: argparse.Namespace) -> None:
@@ -584,44 +898,16 @@ def run_evaluate_stream(args: argparse.Namespace) -> None:
     train_words_type = args.train_words_type
     which_dataset = args.dataset_name
     architecture_type = args.architecture_type
-    sentence_index = args.sentence_index
+    # sentence_index = args.sentence_index
 
-    # good_sentences = [10, 16, 19, 22, 26, 33, 36, 42, 46, 66, 67, 100]
-    # good_sentences = [19, 26, 40, 46, 67]
-    good_sentences = [19, 26, 67]
-
-    good_count = 0
-    bad_count = 0
-
-    # magic to fix the GPUs
-    setup_gpus()
-    model, model_name = load_trained_model(
-        architecture_type, which_dataset, train_words_type
-    )
-
-    # for sentence_index in range(116):
-    # for sentence_index in range(6):
-    for sentence_index in good_sentences:
-        evaluate_stream(
-            model,
-            evaluation_type,
-            which_dataset,
-            train_words_type,
-            architecture_type,
-            sentence_index,
-            model_name,
+    # do_the_stream = True
+    do_the_stream = False
+    if do_the_stream:
+        do_stream_evaluation(
+            architecture_type, which_dataset, train_words_type, evaluation_type
         )
-        # wasgood = input()
-        # if wasgood == "y":
-        #     good_count += 1
-        # else:
-        #     bad_count += 1
 
-    logg.debug(f"good_count: {good_count}")
-    logg.debug(f"bad_count: {bad_count}")
-    logg.debug(f"total: {bad_count+good_count}")
-
-    # plt.show()
+    compute_all_roc(architecture_type, which_dataset, train_words_type)
 
 
 if __name__ == "__main__":

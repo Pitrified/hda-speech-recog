@@ -565,7 +565,8 @@ def compute_spectrograms(
     # logg.debug("Start compute_spectrograms")
 
     specs = []
-    for s in tqdm(signals):
+    # for s in tqdm(signals):
+    for s in signals:
         log_mel = sig2mel(s, mel_kwargs, p2d_kwargs, requested_length)
         img_mel = log_mel.reshape((*log_mel.shape, 1))
         specs.append(img_mel)
