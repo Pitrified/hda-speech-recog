@@ -198,7 +198,9 @@ def split_sentence(
     return splits
 
 
-def load_trained_model_att(override_hypa) -> ty.Tuple[models.Model, str]:
+def load_trained_model_att(
+    override_hypa, do_load: bool = True
+) -> ty.Tuple[models.Model, str]:
     """MAKEDOC: what is load_trained_model_att doing?"""
     logg = logging.getLogger(f"c.{__name__}.load_trained_model_att")
     # logg.setLevel("INFO")
@@ -218,8 +220,24 @@ def load_trained_model_att(override_hypa) -> ty.Tuple[models.Model, str]:
         "optimizer_type": "a1",
         "query_style_type": "01",
     }
-    # use_validation = False
     use_validation = True
+
+    # # for num
+    # hypa = {
+    #     "batch_size_type": "02",
+    #     "conv_size_type": "02",
+    #     # "dataset_name": "mel04",
+    #     "dense_width_type": "01",
+    #     "dropout_type": "01",
+    #     "epoch_num_type": "01",
+    #     "kernel_size_type": "01",
+    #     "learning_rate_type": "04",
+    #     "lstm_units_type": "01",
+    #     "optimizer_type": "a1",
+    #     "query_style_type": "05",
+    #     # "words_type": "num"
+    # }
+    # use_validation = False
 
     # override the values
     for hypa_name in override_hypa:
@@ -228,20 +246,25 @@ def load_trained_model_att(override_hypa) -> ty.Tuple[models.Model, str]:
     model_name = build_attention_name(hypa, use_validation)
     logg.debug(f"model_name: {model_name}")
 
-    # model_folder = Path("trained_models") / "attention"
-    model_folder = Path("good_models") / "attention"
-    model_path = model_folder / f"{model_name}.h5"
-    if not model_path.exists():
-        logg.error(f"Model not found at: {model_path}")
-        logg.error(f"Train it with hypa_grid = {hypa}")
-        raise FileNotFoundError
+    if do_load:
+        # model_folder = Path("trained_models") / "attention"
+        model_folder = Path("good_models") / "attention"
+        model_path = model_folder / f"{model_name}.h5"
+        if not model_path.exists():
+            logg.error(f"Model not found at: {model_path}")
+            logg.error(f"Train it with hypa_grid = {hypa}")
+            raise FileNotFoundError
+        model = models.load_model(model_path)
 
-    model = models.load_model(model_path)
+    else:
+        model = None
 
     return model, model_name
 
 
-def load_trained_model_cnn(override_hypa) -> ty.Tuple[models.Model, str]:
+def load_trained_model_cnn(
+    override_hypa, do_load: bool = True
+) -> ty.Tuple[models.Model, str]:
     """MAKEDOC: what is load_trained_model_cnn doing?"""
     logg = logging.getLogger(f"c.{__name__}.load_trained_model_cnn")
     # logg.setLevel("INFO")
@@ -269,19 +292,25 @@ def load_trained_model_cnn(override_hypa) -> ty.Tuple[models.Model, str]:
     model_name = build_cnn_name(hypa)
     logg.debug(f"model_name: {model_name}")
 
-    model_folder = Path("trained_models") / "cnn"
-    model_path = model_folder / f"{model_name}.h5"
-    if not model_path.exists():
-        logg.error(f"Model not found at: {model_path}")
-        logg.error(f"Train it with hypa_grid = {hypa}")
-        raise FileNotFoundError
+    if do_load:
+        model_folder = Path("trained_models") / "cnn"
+        model_path = model_folder / f"{model_name}.h5"
+        if not model_path.exists():
+            logg.error(f"Model not found at: {model_path}")
+            logg.error(f"Train it with hypa_grid = {hypa}")
+            raise FileNotFoundError
 
-    model = models.load_model(model_path)
+        model = models.load_model(model_path)
+
+    else:
+        model = None
 
     return model, model_name
 
 
-def load_trained_model_area(override_hypa) -> ty.Tuple[models.Model, str]:
+def load_trained_model_area(
+    override_hypa, do_load: bool = True
+) -> ty.Tuple[models.Model, str]:
     """MAKEDOC: what is load_trained_model_area doing?"""
     logg = logging.getLogger(f"c.{__name__}.load_trained_model_area")
     # logg.setLevel("INFO")
@@ -298,40 +327,30 @@ def load_trained_model_area(override_hypa) -> ty.Tuple[models.Model, str]:
     # use_validation = False
     use_validation = True
 
-    # SI2_opa1_lr03_bs32_en15_dsmel04_wLTBnum_noval
-    # hypa = {
-    #     "batch_size_type": "32",
-    #     "dataset_name": "mel04",
-    #     "epoch_num_type": "15",
-    #     "learning_rate_type": "03",
-    #     "net_type": "SI2",
-    #     "optimizer_type": "a1",
-    #     "words_type": "LTBnum"
-    # }
-    # use_validation = False
-
     # override the values
     for hypa_name in override_hypa:
         hypa[hypa_name] = override_hypa[hypa_name]
 
     model_name = build_area_name(hypa, use_validation)
-
     logg.debug(f"model_name: {model_name}")
 
-    model_folder = Path("trained_models") / "area" / model_name
-    model_path = model_folder / f"{model_name}.h5"
-    if not model_path.exists():
-        logg.error(f"Model not found at: {model_path}")
-        logg.error(f"Train it with hypa_grid = {hypa}")
-        raise FileNotFoundError
+    if do_load:
+        model_folder = Path("trained_models") / "area" / model_name
+        model_path = model_folder / f"{model_name}.h5"
+        if not model_path.exists():
+            logg.error(f"Model not found at: {model_path}")
+            logg.error(f"Train it with hypa_grid = {hypa}")
+            raise FileNotFoundError
+        model = models.load_model(model_path)
 
-    model = models.load_model(model_path)
+    else:
+        model = None
 
     return model, model_name
 
 
 def load_trained_model(
-    model_type: str, datasets_type: str, train_words_type: str
+    model_type: str, datasets_type: str, train_words_type: str, do_load: bool = True
 ) -> ty.Tuple[models.Model, str]:
     """MAKEDOC: what is load_trained_model doing?"""
     logg = logging.getLogger(f"c.{__name__}.load_trained_model")
@@ -340,15 +359,15 @@ def load_trained_model(
 
     if model_type == "cnn":
         override_hypa = {"dataset": datasets_type, "words": train_words_type}
-        model, model_name = load_trained_model_cnn(override_hypa)
+        model, model_name = load_trained_model_cnn(override_hypa, do_load)
 
     elif model_type == "attention":
         override_hypa = {"dataset_name": datasets_type, "words_type": train_words_type}
-        model, model_name = load_trained_model_att(override_hypa)
+        model, model_name = load_trained_model_att(override_hypa, do_load)
 
     elif model_type == "area":
         override_hypa = {"dataset_name": datasets_type, "words_type": train_words_type}
-        model, model_name = load_trained_model_area(override_hypa)
+        model, model_name = load_trained_model_area(override_hypa, do_load)
 
     return model, model_name
 
@@ -400,7 +419,7 @@ def plot_sentence_pred(
 
     fig.tight_layout()
 
-    plot_folder = Path("plot_stream") / "all4"
+    plot_folder = Path("plot_stream") / "all5"
     if not plot_folder.exists():
         plot_folder.mkdir(parents=True, exist_ok=True)
     fig.savefig(plot_folder / fig_name.format("pdf"))
@@ -555,6 +574,7 @@ def evaluate_stream(
     # logg.debug(f"y_pred_labels: {y_pred_labels}")
 
     save_plots = False
+    # save_plots = True
     if save_plots:
         clean_labels = []
         for yl in y_pred_labels:
@@ -597,9 +617,11 @@ def do_stream_evaluation(
     logg.debug("Start do_stream_evaluation")
 
     # get the sentence wav paths and transcripts
+    do_filter = False
+    # do_filter = True
     if evaluation_type == "ltts":
         sentence_wav_paths, sentence_norm_tra = build_ltts_sentence_list(
-            train_words_type, do_filter=False
+            train_words_type, do_filter=do_filter
         )
 
     wav_IDs = list(sentence_wav_paths.keys())
@@ -610,8 +632,8 @@ def do_stream_evaluation(
     # good_sentences = [19, 26, 67]
     # good_sentences = list(range(116))
     # good_sentences = list(range(33, 38))
-    good_sentences = list(range(3))
-    # good_sentences = list(range(len(wav_IDs)))
+    # good_sentences = list(range(3))
+    good_sentences = list(range(len(wav_IDs)))
 
     good_count = 0
     bad_count = 0
@@ -828,8 +850,10 @@ def compute_all_false_alarm_reject(
     logg.debug("\n\nStart compute_all_false_alarm_reject")
 
     # get the sentence info
+    do_filter = False
+    # do_filter = True
     sentence_wav_paths, sentence_norm_tra = build_ltts_sentence_list(
-        train_words_type, do_filter=False
+        train_words_type, do_filter=do_filter
     )
     wav_IDs = list(sentence_wav_paths.keys())
     logg.debug(f"len(wav_IDs): {len(wav_IDs)}")
@@ -838,15 +862,14 @@ def compute_all_false_alarm_reject(
     # good_sentences = [19, 26, 40, 46, 67]
     # good_sentences = [19, 26, 67]
     # good_sentences = list(range(116))
-    good_sentences = list(range(3))
-    # good_sentences = list(range(len(wav_IDs)))
+    # good_sentences = list(range(3))
+    good_sentences = list(range(len(wav_IDs)))
 
-    # magic to fix the GPUs
-    setup_gpus()
+    len_good_sentences = len(good_sentences)
 
     # get the model name lol so inefficient
     _, model_name = load_trained_model(
-        architecture_type, which_dataset, train_words_type
+        architecture_type, which_dataset, train_words_type, do_load=False
     )
 
     # where the predictions should be
@@ -864,8 +887,6 @@ def compute_all_false_alarm_reject(
     # set the thresholds
     num_th = 20
     th_list = np.linspace(0, 1, num_th, dtype=np.float32)
-
-    len_good_sentences = len(good_sentences)
 
     # analyze all sentences
     for sentence_index in good_sentences:
@@ -915,6 +936,140 @@ def compute_all_false_alarm_reject(
         roc_path.write_text(json.dumps(recap, indent=4))
 
 
+def analyze_false_alarm_rejects(
+    architecture_type, which_dataset, train_words_type
+) -> None:
+    r"""MAKEDOC: what is analyze_false_alarm_rejects doing?"""
+    logg = logging.getLogger(f"c.{__name__}.analyze_false_alarm_rejects")
+    # logg.setLevel("INFO")
+    logg.debug("Start analyze_false_alarm_rejects")
+
+    # get the sentence info
+    do_filter = False
+    # do_filter = True
+    sentence_wav_paths, sentence_norm_tra = build_ltts_sentence_list(
+        train_words_type, do_filter=do_filter
+    )
+    wav_IDs = list(sentence_wav_paths.keys())
+    logg.debug(f"len(wav_IDs): {len(wav_IDs)}")
+
+    # good_sentences = [10, 16, 19, 22, 26, 33, 36, 42, 46, 66, 67, 100]
+    # good_sentences = [19, 26, 40, 46, 67]
+    # good_sentences = [19, 26, 67]
+    # good_sentences = list(range(116))
+    # good_sentences = list(range(3))
+    good_sentences = list(range(len(wav_IDs)))
+
+    len_good_sentences = len(good_sentences)
+    logg.debug(f"len_good_sentences: {len_good_sentences}")
+
+    # get the model name lol so inefficient
+    _, model_name = load_trained_model(
+        architecture_type, which_dataset, train_words_type, do_load=False
+    )
+
+    # where the FAR should be
+    roc_folder = Path("plot_stream") / "roc_results" / model_name
+    roc_analysis = Path("plot_stream") / "roc_analysis" / model_name
+    if not roc_analysis.exists():
+        roc_analysis.mkdir(parents=True, exist_ok=True)
+
+    # get the words the model was trained on
+    words = sorted(words_types[train_words_type])
+    logg.debug(f"words: {words}")
+    clean_words(words)
+    logg.debug(f"words: {words}")
+
+    # set the thresholds used when computing the data
+    num_th = 20
+
+    # accumulate data for each th value
+    all_correct_miss = {ti: 0 for ti in range(num_th)}
+    all_correct_found = {ti: 0 for ti in range(num_th)}
+    all_false_alarm = {ti: 0 for ti in range(num_th)}
+    all_false_reject = {ti: 0 for ti in range(num_th)}
+
+    # analyze all sentences
+    for sentence_index in good_sentences:
+        # logg.debug(f"\nsentence_index {sentence_index} / {len_good_sentences-1}")
+
+        # get info for one sentence
+        wav_ID = wav_IDs[sentence_index]
+
+        # get the result path
+        roc_name = f"{model_name}"
+        roc_name += f"__{wav_ID}"
+        roc_name += f"__{num_th}"
+        roc_name += ".json"
+        roc_path = roc_folder / roc_name
+
+        # check if there is the roc data
+        if not roc_path.exists():
+            logg.warn(f"\nMissing {roc_path}")
+            continue
+
+        # load it
+        roc_recap = json.loads(roc_path.read_text())
+        # logg.debug(f"norm_tra: {roc_recap['norm_tra']}")
+        th_list = roc_recap["th_list"]
+        th_res = roc_recap["roc_results"]
+
+        for ti, th in enumerate(th_list):
+
+            # get the results for this th
+            th_res_ti = th_res[str(ti)]
+            correct_miss = th_res_ti["correct_miss"]
+            correct_found = th_res_ti["correct_found"]
+            false_alarm = th_res_ti["false_alarm"]
+            false_reject = th_res_ti["false_reject"]
+
+            # if there are correct words we take correct
+            # even if there are alarms or rejects
+            if correct_found > 0:
+                # all_correct_found[ti] += correct_found
+                all_correct_found[ti] += 1
+
+            # if there are alarms those are worse than rejects
+            elif false_alarm > 0:
+                # all_false_alarm[ti] += false_alarm
+                all_false_alarm[ti] += 1
+
+            # if we arrived here and there are rejects,
+            # the sample is a false reject
+            elif false_reject > 0:
+                # all_false_reject[ti] += false_reject
+                all_false_reject[ti] += 1
+
+            # if we reached here, the sample does not contain useful words
+            # and it was not falsely selected
+            elif correct_miss > 0:
+                all_correct_miss[ti] += 1
+
+            else:
+                logg.warn(f"Weird th_res: {th_res}")
+                pass
+
+    # logg.debug(f"all_correct_miss: {all_correct_miss}")
+    # logg.debug(f"all_correct_found: {all_correct_found}")
+    # logg.debug(f"all_false_alarm: {all_false_alarm}")
+    # logg.debug(f"all_false_reject: {all_false_reject}")
+
+    header = " " * 10
+    header += "    CM"
+    header += "    CF"
+    header += "    FR"
+    header += "    FA"
+    logg.debug(f"{header}")
+
+    for ti, th in enumerate(th_list):
+        recap = f"th: {th:.4f}"
+        recap += f" {all_correct_miss[ti]: 5d}"
+        recap += f" {all_correct_found[ti]: 5d}"
+        recap += f" {all_false_reject[ti]: 5d}"
+        recap += f" {all_false_alarm[ti]: 5d}"
+        logg.debug(recap)
+
+
 def run_evaluate_stream(args: argparse.Namespace) -> None:
     """MAKEDOC: What is evaluate_stream doing?"""
     logg = logging.getLogger(f"c.{__name__}.run_evaluate_stream")
@@ -926,14 +1081,16 @@ def run_evaluate_stream(args: argparse.Namespace) -> None:
     architecture_type = args.architecture_type
     # sentence_index = args.sentence_index
 
-    do_the_stream = True
-    # do_the_stream = False
+    # do_the_stream = True
+    do_the_stream = False
     if do_the_stream:
         do_stream_evaluation(
             architecture_type, which_dataset, train_words_type, evaluation_type
         )
 
-    compute_all_false_alarm_reject(architecture_type, which_dataset, train_words_type)
+    # compute_all_false_alarm_reject(architecture_type, which_dataset, train_words_type)
+
+    analyze_false_alarm_rejects(architecture_type, which_dataset, train_words_type)
 
 
 if __name__ == "__main__":
