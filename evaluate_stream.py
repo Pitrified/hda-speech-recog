@@ -88,9 +88,14 @@ def setup_env() -> argparse.Namespace:
 
 
 def build_ltts_sentence_list(
-    train_words_type: str, do_filter: bool = True
+    train_words_type: str, do_filter_match: bool, do_filter_len: bool
 ) -> ty.Tuple[ty.Dict[str, Path], ty.Dict[str, str]]:
-    """MAKEDOC: what is build_ltts_sentence_list doing?"""
+    """MAKEDOC: what is build_ltts_sentence_list doing?
+
+
+    do_filter_match set to True only keeps sentences that contain a train word
+    do_filter_len set to True only keeps sentences s.t. 4 < len_sen < 15
+    """
     logg = logging.getLogger(f"c.{__name__}.build_ltts_sentence_list")
     # logg.setLevel("INFO")
     logg.debug("Start build_ltts_sentence_list")
@@ -143,12 +148,13 @@ def build_ltts_sentence_list(
                 if match is None:
                     no_match_count += 1
                     # and if we *want* to filter out the ones without
-                    if do_filter:
+                    if do_filter_match:
                         continue
 
                 # filter sentences that are too long or short
-                # if not 4 < len(norm_tra.split()) < 15:
-                #     continue
+                if do_filter_len:
+                    if not 4 < len(norm_tra.split()) < 15:
+                        continue
 
                 # build the wav path
                 #    file_path /path/to/file/wav_ID.normalized.txt
@@ -609,31 +615,20 @@ def evaluate_stream(
 
 
 def do_stream_evaluation(
-    architecture_type, which_dataset, train_words_type, evaluation_type
+    architecture_type,
+    which_dataset,
+    train_words_type,
+    sentence_wav_paths,
+    sentence_norm_tra,
+    good_sentences,
 ) -> None:
     r"""MAKEDOC: what is do_stream_evaluation doing?"""
     logg = logging.getLogger(f"c.{__name__}.do_stream_evaluation")
     # logg.setLevel("INFO")
     logg.debug("Start do_stream_evaluation")
 
-    # get the sentence wav paths and transcripts
-    do_filter = False
-    # do_filter = True
-    if evaluation_type == "ltts":
-        sentence_wav_paths, sentence_norm_tra = build_ltts_sentence_list(
-            train_words_type, do_filter=do_filter
-        )
-
     wav_IDs = list(sentence_wav_paths.keys())
     logg.debug(f"len(wav_IDs): {len(wav_IDs)}")
-
-    # good_sentences = [10, 16, 19, 22, 26, 33, 36, 42, 46, 66, 67, 100]
-    # good_sentences = [19, 26, 40, 46, 67]
-    # good_sentences = [19, 26, 67]
-    # good_sentences = list(range(116))
-    # good_sentences = list(range(33, 38))
-    # good_sentences = list(range(3))
-    good_sentences = list(range(len(wav_IDs)))
 
     good_count = 0
     bad_count = 0
@@ -641,6 +636,7 @@ def do_stream_evaluation(
     # magic to fix the GPUs
     setup_gpus()
 
+    # load the model
     model, model_name = load_trained_model(
         architecture_type, which_dataset, train_words_type
     )
@@ -651,13 +647,11 @@ def do_stream_evaluation(
     if not ypred_folder.exists():
         ypred_folder.mkdir(parents=True, exist_ok=True)
 
-    len_good_sentences = len(good_sentences)
-
     for sentence_index in good_sentences:
 
         # get info for one sentence
         wav_ID = wav_IDs[sentence_index]
-        logg.debug(f"\nsentence_index {sentence_index} / {len_good_sentences-1}")
+        logg.debug(f"\nsentence_index {sentence_index} / {len(good_sentences)-1}")
         orig_wav_path = sentence_wav_paths[wav_ID]
         logg.debug(f"sentence_wav_paths[{wav_ID}]: {orig_wav_path}")
         norm_tra = sentence_norm_tra[wav_ID]
@@ -671,7 +665,7 @@ def do_stream_evaluation(
         pred_path = ypred_folder / pred_name
 
         if pred_path.exists():
-            logg.warn(f"Already predicted {pred_path}")
+            logg.info(f"Already predicted {pred_path}")
             continue
 
         y_pred = evaluate_stream(
@@ -737,10 +731,10 @@ def clean_words(words) -> None:
             words[i] = "_conversation"
 
 
-def compute_roc(
+def compute_sentence_far(
     train_words, y_pred, norm_tra, th_list
 ) -> ty.Dict[int, ty.Dict[str, float]]:
-    r"""MAKEDOC: what is compute_roc doing?
+    r"""MAKEDOC: what is compute_sentence_far doing?
 
     train_words: list of words the model was trained on
     y_pred:      (num_split, num_words) numpy array of predictions
@@ -751,15 +745,15 @@ def compute_roc(
 
     4 cases:
         - a train word is in the sentence
-            - is predicted: CORRECT
+            - is predicted: CORRECT found
             - is missed:    false reject
         - no train word is in the sentence
             - is predicted: false alarm
-            - is missed:    CORRECT
+            - is missed:    CORRECT miss
     """
-    logg = logging.getLogger(f"c.{__name__}.compute_roc")
+    logg = logging.getLogger(f"c.{__name__}.compute_sentence_far")
     # logg.setLevel("INFO")
-    logg.debug("Start compute_roc")
+    logg.debug("Start compute_sentence_far")
 
     # # a regex to find the trained words
     # train_words_bound = [fr"\b{w}\b" for w in train_words]
@@ -842,30 +836,21 @@ def compute_roc(
 
 
 def compute_all_false_alarm_reject(
-    architecture_type, which_dataset, train_words_type
+    architecture_type,
+    which_dataset,
+    train_words_type,
+    sentence_wav_paths,
+    sentence_norm_tra,
+    good_sentences,
 ) -> None:
     r"""MAKEDOC: what is compute_all_false_alarm_reject doing?"""
     logg = logging.getLogger(f"c.{__name__}.compute_all_false_alarm_reject")
     # logg.setLevel("INFO")
     logg.debug("\n\nStart compute_all_false_alarm_reject")
 
-    # get the sentence info
-    do_filter = False
-    # do_filter = True
-    sentence_wav_paths, sentence_norm_tra = build_ltts_sentence_list(
-        train_words_type, do_filter=do_filter
-    )
+    # extract the wav_IDs for clarity
     wav_IDs = list(sentence_wav_paths.keys())
     logg.debug(f"len(wav_IDs): {len(wav_IDs)}")
-
-    # good_sentences = [10, 16, 19, 22, 26, 33, 36, 42, 46, 66, 67, 100]
-    # good_sentences = [19, 26, 40, 46, 67]
-    # good_sentences = [19, 26, 67]
-    # good_sentences = list(range(116))
-    # good_sentences = list(range(3))
-    good_sentences = list(range(len(wav_IDs)))
-
-    len_good_sentences = len(good_sentences)
 
     # get the model name lol so inefficient
     _, model_name = load_trained_model(
@@ -890,7 +875,7 @@ def compute_all_false_alarm_reject(
 
     # analyze all sentences
     for sentence_index in good_sentences:
-        logg.debug(f"\nsentence_index {sentence_index} / {len_good_sentences-1}")
+        logg.debug(f"\nsentence_index {sentence_index} / {len(good_sentences)-1}")
 
         # get info for one sentence
         wav_ID = wav_IDs[sentence_index]
@@ -902,6 +887,7 @@ def compute_all_false_alarm_reject(
         roc_name += ".json"
         roc_path = roc_folder / roc_name
         if roc_path.exists():
+            logg.info(f"Already computed {roc_path}")
             continue
 
         # get the prediction path
@@ -924,7 +910,7 @@ def compute_all_false_alarm_reject(
         norm_tra = sentence_norm_tra[wav_ID]
         logg.debug(f"sentence_norm_tra[{wav_ID}]: {norm_tra}")
 
-        roc_results = compute_roc(words, y_pred, norm_tra, th_list)
+        roc_results = compute_sentence_far(words, y_pred, norm_tra, th_list)
 
         recap: ty.Dict[str, ty.Any] = {}
         recap["norm_tra"] = norm_tra
@@ -937,31 +923,20 @@ def compute_all_false_alarm_reject(
 
 
 def analyze_false_alarm_rejects(
-    architecture_type, which_dataset, train_words_type
+    architecture_type,
+    which_dataset,
+    train_words_type,
+    sentence_wav_paths,
+    sentence_norm_tra,
+    good_sentences,
 ) -> None:
     r"""MAKEDOC: what is analyze_false_alarm_rejects doing?"""
     logg = logging.getLogger(f"c.{__name__}.analyze_false_alarm_rejects")
     # logg.setLevel("INFO")
-    logg.debug("Start analyze_false_alarm_rejects")
+    logg.debug("\n\nStart analyze_false_alarm_rejects")
 
-    # get the sentence info
-    do_filter = False
-    # do_filter = True
-    sentence_wav_paths, sentence_norm_tra = build_ltts_sentence_list(
-        train_words_type, do_filter=do_filter
-    )
     wav_IDs = list(sentence_wav_paths.keys())
     logg.debug(f"len(wav_IDs): {len(wav_IDs)}")
-
-    # good_sentences = [10, 16, 19, 22, 26, 33, 36, 42, 46, 66, 67, 100]
-    # good_sentences = [19, 26, 40, 46, 67]
-    # good_sentences = [19, 26, 67]
-    # good_sentences = list(range(116))
-    # good_sentences = list(range(3))
-    good_sentences = list(range(len(wav_IDs)))
-
-    len_good_sentences = len(good_sentences)
-    logg.debug(f"len_good_sentences: {len_good_sentences}")
 
     # get the model name lol so inefficient
     _, model_name = load_trained_model(
@@ -991,7 +966,7 @@ def analyze_false_alarm_rejects(
 
     # analyze all sentences
     for sentence_index in good_sentences:
-        # logg.debug(f"\nsentence_index {sentence_index} / {len_good_sentences-1}")
+        # logg.debug(f"\nsentence_index {sentence_index} / {len(good_sentences)-1}")
 
         # get info for one sentence
         wav_ID = wav_IDs[sentence_index]
@@ -1075,22 +1050,67 @@ def run_evaluate_stream(args: argparse.Namespace) -> None:
     logg = logging.getLogger(f"c.{__name__}.run_evaluate_stream")
     logg.debug("Starting run_evaluate_stream")
 
-    evaluation_type = args.evaluation_type
+    # evaluation_type = args.evaluation_type
     train_words_type = args.train_words_type
     which_dataset = args.dataset_name
     architecture_type = args.architecture_type
     # sentence_index = args.sentence_index
 
-    # do_the_stream = True
-    do_the_stream = False
+    # get the sentence wav paths and transcripts
+    do_filter_match = False
+    # do_filter_match = True
+    do_filter_len = False
+    # do_filter_len = True
+    sentence_wav_paths, sentence_norm_tra = build_ltts_sentence_list(
+        train_words_type, do_filter_match=do_filter_match, do_filter_len=do_filter_len
+    )
+
+    wav_IDs = list(sentence_wav_paths.keys())
+    logg.debug(f"len(wav_IDs): {len(wav_IDs)}")
+
+    # good_sentences = [10, 16, 19, 22, 26, 33, 36, 42, 46, 66, 67, 100]
+    # good_sentences = [19, 26, 40, 46, 67]
+    # good_sentences = [19, 26, 67]
+    # good_sentences = list(range(116))
+    # good_sentences = list(range(33, 38))
+    # good_sentences = list(range(3))
+    good_sentences = list(range(len(wav_IDs)))
+
+    do_the_stream = True
+    # do_the_stream = False
     if do_the_stream:
         do_stream_evaluation(
-            architecture_type, which_dataset, train_words_type, evaluation_type
+            architecture_type,
+            which_dataset,
+            train_words_type,
+            sentence_wav_paths,
+            sentence_norm_tra,
+            good_sentences,
         )
 
-    # compute_all_false_alarm_reject(architecture_type, which_dataset, train_words_type)
+    do_the_compute_far = True
+    # do_the_compute_far = False
+    if do_the_compute_far:
+        compute_all_false_alarm_reject(
+            architecture_type,
+            which_dataset,
+            train_words_type,
+            sentence_wav_paths,
+            sentence_norm_tra,
+            good_sentences,
+        )
 
-    analyze_false_alarm_rejects(architecture_type, which_dataset, train_words_type)
+    do_the_analyze_far = True
+    # do_the_analyze_far = False
+    if do_the_analyze_far:
+        analyze_false_alarm_rejects(
+            architecture_type,
+            which_dataset,
+            train_words_type,
+            sentence_wav_paths,
+            sentence_norm_tra,
+            good_sentences,
+        )
 
 
 if __name__ == "__main__":
