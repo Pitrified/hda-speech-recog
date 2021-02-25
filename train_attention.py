@@ -161,11 +161,11 @@ def hyper_train_attention(
     # ds.extend(["aug06", "aug07", "aug08", "aug09"])
     # ds.extend(["aug10", "aug11", "aug12", "aug13"])
     # ds.extend(["aug14", "aug15", "aug16", "aug17"])
-    ds.extend(["mela1"])
+    # ds.extend(["mela1"])
     ds.extend(["mel04"])
-    ds.extend(["aug15"])
-    ds.extend(["aug14"])
-    ds.extend(["aug07"])
+    # ds.extend(["aug15"])
+    # ds.extend(["aug14"])
+    # ds.extend(["aug07"])
     # hypa_grid["dataset_name"] = ["mela1"]
     # hypa_grid["dataset_name"] = ["mel04"]
     # hypa_grid["dataset_name"] = ["aug01"]
@@ -201,10 +201,10 @@ def hyper_train_attention(
     ###### the query style type
     qs = []
     # hypa_grid["query_style_type"] = ["01", "02", "03", "04", "05"]
-    # qs.extend(["01"])  # dense01
+    qs.extend(["01"])  # dense01
     # qs.extend(["03"])  # conv02 (LSTM)
     # qs.extend(["04"])  # conv03 (inputs)
-    qs.extend(["05"])  # dense02
+    # qs.extend(["05"])  # dense02
     hypa_grid["query_style_type"] = qs
 
     ###### the width of the dense layers
@@ -217,7 +217,7 @@ def hyper_train_attention(
     # lr.extend(["01"])  # fixed
     # lr.extend(["02"])  # fixed
     lr.extend(["03"])  # exp_decay_step_01
-    lr.extend(["04"])  # exp_decay_smooth_01
+    # lr.extend(["04"])  # exp_decay_smooth_01
     # lr.extend(["05"])  # clr_triangular2_01
     # lr.extend(["06"])  # clr_triangular2_02
     # lr.extend(["07"])  # clr_triangular2_03
@@ -237,8 +237,8 @@ def hyper_train_attention(
 
     ###### the number of epochs
     en = []
-    en.extend(["01"])  # 15
-    # en.extend(["02"])  # 30
+    # en.extend(["01"])  # 15
+    en.extend(["02"])  # 30
     # en.extend(["03", "04"])
     hypa_grid["epoch_num_type"] = en
 

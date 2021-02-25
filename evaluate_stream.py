@@ -610,8 +610,8 @@ def do_stream_evaluation(
     # good_sentences = [19, 26, 67]
     # good_sentences = list(range(116))
     # good_sentences = list(range(33, 38))
-    # good_sentences = list(range(3))
-    good_sentences = list(range(len(wav_IDs)))
+    good_sentences = list(range(3))
+    # good_sentences = list(range(len(wav_IDs)))
 
     good_count = 0
     bad_count = 0
@@ -625,7 +625,7 @@ def do_stream_evaluation(
 
     # all_y_pred: ty.Dict[str, ty.List[float]] = {}
 
-    ypred_folder = Path("plot_stream") / "y_pred"
+    ypred_folder = Path("plot_stream") / "y_pred" / model_name
     if not ypred_folder.exists():
         ypred_folder.mkdir(parents=True, exist_ok=True)
 
@@ -819,11 +819,13 @@ def compute_roc(
     return results
 
 
-def compute_all_roc(architecture_type, which_dataset, train_words_type) -> None:
-    r"""MAKEDOC: what is compute_all_roc doing?"""
-    logg = logging.getLogger(f"c.{__name__}.compute_all_roc")
+def compute_all_false_alarm_reject(
+    architecture_type, which_dataset, train_words_type
+) -> None:
+    r"""MAKEDOC: what is compute_all_false_alarm_reject doing?"""
+    logg = logging.getLogger(f"c.{__name__}.compute_all_false_alarm_reject")
     # logg.setLevel("INFO")
-    logg.debug("\n\nStart compute_all_roc")
+    logg.debug("\n\nStart compute_all_false_alarm_reject")
 
     # get the sentence info
     sentence_wav_paths, sentence_norm_tra = build_ltts_sentence_list(
@@ -836,8 +838,8 @@ def compute_all_roc(architecture_type, which_dataset, train_words_type) -> None:
     # good_sentences = [19, 26, 40, 46, 67]
     # good_sentences = [19, 26, 67]
     # good_sentences = list(range(116))
-    # good_sentences = list(range(3))
-    good_sentences = list(range(len(wav_IDs)))
+    good_sentences = list(range(3))
+    # good_sentences = list(range(len(wav_IDs)))
 
     # magic to fix the GPUs
     setup_gpus()
@@ -848,8 +850,8 @@ def compute_all_roc(architecture_type, which_dataset, train_words_type) -> None:
     )
 
     # where the predictions should be
-    ypred_folder = Path("plot_stream") / "y_pred"
-    roc_folder = Path("plot_stream") / "roc_results"
+    ypred_folder = Path("plot_stream") / "y_pred" / model_name
+    roc_folder = Path("plot_stream") / "roc_results" / model_name
     if not roc_folder.exists():
         roc_folder.mkdir(parents=True, exist_ok=True)
 
@@ -931,7 +933,7 @@ def run_evaluate_stream(args: argparse.Namespace) -> None:
             architecture_type, which_dataset, train_words_type, evaluation_type
         )
 
-    compute_all_roc(architecture_type, which_dataset, train_words_type)
+    compute_all_false_alarm_reject(architecture_type, which_dataset, train_words_type)
 
 
 if __name__ == "__main__":
